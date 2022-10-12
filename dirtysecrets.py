@@ -128,8 +128,6 @@ class ASPNETViewstate(DirtySecretsBase):
             candidate_hash_algs = search_dict(self.hash_sizes, signature_len)
 
         for hash_alg in candidate_hash_algs:
-            print(hash_alg)
-            print(self.hash_sizes[hash_alg])
             viewstate_data = self.viewstate_bytes[: -self.hash_sizes[hash_alg]]
             signature = self.viewstate_bytes[-self.hash_sizes[hash_alg] :]
             if hash_alg == "MD5":
@@ -138,7 +136,6 @@ class ASPNETViewstate(DirtySecretsBase):
                     if not self.encrypted:
                         md5_bytes += b"\x00" * 4
                     h = hashlib.md5(md5_bytes)
-                    print(h.digest())
                 except binascii.Error:
                     continue
             else:
