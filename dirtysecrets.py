@@ -13,11 +13,13 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 unpad = lambda s: s[: -ord(s[len(s) - 1 :])]
 
+
 def search_dict(d, query):
     items = [key for key, value in d.items() if query == value]
     if not items:
         return None
     return items
+
 
 class DirtySecretsBase:
 
@@ -31,6 +33,7 @@ class DirtySecretsBase:
             for l in r.readlines():
                 if len(l) > 0:
                     yield l
+
 
 class ASPNETViewstate(DirtySecretsBase):
 
