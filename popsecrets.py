@@ -288,8 +288,6 @@ class ASPNETViewstate(PopsecretsBase):
 
 
 def check_all_modules(secret):
-    modules = []
-
     for m in PopsecretsBase.__subclasses__():
         if m.identify(secret):
             x = m(secret)
