@@ -22,6 +22,7 @@ def search_dict(d, query):
         return None
     return items
 
+
 class PopsecretsBase:
 
     hash_sizes = {"SHA1": 20, "MD5": 16, "SHA256": 32, "SHA384": 48, "SHA512": 64}
@@ -48,18 +49,18 @@ class PopsecretsBase:
 
 
 class FlaskSigningKey(PopsecretsBase):
-
     def __init__(self, flask_cookie):
         self.flask_cookie = flask_cookie
 
     def check_secret(self):
         for l in self.load_resource("flask_passwords.txt"):
             password = l.rstrip()
-            r = flaskVerify(value=self.flask_cookie,secret=password)
+            r = flaskVerify(value=self.flask_cookie, secret=password)
             if r:
-                self.output_parameters = {"flask_password":password}
+                self.output_parameters = {"flask_password": password}
                 return True
         return False
+
 
 class TelerikUploadConfigurationHashKey(PopsecretsBase):
     def __init__(self, dialogParameters_raw):
