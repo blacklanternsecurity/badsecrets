@@ -296,8 +296,3 @@ def check_all_modules(secret):
             if x.check_secret():
                 return x.output_parameters
     return False
-
-
-r = check_all_modules("yJrdyJV6tkmHLII2uDq1Sl509UeDg9xGI4u3tb6dm9BQS4wD08KTkyXKST4PeQs00giqSA==")
-if r:
-    print(r)
