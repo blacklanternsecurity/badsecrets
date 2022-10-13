@@ -26,6 +26,7 @@ YOUR-SECOND-UNIQUE-STRONG-RANDOM-VALUE-UNIQUE-TO-YOUR-APP (from telerik_hash_key
 F5144F1A581A57BA3B60311AF7562A855998F7DD203CD8A71405599B980D8694B5C986C888BE4FC0E6571C2CE600D58CE82B8FA13106B17D77EA4CECDDBBEC1B (from aspnet_machinekeys.txt)
 """
 
+
 def test_viewstates():
     for test in tests:
 
@@ -33,8 +34,3 @@ def test_viewstates():
         found_key = x.check_secret()
         assert found_key == True
         assert x.output_parameters["Telerik.Upload.ConfigurationHashKey"] == test[0]
-
-
-
-
-
