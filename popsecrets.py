@@ -4,6 +4,7 @@ import base64
 import hashlib
 import struct
 import binascii
+import urllib.parse
 from Crypto.Cipher import AES
 from Crypto.Cipher import DES
 from Crypto.Cipher import DES3
@@ -23,6 +24,17 @@ def search_dict(d, query):
 
 class PopsecretsBase:
 
+    hash_sizes = {"SHA1": 20, "MD5": 16, "SHA256": 32, "SHA384": 48, "SHA512": 64}
+    hash_algs = {
+        "SHA1": hashlib.sha1,
+        "MD5": hashlib.md5,
+        "SHA256": hashlib.sha256,
+        "SHA384": hashlib.sha384,
+        "SHA512": hashlib.sha512,
+        "AES": hashlib.sha1,
+        "3DES": hashlib.sha1,
+    }
+
     output_parameters = None
 
     def check_secret(self):
@@ -35,19 +47,39 @@ class PopsecretsBase:
                     yield l
 
 
+class TelerikUploadConfigurationHashKey(PopsecretsBase):
+    def __init__(self, dialogParameters_raw):
+
+        dialogParametersB64 = urllib.parse.unquote(dialogParameters_raw)
+
+        self.dp_enc = dialogParametersB64[:-44].encode()
+        self.dp_hash = dialogParametersB64[-44:].encode()
+
+    def prepare_keylist(self):
+        for l in self.load_resource("aspnet_machinekeys.txt"):
+            try:
+                vkey, ekey = l.rstrip().split(",")
+                yield vkey
+            except ValueError:
+                continue
+        for l in self.load_resource("telerik_hash_keys.txt"):
+            vkey = l.strip()
+            yield vkey
+
+    def check_secret(self):
+
+        for vkey in self.prepare_keylist():
+            try:
+                h = hmac.new(vkey.encode(), self.dp_enc, self.hash_algs["SHA256"])
+                if base64.b64encode(h.digest()) == self.dp_hash:
+                    self.output_parameters = {"Telerik.Upload.ConfigurationHashKey": vkey}
+                    return True
+            except binascii.Error:
+                continue
+        return False
+
+
 class ASPNETViewstate(PopsecretsBase):
-
-    hash_algs = {
-        "SHA1": hashlib.sha1,
-        "MD5": hashlib.md5,
-        "SHA256": hashlib.sha256,
-        "SHA384": hashlib.sha384,
-        "SHA512": hashlib.sha512,
-        "AES": hashlib.sha1,
-        "3DES": hashlib.sha1,
-    }
-    hash_sizes = {"SHA1": 20, "MD5": 16, "SHA256": 32, "SHA384": 48, "SHA512": 64}
-
     def __init__(self, viewstate_B64, generator):
 
         self.generator = struct.pack("<I", int(generator, 16))
