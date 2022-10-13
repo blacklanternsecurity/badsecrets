@@ -1,9 +1,10 @@
+import re
 import os
 import hmac
 import zlib
+import struct
 import base64
 import hashlib
-import struct
 import binascii
 import urllib.parse
 from Crypto.Cipher import AES
@@ -16,6 +17,10 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 unpad = lambda s: s[: -ord(s[len(s) - 1 :])]
 
+generic_base64_regex = re.compile(
+    r"^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}={2})$"
+)
+
 
 def search_dict(d, query):
     items = [key for key, value in d.items() if query == value]
@@ -25,6 +30,8 @@ def search_dict(d, query):
 
 
 class PopsecretsBase:
+
+    identify_regex = re.compile(r".+")
 
     hash_sizes = {"SHA1": 20, "MD5": 16, "SHA256": 32, "SHA384": 48, "SHA512": 64}
     hash_algs = {
@@ -48,15 +55,27 @@ class PopsecretsBase:
                 if len(l) > 0:
                     yield l
 
+    @classmethod
+    def identify(self, secret):
+        if re.match(self.identify_regex, secret):
+            return True
+        return False
+
 
 class Peoplesoft_PSToken(PopsecretsBase):
+
+    identify_regex = generic_base64_regex
+
     def __init__(self, PS_TOKEN_B64):
         self.PS_TOKEN = base64.b64decode(PS_TOKEN_B64)
 
     def check_secret(self):
 
         SHA1_mac = self.PS_TOKEN[44:64]
-        PS_TOKEN_DATA = zlib.decompress(self.PS_TOKEN[76:])
+        try:
+            PS_TOKEN_DATA = zlib.decompress(self.PS_TOKEN[76:])
+        except zlib.error:
+            return False
 
         username = PS_TOKEN_DATA[21 : 21 + PS_TOKEN_DATA[20]].replace(b"\x00", b"").decode()
 
@@ -78,6 +97,9 @@ class Peoplesoft_PSToken(PopsecretsBase):
 
 
 class FlaskSigningKey(PopsecretsBase):
+
+    identify_regex = re.compile(r"eyJ(?:[\w-]*\.)(?:[\w-]*\.)[\w-]*")
+
     def __init__(self, flask_cookie):
         self.flask_cookie = flask_cookie
 
@@ -92,6 +114,9 @@ class FlaskSigningKey(PopsecretsBase):
 
 
 class TelerikUploadConfigurationHashKey(PopsecretsBase):
+
+    identify_regex = re.compile(r"^(?:[A-Za-z0-9+\/=%]+)$")
+
     def __init__(self, dialogParameters_raw):
 
         dialogParametersB64 = urllib.parse.unquote(dialogParameters_raw)
@@ -124,7 +149,10 @@ class TelerikUploadConfigurationHashKey(PopsecretsBase):
 
 
 class ASPNETViewstate(PopsecretsBase):
-    def __init__(self, viewstate_B64, generator):
+
+    identify_regex = generic_base64_regex
+
+    def __init__(self, viewstate_B64, generator="0000"):
 
         self.generator = struct.pack("<I", int(generator, 16))
         self.viewstate = viewstate_B64
@@ -257,3 +285,19 @@ class ASPNETViewstate(PopsecretsBase):
                 }
                 return True
         return False
+
+
+def check_all_modules(secret):
+    modules = []
+
+    for m in PopsecretsBase.__subclasses__():
+        if m.identify(secret):
+            x = m(secret)
+            if x.check_secret():
+                return x.output_parameters
+    return False
+
+
+r = check_all_modules("yJrdyJV6tkmHLII2uDq1Sl509UeDg9xGI4u3tb6dm9BQS4wD08KTkyXKST4PeQs00giqSA==")
+if r:
+    print(r)

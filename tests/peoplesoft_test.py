@@ -20,7 +20,7 @@ tests = [
 
 def test_peoplesoft():
     for test in tests:
-
+        assert Peoplesoft_PSToken.identify(test[1])
         x = Peoplesoft_PSToken(test[1])
         found_key = x.check_secret()
         assert found_key == True
