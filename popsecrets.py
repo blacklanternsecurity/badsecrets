@@ -21,7 +21,7 @@ def search_dict(d, query):
     return items
 
 
-class DirtySecretsBase:
+class PopsecretsBase:
 
     output_parameters = None
 
@@ -35,7 +35,7 @@ class DirtySecretsBase:
                     yield l
 
 
-class ASPNETViewstate(DirtySecretsBase):
+class ASPNETViewstate(PopsecretsBase):
 
     hash_algs = {
         "SHA1": hashlib.sha1,
