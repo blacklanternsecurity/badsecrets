@@ -11,7 +11,7 @@ tests = [("CHANGEME", "eyJoZWxsbyI6IndvcmxkIn0.XDtqeQ.1qsBdjyRJLokwRzJdzXMVCSyRT
 
 def test_flask():
     for test in tests:
-
+        assert FlaskSigningKey.identify(test[1])
         x = FlaskSigningKey(test[1])
         found_key = x.check_secret()
         assert found_key == True

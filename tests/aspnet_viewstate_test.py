@@ -142,6 +142,8 @@ def test_viewstates():
     for test in tests:
 
         print(test[0])
+
+        assert ASPNETViewstate.identify(test[3])
         x = ASPNETViewstate(test[3], modifier)
         found_key = x.check_secret()
         assert found_key == True
