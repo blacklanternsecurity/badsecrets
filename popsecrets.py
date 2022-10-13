@@ -9,6 +9,7 @@ from Crypto.Cipher import AES
 from Crypto.Cipher import DES
 from Crypto.Cipher import DES3
 from viewstate import ViewState
+from flask_unsign import verify as flaskVerify
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -20,7 +21,6 @@ def search_dict(d, query):
     if not items:
         return None
     return items
-
 
 class PopsecretsBase:
 
@@ -46,6 +46,20 @@ class PopsecretsBase:
                 if len(l) > 0:
                     yield l
 
+
+class FlaskSigningKey(PopsecretsBase):
+
+    def __init__(self, flask_cookie):
+        self.flask_cookie = flask_cookie
+
+    def check_secret(self):
+        for l in self.load_resource("flask_passwords.txt"):
+            password = l.rstrip()
+            r = flaskVerify(value=self.flask_cookie,secret=password)
+            if r:
+                self.output_parameters = {"flask_password":password}
+                return True
+        return False
 
 class TelerikUploadConfigurationHashKey(PopsecretsBase):
     def __init__(self, dialogParameters_raw):
