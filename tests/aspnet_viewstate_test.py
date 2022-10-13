@@ -135,14 +135,14 @@ Viewstates taken from query.aspx page, so modified should be constant (EDD8C9AE)
 
 enc_key = "B47D3CD1E780CF30C739A080995B9B10B64354AA135A2D78"
 validation_key = "F5144F1A581A57BA3B60311AF7562A855998F7DD203CD8A71405599B980D8694B5C986C888BE4FC0E6571C2CE600D58CE82B8FA13106B17D77EA4CECDDBBEC1B"
-modifer = "EDD8C9AE"
+modifier = "EDD8C9AE"
 
 
 def test_viewstates():
     for test in tests:
 
         print(test[0])
-        x = ASPNETViewstate(test[3], modifer)
+        x = ASPNETViewstate(test[3], modifier)
         found_key = x.check_secret()
         assert found_key == True
         assert x.output_parameters["validationKey"] == validation_key
