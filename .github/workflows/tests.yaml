@@ -1,8 +1,5 @@
 name: tests
 on: [push, pull_request]
-runs:
-  using: 'node16'
-  main: 'main.js'
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -25,7 +22,7 @@ jobs:
           command: |
             poetry run pytest --exitfirst --disable-warnings --log-cli-level=DEBUG --cov-report xml:cov.xml --cov=badsecrets .
       - name: Upload Code Coverage
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./cov.xml
