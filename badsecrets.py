@@ -29,7 +29,7 @@ def search_dict(d, query):
     return items
 
 
-class PopsecretsBase:
+class BadsecretsBase:
 
     identify_regex = re.compile(r".+")
 
@@ -62,7 +62,7 @@ class PopsecretsBase:
         return False
 
 
-class Peoplesoft_PSToken(PopsecretsBase):
+class Peoplesoft_PSToken(BadsecretsBase):
 
     identify_regex = generic_base64_regex
 
@@ -96,7 +96,7 @@ class Peoplesoft_PSToken(PopsecretsBase):
         return False
 
 
-class FlaskSigningKey(PopsecretsBase):
+class FlaskSigningKey(BadsecretsBase):
 
     identify_regex = re.compile(r"eyJ(?:[\w-]*\.)(?:[\w-]*\.)[\w-]*")
 
@@ -113,7 +113,7 @@ class FlaskSigningKey(PopsecretsBase):
         return False
 
 
-class TelerikUploadConfigurationHashKey(PopsecretsBase):
+class TelerikUploadConfigurationHashKey(BadsecretsBase):
 
     identify_regex = re.compile(r"^(?:[A-Za-z0-9+\/=%]+)$")
 
@@ -148,7 +148,7 @@ class TelerikUploadConfigurationHashKey(PopsecretsBase):
         return False
 
 
-class ASPNETViewstate(PopsecretsBase):
+class ASPNETViewstate(BadsecretsBase):
 
     identify_regex = generic_base64_regex
 
@@ -288,7 +288,7 @@ class ASPNETViewstate(PopsecretsBase):
 
 
 def check_all_modules(secret):
-    for m in PopsecretsBase.__subclasses__():
+    for m in BadsecretsBase.__subclasses__():
         if m.identify(secret):
             x = m(secret)
             if x.check_secret():

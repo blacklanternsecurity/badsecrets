@@ -2,7 +2,7 @@
 
 
 ```
-from popsecrets import ASPNETViewstate, TelerikUploadConfigurationHashKey, FlaskSigningKey, Peoplesoft_PSToken
+from badsecrets import ASPNETViewstate, TelerikUploadConfigurationHashKey, FlaskSigningKey, Peoplesoft_PSToken
 
 x = ASPNETViewstate("AgF5WuyVO11CsYJ1K5rjyuLXqUGCITSOapG1cYNiriYQ6VTKochMpn8ws4eJRvft81nQIA==","EDD8C9AE")
 if x.check_secret():
