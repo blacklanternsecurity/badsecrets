@@ -1,5 +1,22 @@
-## Examples
+# badsecrets
 
+A pure python library for identifying the use of known or very weak cryptographic secrets across a variety of platforms. The project is designed to be both a repository of various "known secrets" (for example, ASP.NET machine keys found in examples in tutorials), and to provide a language-agnostic abstraction layer for identifying their use.  
+
+Knowing when a 'bad secret' was used is usually a matter of examining some cryptographic product in which the secret was used: for example, a cookie which is signed with a keyed hashing algorithm. Things can get complicated when you dive into the individual implementation oddities each platform provides, which this library aims to alleviate. 
+
+Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a desire to expand on the supported platforms and remove language/operating. system dependencies 
+
+## Current Modules
+
+| Name     | Description |
+| ----------- | ----------- |
+| ASPNETViewstate      | Checks the viewstate/generator against a list of known machine keys.|
+| TelerikUploadConfigurationHashKey   | Checks patched (2017+) versions of Telerik UI for a known TelerikUploadConfigurationHashKey|
+| FlaskSigningKey  | Checks for weak Flask cookie signing password. Wrapper for [flask-unsign](https://github.com/Paradoxis/Flask-Unsign)       |
+| Peoplesoft_PSToken  | Can check a peoplesoft PS_TOKEN for a bad/weak signing password |
+| DjangoSignedCookies   | Checks django's session cookies (when in signed_cookie mode) for known django secret_key 
+
+## Examples
 
 ```
 from badsecrets import ASPNETViewstate, TelerikUploadConfigurationHashKey, FlaskSigningKey, Peoplesoft_PSToken, DjangoSignedCookies
