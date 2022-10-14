@@ -1,4 +1,7 @@
 # badsecrets
+[![Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) 
+![License](https://img.shields.io/badge/license-GPLv3-FF8400.svg)
+
 
 A pure python library for identifying the use of known or very weak cryptographic secrets across a variety of platforms. The project is designed to be both a repository of various "known secrets" (for example, ASP.NET machine keys found in examples in tutorials), and to provide a language-agnostic abstraction layer for identifying their use.  
 
@@ -55,7 +58,7 @@ else:
 
 
 
-## Check all modules at once
+### Check all modules at once
 
 ```
 r = check_all_modules("yJrdyJV6tkmHLII2uDq1Sl509UeDg9xGI4u3tb6dm9BQS4wD08KTkyXKST4PeQs00giqSA==")
