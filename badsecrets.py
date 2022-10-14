@@ -110,13 +110,19 @@ class DjangoSignedCookies(BadsecretsBase):
             return False
         for l in self.load_resource("django_secret_keys.txt"):
             secret_key = l.rstrip()
-            r = djangoLoads(self.django_signed_cookie,key=secret_key,fallback_keys="",salt="django.contrib.sessions.backends.signed_cookies")
+            r = djangoLoads(
+                self.django_signed_cookie,
+                key=secret_key,
+                fallback_keys="",
+                salt="django.contrib.sessions.backends.signed_cookies",
+            )
 
             if r:
-                r['secret_key'] = secret_key
+                r["secret_key"] = secret_key
                 self.output_parameters = r
                 return True
         return False
+
 
 class FlaskSigningKey(BadsecretsBase):
 
