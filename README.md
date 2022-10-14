@@ -2,7 +2,7 @@
 
 
 ```
-from badsecrets import ASPNETViewstate, TelerikUploadConfigurationHashKey, FlaskSigningKey, Peoplesoft_PSToken
+from badsecrets import ASPNETViewstate, TelerikUploadConfigurationHashKey, FlaskSigningKey, Peoplesoft_PSToken, DjangoSignedCookies
 
 x = ASPNETViewstate("AgF5WuyVO11CsYJ1K5rjyuLXqUGCITSOapG1cYNiriYQ6VTKochMpn8ws4eJRvft81nQIA==","EDD8C9AE")
 if x.check_secret():
@@ -27,6 +27,13 @@ if x.check_secret():
     print(x.output_parameters.items())
 else:
     print("KEY NOT FOUND :(")
+
+x = DjangoSignedCookies(".eJxVjLsOAiEURP-F2hAuL8HSfr-BAPciq4ZNlt3K-O9KsoU2U8w5My8W4r7VsHdaw4zswoCdfrsU84PaAHiP7bbwvLRtnRMfCj9o59OC9Lwe7t9Bjb2OtbMkAEGQtQjekykmJy9JZIW-6CgUaCGsA6eSyV65s1Qya_xGKZrY-wPVYjdw:1ojOrE:bfOktjgLlUykwCIRIpvaTZRQMM3-UypscEN57ECtXis")
+if x.check_secret():
+    print(x.output_parameters.items())
+else:
+    print("KEY NOT FOUND :(")
+
 ```
 
 
