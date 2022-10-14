@@ -1,5 +1,8 @@
 name: tests
 on: [push, pull_request]
+runs:
+  using: 'node16'
+  main: 'main.js'
 jobs:
   test:
     runs-on: ubuntu-latest
