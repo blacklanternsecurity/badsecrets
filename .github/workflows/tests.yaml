@@ -21,12 +21,11 @@ jobs:
           retry_wait_seconds: 0
           command: |
             poetry run pytest --exitfirst --disable-warnings --log-cli-level=DEBUG --cov-report xml:cov.xml --cov=badsecrets .
-
-        - name: Upload Code Coverage
-          uses: codecov/codecov-action@v2
-          with:
-            token: ${{ secrets.CODECOV_TOKEN }}
-            files: ./cov.xml
-            verbose: true
+      - name: Upload Code Coverage
+        uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./cov.xml
+          verbose: true
       
   
