@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "popsecrets"
+name = "badsecrets"
 version = "0.1.0"
 description = "About"
 authors = ["A library for detecting known or weak secrets on across many platforms"]
