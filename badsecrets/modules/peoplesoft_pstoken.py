@@ -8,14 +8,11 @@ class Peoplesoft_PSToken(BadsecretsBase):
 
     identify_regex = generic_base64_regex
 
-    def __init__(self, PS_TOKEN_B64):
-        self.PS_TOKEN = base64.b64decode(PS_TOKEN_B64)
-
-    def check_secret(self):
-
-        SHA1_mac = self.PS_TOKEN[44:64]
+    def check_secret(self, PS_TOKEN_B64):
+        PS_TOKEN = base64.b64decode(PS_TOKEN_B64)
+        SHA1_mac = PS_TOKEN[44:64]
         try:
-            PS_TOKEN_DATA = zlib.decompress(self.PS_TOKEN[76:])
+            PS_TOKEN_DATA = zlib.decompress(PS_TOKEN[76:])
         except zlib.error:
             return False
 
@@ -32,7 +29,6 @@ class Peoplesoft_PSToken(BadsecretsBase):
 
             h = hashlib.sha1(PS_TOKEN_DATA + password.encode("utf_16_le", errors="ignore"))
             if h.digest() == SHA1_mac:
-                self.output_parameters = {"PS_TOKEN_password": password, "username": username}
-                return True
+                return {"PS_TOKEN_password": password, "username": username}
 
-        return False
+        return None

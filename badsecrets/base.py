@@ -24,8 +24,9 @@ class BadsecretsBase:
 
     output_parameters = None
 
-    def check_secret(self):
-        pass
+    def check_secret(self, secret):
+        if not self.identify(secret):
+            return None
 
     def load_resource(self, resource):
         with open(f"{os.path.dirname(os.path.abspath(__file__))}/resources/{resource}") as r:
@@ -42,12 +43,12 @@ class BadsecretsBase:
 
 def check_all_modules(secret):
     for m in BadsecretsBase.__subclasses__():
-        if m.identify(secret):
-            x = m(secret)
-            if x.check_secret():
-                x.output_parameters["detecting_module"] = m.__name__
-                return x.output_parameters
-    return False
+        x = m()
+        r = x.check_secret(secret)
+        if r:
+            r["detecting_module"] = m.__name__
+            return r
+    return None
 
 
 # class all_modules(BadSecretsBase):

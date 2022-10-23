@@ -11,9 +11,8 @@ tests = [
 
 
 def test_django():
+    x = DjangoSignedCookies()
     for test in tests:
-        assert DjangoSignedCookies.identify(test[0])
-        x = DjangoSignedCookies(test[0])
-        found_key = x.check_secret()
-        assert found_key == True
-        assert x.output_parameters["_auth_user_hash"] == test[1]
+        found_key = x.check_secret(test[0])
+        assert found_key
+        assert found_key["_auth_user_hash"] == test[1]

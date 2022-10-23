@@ -10,13 +10,6 @@ class Telerik_HashKey(BadsecretsBase):
 
     identify_regex = re.compile(r"^(?:[A-Za-z0-9+\/=%]+)$")
 
-    def __init__(self, dialogParameters_raw):
-
-        dialogParametersB64 = urllib.parse.unquote(dialogParameters_raw)
-
-        self.dp_enc = dialogParametersB64[:-44].encode()
-        self.dp_hash = dialogParametersB64[-44:].encode()
-
     def prepare_keylist(self):
         for l in self.load_resource("aspnet_machinekeys.txt"):
             try:
@@ -28,14 +21,17 @@ class Telerik_HashKey(BadsecretsBase):
             vkey = l.strip()
             yield vkey
 
-    def check_secret(self):
+    def check_secret(self, dialogParameters_raw):
+
+        dialogParametersB64 = urllib.parse.unquote(dialogParameters_raw)
+        dp_enc = dialogParametersB64[:-44].encode()
+        dp_hash = dialogParametersB64[-44:].encode()
 
         for vkey in self.prepare_keylist():
             try:
-                h = hmac.new(vkey.encode(), self.dp_enc, self.hash_algs["SHA256"])
-                if base64.b64encode(h.digest()) == self.dp_hash:
-                    self.output_parameters = {"Telerik.Upload.ConfigurationHashKey": vkey}
-                    return True
+                h = hmac.new(vkey.encode(), dp_enc, self.hash_algs["SHA256"])
+                if base64.b64encode(h.digest()) == dp_hash:
+                    return {"Telerik.Upload.ConfigurationHashKey": vkey}
             except binascii.Error:
                 continue
-        return False
+        return None
