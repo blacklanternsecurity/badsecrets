@@ -16,16 +16,6 @@ class ASPNET_Viewstate(BadsecretsBase):
 
     identify_regex = generic_base64_regex
 
-    def __init__(self, viewstate_B64, generator="0000"):
-
-        self.generator = struct.pack("<I", int(generator, 16))
-        self.viewstate = viewstate_B64
-        self.viewstate_bytes = base64.b64decode(viewstate_B64)
-        if self.valid_preamble(self.viewstate_bytes):
-            self.encrypted = False
-        else:
-            self.encrypted = True
-
     @staticmethod
     def valid_preamble(sourcebytes):
         if sourcebytes[0:2] == b"\xff\x01":
@@ -39,14 +29,16 @@ class ASPNET_Viewstate(BadsecretsBase):
             return None
         return items
 
-    def viewstate_decrypt(self, ekey, hash_alg):
+    def viewstate_decrypt(self, ekey, hash_alg, viewstate_B64):
+
+        viewstate_bytes = base64.b64decode(viewstate_B64)
 
         try:
             ekey_bytes = binascii.unhexlify(ekey)
         except binascii.Error:
             return
 
-        vs_size = len(self.viewstate_bytes)
+        vs_size = len(viewstate_bytes)
         dec_algos = set()
         hash_size = self.hash_sizes[hash_alg]
 
@@ -59,7 +51,7 @@ class ASPNET_Viewstate(BadsecretsBase):
         for dec_algo in list(dec_algos):
             if dec_algo == "AES":
                 block_size = AES.block_size
-                iv = self.viewstate_bytes[0:block_size]
+                iv = viewstate_bytes[0:block_size]
                 try:
                     cipher = AES.new(ekey_bytes, AES.MODE_CBC, iv)
                 except ValueError:
@@ -68,7 +60,7 @@ class ASPNET_Viewstate(BadsecretsBase):
 
             elif dec_algo == "3DES":
                 block_size = DES3.block_size
-                iv = self.viewstate_bytes[0:block_size]
+                iv = viewstate_bytes[0:block_size]
                 try:
                     cipher = DES3.new(ekey_bytes[:24], DES3.MODE_CBC, iv)
                 except ValueError:
@@ -77,14 +69,14 @@ class ASPNET_Viewstate(BadsecretsBase):
 
             elif dec_algo == "DES":
                 block_size = DES.block_size
-                iv = self.viewstate_bytes[0:block_size]
+                iv = viewstate_bytes[0:block_size]
                 try:
                     cipher = DES.new(ekey_bytes[:8], DES.MODE_CBC, iv)
                 except ValueError:
                     continue
                 blockpadlen = 0
 
-            encrypted_raw = self.viewstate_bytes[block_size:-hash_size]
+            encrypted_raw = viewstate_bytes[block_size:-hash_size]
             decrypted_raw = cipher.decrypt(encrypted_raw)
             decrypt = unpad(decrypted_raw[blockpadlen:])
 
@@ -92,23 +84,25 @@ class ASPNET_Viewstate(BadsecretsBase):
                 return dec_algo
         return None
 
-    def viewstate_validate(self, vkey):
-        if self.encrypted:
+    def viewstate_validate(self, vkey, encrypted, viewstate_B64, generator):
+        viewstate_bytes = base64.b64decode(viewstate_B64)
+
+        if encrypted:
             candidate_hash_algs = list(self.hash_sizes.keys())
 
         else:
-            vs = ViewState(self.viewstate)
+            vs = ViewState(viewstate_B64)
             vs.decode()
             signature_len = len(vs.signature)
             candidate_hash_algs = self.search_dict(self.hash_sizes, signature_len)
 
         for hash_alg in candidate_hash_algs:
-            viewstate_data = self.viewstate_bytes[: -self.hash_sizes[hash_alg]]
-            signature = self.viewstate_bytes[-self.hash_sizes[hash_alg] :]
+            viewstate_data = viewstate_bytes[: -self.hash_sizes[hash_alg]]
+            signature = viewstate_bytes[-self.hash_sizes[hash_alg] :]
             if hash_alg == "MD5":
                 try:
                     md5_bytes = viewstate_data + binascii.unhexlify(vkey)
-                    if not self.encrypted:
+                    if not encrypted:
                         md5_bytes += b"\x00" * 4
                     h = hashlib.md5(md5_bytes)
                 except binascii.Error:
@@ -116,8 +110,8 @@ class ASPNET_Viewstate(BadsecretsBase):
             else:
                 try:
                     vs_data_bytes = viewstate_data
-                    if not self.encrypted:
-                        vs_data_bytes += self.generator
+                    if not encrypted:
+                        vs_data_bytes += generator
                     h = hmac.new(
                         binascii.unhexlify(vkey),
                         vs_data_bytes,
@@ -131,27 +125,36 @@ class ASPNET_Viewstate(BadsecretsBase):
 
         return None
 
-    def check_secret(self):
+    def check_secret(self, viewstate_B64, generator="0000"):
+
+        if not self.identify(viewstate_B64):
+            return None
+
+        generator = struct.pack("<I", int(generator, 16))
+        if self.valid_preamble(base64.b64decode(viewstate_B64)):
+            encrypted = False
+        else:
+            encrypted = True
+
         for l in self.load_resource("aspnet_machinekeys.txt"):
             try:
                 vkey, ekey = l.rstrip().split(",")
             except ValueError:
                 continue
 
-            validationAlgo = self.viewstate_validate(vkey)
+            validationAlgo = self.viewstate_validate(vkey, encrypted, viewstate_B64, generator)
             if validationAlgo:
                 confirmed_ekey = None
                 decryptionAlgo = None
-                if self.encrypted:
-                    decryptionAlgo = self.viewstate_decrypt(ekey, validationAlgo)
+                if encrypted:
+                    decryptionAlgo = self.viewstate_decrypt(ekey, validationAlgo, viewstate_B64)
                     if decryptionAlgo:
                         confirmed_ekey = ekey
 
-                self.output_parameters = {
+                return {
                     "validationKey": vkey,
                     "validationAlgo": validationAlgo,
                     "encryptionKey": confirmed_ekey,
                     "encryptionAlgo": decryptionAlgo,
                 }
-                return True
-        return False
+        return None

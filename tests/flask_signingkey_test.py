@@ -6,9 +6,8 @@ tests = [("CHANGEME", "eyJoZWxsbyI6IndvcmxkIn0.XDtqeQ.1qsBdjyRJLokwRzJdzXMVCSyRT
 
 
 def test_flask():
+    x = FlaskSigningKey()
     for test in tests:
-        assert FlaskSigningKey.identify(test[1])
-        x = FlaskSigningKey(test[1])
-        found_key = x.check_secret()
-        assert found_key == True
-        assert x.output_parameters["flask_password"] == test[0]
+        found_key = x.check_secret(test[1])
+        assert found_key
+        assert found_key["flask_password"] == test[0]

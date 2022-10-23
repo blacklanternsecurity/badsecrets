@@ -15,10 +15,10 @@ tests = [
 
 
 def test_peoplesoft():
+    x = Peoplesoft_PSToken()
     for test in tests:
-        assert Peoplesoft_PSToken.identify(test[1])
-        x = Peoplesoft_PSToken(test[1])
-        found_key = x.check_secret()
-        assert found_key == True
+
+        found_key = x.check_secret(test[1])
+        assert found_key
         assert x.output_parameters["username"] == test[0]
         assert x.output_parameters["PS_TOKEN_password"] != None
