@@ -1,10 +1,6 @@
-import sys
-import os
+from badsecrets import modules_loaded
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.dirname(SCRIPT_DIR))
-
-from badsecrets import FlaskSigningKey
+FlaskSigningKey = modules_loaded["flask_signingkey"]
 
 tests = [("CHANGEME", "eyJoZWxsbyI6IndvcmxkIn0.XDtqeQ.1qsBdjyRJLokwRzJdzXMVCSyRTA")]
 

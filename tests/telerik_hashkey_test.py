@@ -1,10 +1,6 @@
-import sys
-import os
+from badsecrets import modules_loaded
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.dirname(SCRIPT_DIR))
-
-from badsecrets import TelerikUploadConfigurationHashKey
+TelerikHashKey = modules_loaded["telerik_hashkey"]
 
 
 tests = [
@@ -29,8 +25,8 @@ F5144F1A581A57BA3B60311AF7562A855998F7DD203CD8A71405599B980D8694B5C986C888BE4FC0
 
 def test_viewstates():
     for test in tests:
-        assert TelerikUploadConfigurationHashKey.identify(test[1])
-        x = TelerikUploadConfigurationHashKey(test[1])
+        assert TelerikHashKey.identify(test[1])
+        x = TelerikHashKey(test[1])
         found_key = x.check_secret()
         assert found_key == True
         assert x.output_parameters["Telerik.Upload.ConfigurationHashKey"] == test[0]
