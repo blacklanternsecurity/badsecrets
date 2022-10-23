@@ -1,10 +1,6 @@
-import sys
-import os
+from badsecrets import modules_loaded
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.dirname(SCRIPT_DIR))
-
-from badsecrets import ASPNETViewstate
+ASPNETViewstate = modules_loaded["aspnet_viewstate"]
 
 tests = [
     (
@@ -139,18 +135,24 @@ modifier = "EDD8C9AE"
 
 
 def test_viewstates():
+
+    x = ASPNETViewstate()
+
     for test in tests:
 
         print(test[0])
 
-        assert ASPNETViewstate.identify(test[3])
-        x = ASPNETViewstate(test[3], modifier)
-        found_key = x.check_secret()
-        assert found_key == True
-        assert x.output_parameters["validationKey"] == validation_key
-        assert x.output_parameters["validationAlgo"] == test[2]
+        found_key = x.check_secret(test[3], modifier)
+        assert found_key
+        assert found_key["validationKey"] == validation_key
+        assert found_key["validationAlgo"] == test[2]
 
         if "NOENC" not in test[0]:
             print(test)
-            assert x.output_parameters["encryptionKey"] == enc_key
-            assert x.output_parameters["encryptionAlgo"] == test[1]
+            assert found_key["encryptionKey"] == enc_key
+            assert found_key["encryptionAlgo"] == test[1]
+
+    # negative test
+
+    found_key = x.check_secret("Ad5AwfMUcwXM5rJFA9dtrSgoT3ezfxneYLjsXW7pB/TjlgNbzsx3dY/P+FlXTZReIA==", "AAAAAAAA")
+    assert not found_key
