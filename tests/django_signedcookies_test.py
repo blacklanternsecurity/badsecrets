@@ -1,10 +1,6 @@
-import sys
-import os
+from badsecrets import modules_loaded
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.dirname(SCRIPT_DIR))
-
-from badsecrets import DjangoSignedCookies
+DjangoSignedCookies = modules_loaded["django_signedcookies"]
 
 tests = [
     (
@@ -14,7 +10,7 @@ tests = [
 ]
 
 
-def test_flask():
+def test_django():
     for test in tests:
         assert DjangoSignedCookies.identify(test[0])
         x = DjangoSignedCookies(test[0])
