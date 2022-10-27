@@ -10,26 +10,26 @@ from Crypto.Protocol.KDF import PBKDF2
 from badsecrets.base import BadsecretsBase
 
 
-class Rails6_SignedCookies(BadsecretsBase):
+class Rails_SignedCookies(BadsecretsBase):
 
-    identify_regex = re.compile(r"^[\.a-zA-z-0-9\%]+--[\.a-zA-z-0-9%]+$")
+    identify_regex = re.compile(r"^[\.a-zA-z-0-9\%=]+--[\.a-zA-z-0-9%=]+$")
 
-    def rails6(self, rails6_cookie, secret_key_base):
-        split_rails6_cookie = urllib.parse.unquote(rails6_cookie).split("--")
-        data = split_rails6_cookie[0]
+    def rails(self, rails_cookie, secret_key_base):
+
+        split_rails_cookie = urllib.parse.unquote(rails_cookie).split("--")
+        data = split_rails_cookie[0]
 
         # Cookie is likely signed but not encrypted
-        if split_rails6_cookie[0][0:3] == "eyJ":
-            signature = split_rails6_cookie[1]
+        if split_rails_cookie[0].startswith("eyJ"):
+            signature = split_rails_cookie[1]
             hash_alg = self.search_dict(self.hash_sizes, len(binascii.unhexlify(signature)))[0]
             hmac_secret = PBKDF2(secret_key_base, "signed cookie", 64, 1000)
             h = hmac.new(hmac_secret, data.encode(), hash_alg)
             if h.hexdigest() == signature:
-
                 return {"secret_key_base": secret_key_base, "data": base64.b64decode(data), "hash_algorithm": hash_alg}
 
-        # Cookie is likely Rails 5 AES-CBC Cookie
-        elif len(split_rails6_cookie) == 2:
+        # Cookie is likely Rails 4/5/6 AES-CBC Cookie
+        elif len(split_rails_cookie) == 2:
 
             try:
                 encrypted_data = base64.b64decode(data).decode()
@@ -49,8 +49,8 @@ class Rails6_SignedCookies(BadsecretsBase):
                     pass
 
         # Cookie is likey Rails 6 AES-GCM
-        elif len(split_rails6_cookie) == 3:
-            iv = split_rails6_cookie[1]
+        elif len(split_rails_cookie) == 3:
+            iv = split_rails_cookie[1]
             aes_secret = PBKDF2(secret_key_base, "authenticated encrypted cookie", 64, 1000)
             cipher = AES.new(aes_secret[:32], AES.MODE_GCM, nonce=base64.b64decode(iv))
 
@@ -64,10 +64,13 @@ class Rails6_SignedCookies(BadsecretsBase):
         else:
             return None
 
-    def check_secret(self, rails6_cookie):
-        for l in self.load_resource("rails6_secret_key_base.txt"):
+    def check_secret(self, rails_cookie):
+
+        if not self.identify(rails_cookie):
+            return None
+        for l in self.load_resource("rails_secret_key_base.txt"):
             secret_key_base = l.rstrip()
-            r = self.rails6(rails6_cookie, secret_key_base)
+            r = self.rails(rails_cookie, secret_key_base)
             if r:
                 return r
         return None

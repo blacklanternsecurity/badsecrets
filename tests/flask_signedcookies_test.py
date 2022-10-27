@@ -1,12 +1,12 @@
 from badsecrets import modules_loaded
 
-FlaskSigningKey = modules_loaded["flask_signingkey"]
+FlaskSignedCookies = modules_loaded["flask_signedcookies"]
 
 tests = [("CHANGEME", "eyJoZWxsbyI6IndvcmxkIn0.XDtqeQ.1qsBdjyRJLokwRzJdzXMVCSyRTA")]
 
 
 def test_flask():
-    x = FlaskSigningKey()
+    x = FlaskSignedCookies()
     for test in tests:
         found_key = x.check_secret(test[1])
         assert found_key
