@@ -9,6 +9,9 @@ class Peoplesoft_PSToken(BadsecretsBase):
     identify_regex = generic_base64_regex
 
     def check_secret(self, PS_TOKEN_B64):
+
+        if not self.identify(PS_TOKEN_B64):
+            return None
         PS_TOKEN = base64.b64decode(PS_TOKEN_B64)
         SHA1_mac = PS_TOKEN[44:64]
         try:

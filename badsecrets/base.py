@@ -40,6 +40,13 @@ class BadsecretsBase:
             return True
         return False
 
+    @staticmethod
+    def search_dict(d, query):
+        items = [key for key, value in d.items() if query == value]
+        if not items:
+            return None
+        return items
+
 
 def check_all_modules(secret):
     for m in BadsecretsBase.__subclasses__():

@@ -22,6 +22,8 @@ class Telerik_HashKey(BadsecretsBase):
             yield vkey
 
     def check_secret(self, dialogParameters_raw):
+        if not self.identify(dialogParameters_raw):
+            return None
 
         dialogParametersB64 = urllib.parse.unquote(dialogParameters_raw)
         dp_enc = dialogParametersB64[:-44].encode()
