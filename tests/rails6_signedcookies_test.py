@@ -1,0 +1,33 @@
+from badsecrets import modules_loaded
+
+Rails6_SignedCookies = modules_loaded["rails6_signedcookies"]
+
+tests = [
+    (
+        "hash_algorithm",
+        "SHA1",
+        "4698bc5d99f3103ca76ab57f28a6b8f75f5f0768aab4f2e3f3743383594ad91f43e78c1b86138602f5859a811927698180ebfae7c490333f37b87521ca5a5f8c",
+        "eyJfcmFpbHMiOnsibWVzc2FnZSI6IklraGxiR3h2TENCSklHRnRJR0VnYzJsbmJtVmtJSEpoYVd4ek5pQkRiMjlyYVdVaElnPT0iLCJleHAiOm51bGwsInB1ciI6ImNvb2tpZS5zaWduZWQifX0%3D--eb1ea3ddc55deb16ffc58ac165edfbb554067edc",
+    ),
+    (
+        "encryption_algorithm",
+        "AES_CBC",
+        "6f9c2bdad527137950bd62e9688c6cd6a3f3ccc1bbd2972c2d9dbdc4bccbfeb38c2832804cfc62fc662ed54b15f8731083cc090b352168b335569cc4375a4696",
+        "dUEvRldLekFNcklGZ3ZSbU1XaHJ0ZGxsLzhYTHlNTW43T3BVN05kZXE3WUhQOVVKbVA3Rm5WaSs5eG5QQ1VIRVBzeDFNTnNpZ0xCM1FKbzFZTEJISzhaNzFmVGYzME0waDFURVpCYm5TQlJFRmRFclYzNUZhR3VuN29PMmlkVHBrRi8wb3AwZWgvWmxObkFOYnpkeHR1YWpWZ3lnN0Y4ZW9xSk9LNVlQd0U4MmFsbWtLZUI5VzkzRkM4YXBFWXBWLS15L00xME1nVFp2ZTlmUWcxZVlpelpnPT0=--7efe7919a5210cfd1ac4c6228e3ff82c0600d841",
+    ),
+    (
+        "encryption_algorithm",
+        "AES_GCM",
+        "4698bc5d99f3103ca76ab57f28a6b8f75f5f0768aab4f2e3f3743383594ad91f43e78c1b86138602f5859a811927698180ebfae7c490333f37b87521ca5a5f8c",
+        "fuP54C4UxMudlZRR6j25zJfkevHVZ6IJR6Hp1B3rW6sAW5Aqc1j2Ri0XgcyLRvuSNVLwzq6cqeWlVhwU13xMS8scjU%2BSGGi%2Bta4jQU7oYujKdxynHSEiYOmeNFW4onXoF3KLlmr7ODmtIaHm1zIEP11TT%2FmRqZuxxecjz0VIxUDhvHYEFQ%3D%3D--ZclUs5zZFu3JPKnx--%2Fc0Q4ufTHqqmMxoin0mRtQ%3D%3D",
+    ),
+]
+
+
+def test_rails6():
+    x = Rails6_SignedCookies()
+    for test in tests:
+        found_key = x.check_secret(test[3])
+        assert found_key
+        assert found_key["secret_key_base"] == test[2]
+        assert found_key[test[0]] == test[1]
