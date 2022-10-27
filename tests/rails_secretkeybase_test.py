@@ -1,6 +1,6 @@
 from badsecrets import modules_loaded
 
-Rails6_SignedCookies = modules_loaded["rails6_signedcookies"]
+Rails_SecretKeyBase = modules_loaded["rails_secretkeybase"]
 
 tests = [
     (
@@ -24,9 +24,10 @@ tests = [
 ]
 
 
-def test_rails6():
-    x = Rails6_SignedCookies()
+def test_rails():
+    x = Rails_SecretKeyBase()
     for test in tests:
+        print(test)
         found_key = x.check_secret(test[3])
         assert found_key
         assert found_key["secret_key_base"] == test[2]
