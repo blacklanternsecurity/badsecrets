@@ -10,7 +10,7 @@ from Crypto.Protocol.KDF import PBKDF2
 from badsecrets.base import BadsecretsBase
 
 
-class Rails_SignedCookies(BadsecretsBase):
+class Rails_SecretKeyBase(BadsecretsBase):
 
     identify_regex = re.compile(r"^[\.a-zA-z-0-9\%=]+--[\.a-zA-z-0-9%=]+$")
 
