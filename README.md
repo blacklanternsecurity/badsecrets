@@ -16,7 +16,7 @@ Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a de
 | Name     | Description |
 | ----------- | ----------- |
 | ASPNET_Viewstate      | Checks the viewstate/generator against a list of known machine keys.|
-| Telerik_UploadConfiguration_HashKey   | Checks patched (2017+) versions of Telerik UI for a known TelerikUploadConfigurationHashKey|
+| Telerik_HashKey   | Checks patched (2017+) versions of Telerik UI for a known TelerikUploadConfigurationHashKey|
 | Flask_SignedCookies  | Checks for weak Flask cookie signing password. Wrapper for [flask-unsign](https://github.com/Paradoxis/Flask-Unsign)       |
 | Peoplesoft_PSToken  | Can check a peoplesoft PS_TOKEN for a bad/weak signing password |
 | Django_SignedCookies   | Checks django's session cookies (when in signed_cookie mode) for known django secret_key |
