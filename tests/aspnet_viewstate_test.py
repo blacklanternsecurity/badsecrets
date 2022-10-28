@@ -153,6 +153,5 @@ def test_viewstates():
             assert found_key["encryptionAlgo"] == test[1]
 
     # negative test
-
     found_key = x.check_secret("Ad5AwfMUcwXM5rJFA9dtrSgoT3ezfxneYLjsXW7pB/TjlgNbzsx3dY/P+FlXTZReIA==", "AAAAAAAA")
     assert not found_key

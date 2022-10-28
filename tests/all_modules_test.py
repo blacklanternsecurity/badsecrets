@@ -10,9 +10,20 @@ tests = [
     "eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo",
 ]
 
+negative_tests = [
+    "AAAAAAAA",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkJhZFNpZ25hdHVyZSIsImlhdCI6MTUxNjIzOTAyMn0.S_8lg9Pzezv8JhXT3cppPZcz046cFM8H1o1GJYYAAAA",
+    "AAAA℗",
+]
+
 
 def test_checkall():
-
+    # Confirm each of the examples produced a positive result
     for test in tests:
         r = check_all_modules(test)
         assert r
+
+    # verify various types of non-matching inputs do not produce errors or false positives
+    for negative_test in negative_tests:
+        r = check_all_modules(negative_test)
+        assert not r
