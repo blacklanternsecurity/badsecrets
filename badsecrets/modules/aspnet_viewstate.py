@@ -141,7 +141,6 @@ class ASPNET_Viewstate(BadsecretsBase):
                 vkey, ekey = l.rstrip().split(",")
             except ValueError:
                 continue
-
             validationAlgo = self.viewstate_validate(vkey, encrypted, viewstate_B64, generator)
             if validationAlgo:
                 confirmed_ekey = None
