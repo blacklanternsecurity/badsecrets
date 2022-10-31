@@ -36,3 +36,11 @@ def test_use_custom_resource():
         "eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo"
     )
     assert r
+
+
+def test_identity_non_match():
+
+    Generic_JWT = modules_loaded["generic_jwt"]
+    x = Generic_JWT()
+    r = x.check_secret("N0T_Val1D")
+    assert r == None
