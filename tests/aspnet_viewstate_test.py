@@ -1,3 +1,4 @@
+import os
 from badsecrets import modules_loaded
 
 ASPNETViewstate = modules_loaded["aspnet_viewstate"]
@@ -154,4 +155,15 @@ def test_viewstates():
 
     # negative test
     found_key = x.check_secret("Ad5AwfMUcwXM5rJFA9dtrSgoT3ezfxneYLjsXW7pB/TjlgNbzsx3dY/P+FlXTZReIA==", "AAAAAAAA")
+    assert not found_key
+
+
+def test_bad_sourcefile():
+    x = ASPNETViewstate(
+        custom_resource=f"{os.path.dirname(os.path.abspath(__file__))}/../tests/resources/aspnet_viewstate_bad.txt"
+    )
+    found_key = x.check_secret(
+        "KLox5XeGYfb7Lo8zFzr1YepUagXuixcxX55lpFht+rrW6VGheZi831vdusH6DCMfxIhsLG1EPU3OuPvqN2XBc/fj0ew15TQ1zBmmKWJVns4=",
+        "AAAAAAAA",
+    )
     assert not found_key
