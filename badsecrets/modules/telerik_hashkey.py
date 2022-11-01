@@ -3,6 +3,7 @@ import hmac
 import base64
 import binascii
 import urllib.parse
+from contextlib import suppress
 from badsecrets.base import BadsecretsBase
 
 
@@ -30,10 +31,8 @@ class Telerik_HashKey(BadsecretsBase):
         dp_hash = dialogParametersB64[-44:].encode()
 
         for vkey in self.prepare_keylist():
-            try:
+            with suppress(binascii.Error):
                 h = hmac.new(vkey.encode(), dp_enc, self.hash_algs["SHA256"])
                 if base64.b64encode(h.digest()) == dp_hash:
                     return {"Telerik.Upload.ConfigurationHashKey": vkey}
-            except binascii.Error:
-                continue
         return None

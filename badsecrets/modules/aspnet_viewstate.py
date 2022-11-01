@@ -7,6 +7,7 @@ from Crypto.Cipher import AES
 from Crypto.Cipher import DES
 from Crypto.Cipher import DES3
 from viewstate import ViewState
+from contextlib import suppress
 from badsecrets.base import BadsecretsBase, generic_base64_regex
 
 unpad = lambda s: s[: -ord(s[len(s) - 1 :])]
@@ -22,21 +23,9 @@ class ASPNET_Viewstate(BadsecretsBase):
             return True
         return False
 
-    @staticmethod
-    def search_dict(d, query):
-        items = [key for key, value in d.items() if query == value]
-        if not items:
-            return None
-        return items
-
-    def viewstate_decrypt(self, ekey, hash_alg, viewstate_B64):
+    def viewstate_decrypt(self, ekey_bytes, hash_alg, viewstate_B64):
 
         viewstate_bytes = base64.b64decode(viewstate_B64)
-
-        try:
-            ekey_bytes = binascii.unhexlify(ekey)
-        except binascii.Error:
-            return
 
         vs_size = len(viewstate_bytes)
         dec_algos = set()
@@ -49,32 +38,24 @@ class ASPNET_Viewstate(BadsecretsBase):
             dec_algos.add("3DES")
 
         for dec_algo in list(dec_algos):
-            if dec_algo == "AES":
-                block_size = AES.block_size
-                iv = viewstate_bytes[0:block_size]
-                try:
+            with suppress(ValueError):
+                if dec_algo == "AES":
+                    block_size = AES.block_size
+                    iv = viewstate_bytes[0:block_size]
                     cipher = AES.new(ekey_bytes, AES.MODE_CBC, iv)
-                except ValueError:
-                    continue
-                blockpadlen = 8
+                    blockpadlen = 8
 
-            elif dec_algo == "3DES":
-                block_size = DES3.block_size
-                iv = viewstate_bytes[0:block_size]
-                try:
+                elif dec_algo == "3DES":
+                    block_size = DES3.block_size
+                    iv = viewstate_bytes[0:block_size]
                     cipher = DES3.new(ekey_bytes[:24], DES3.MODE_CBC, iv)
-                except ValueError:
-                    continue
-                blockpadlen = 16
+                    blockpadlen = 16
 
-            elif dec_algo == "DES":
-                block_size = DES.block_size
-                iv = viewstate_bytes[0:block_size]
-                try:
+                elif dec_algo == "DES":
+                    block_size = DES.block_size
+                    iv = viewstate_bytes[0:block_size]
                     cipher = DES.new(ekey_bytes[:8], DES.MODE_CBC, iv)
-                except ValueError:
-                    continue
-                blockpadlen = 0
+                    blockpadlen = 0
 
             encrypted_raw = viewstate_bytes[block_size:-hash_size]
             decrypted_raw = cipher.decrypt(encrypted_raw)
@@ -82,7 +63,6 @@ class ASPNET_Viewstate(BadsecretsBase):
 
             if self.valid_preamble(decrypt):
                 return dec_algo
-        return None
 
     def viewstate_validate(self, vkey, encrypted, viewstate_B64, generator):
         viewstate_bytes = base64.b64decode(viewstate_B64)
@@ -141,15 +121,16 @@ class ASPNET_Viewstate(BadsecretsBase):
                 vkey, ekey = l.rstrip().split(",")
             except ValueError:
                 continue
-
             validationAlgo = self.viewstate_validate(vkey, encrypted, viewstate_B64, generator)
             if validationAlgo:
                 confirmed_ekey = None
                 decryptionAlgo = None
                 if encrypted:
-                    decryptionAlgo = self.viewstate_decrypt(ekey, validationAlgo, viewstate_B64)
-                    if decryptionAlgo:
-                        confirmed_ekey = ekey
+                    with suppress(binascii.Error):
+                        ekey_bytes = binascii.unhexlify(ekey)
+                        decryptionAlgo = self.viewstate_decrypt(ekey_bytes, validationAlgo, viewstate_B64)
+                        if decryptionAlgo:
+                            confirmed_ekey = ekey
 
                 return {
                     "validationKey": vkey,
