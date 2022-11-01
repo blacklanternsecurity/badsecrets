@@ -168,6 +168,11 @@ def test_bad_sourcefile():
     )
     assert not found_key
 
+    found_key = x.check_secret(
+        "QhNlfAmxL3x1eiDHXDyjc8Nv7IsFX/OsUgF2hrtevccYC3a56XmssuVxjhHAYqgBNSOMlN1IztaNEGRMl56UOofadCc="
+    )
+    assert not found_key
+
 
 def test_viewstate_negative():
 
