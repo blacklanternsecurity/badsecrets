@@ -26,7 +26,6 @@ class ASPNET_Viewstate(BadsecretsBase):
     def viewstate_decrypt(self, ekey, hash_alg, viewstate_B64):
 
         viewstate_bytes = base64.b64decode(viewstate_B64)
-
         try:
             ekey_bytes = binascii.unhexlify(ekey)
         except binascii.Error:
