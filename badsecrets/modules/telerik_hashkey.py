@@ -3,8 +3,8 @@ import hmac
 import base64
 import binascii
 import urllib.parse
-from badsecrets.base import BadsecretsBase
 from contextlib import suppress
+from badsecrets.base import BadsecretsBase
 
 
 class Telerik_HashKey(BadsecretsBase):
