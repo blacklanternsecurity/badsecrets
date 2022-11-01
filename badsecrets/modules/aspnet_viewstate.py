@@ -68,7 +68,6 @@ class ASPNET_Viewstate(BadsecretsBase):
 
             if self.valid_preamble(decrypt):
                 return dec_algo
-        return None
 
     def viewstate_validate(self, vkey, encrypted, viewstate_B64, generator):
         viewstate_bytes = base64.b64decode(viewstate_B64)

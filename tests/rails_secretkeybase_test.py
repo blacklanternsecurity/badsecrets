@@ -62,3 +62,10 @@ def test_rails_negative():
         print(test)
         found_key = x.check_secret(test[3])
         assert not found_key
+
+
+def test_rails_malformed():
+
+    x = Rails_SecretKeyBase()
+    found_key = x.check_secret("AAECAwQF--AAECAwQF")
+    assert not found_key
