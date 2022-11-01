@@ -2,6 +2,7 @@ import re
 import os
 import hashlib
 import badsecrets.errors
+from abc import abstractmethod
 
 generic_base64_regex = re.compile(
     r"^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}={2})$"
@@ -34,9 +35,9 @@ class BadsecretsBase:
                     f"Custom resource [{self.custom_resource}] does not exist"
                 )
 
+    @abstractmethod
     def check_secret(self, secret):
-        if not self.identify(secret):
-            return None
+        raise NotImplementedError
 
     def load_resource(self, resource):
 
