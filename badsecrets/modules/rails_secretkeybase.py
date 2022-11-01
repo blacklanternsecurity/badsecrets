@@ -22,7 +22,10 @@ class Rails_SecretKeyBase(BadsecretsBase):
         # Cookie is likely signed but not encrypted
         if split_rails_cookie[0].startswith("eyJ"):
             signature = split_rails_cookie[1]
-            hash_alg = self.search_dict(self.hash_sizes, len(binascii.unhexlify(signature)))[0]
+            try:
+                hash_alg = self.search_dict(self.hash_sizes, len(binascii.unhexlify(signature)))[0]
+            except binascii.Error:
+                return None
             hmac_secret = PBKDF2(secret_key_base, "signed cookie", 64, 1000)
             h = hmac.new(hmac_secret, data.encode(), hash_alg)
             if h.hexdigest() == signature:
