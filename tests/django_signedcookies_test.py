@@ -16,3 +16,11 @@ def test_django():
         found_key = x.check_secret(test[0])
         assert found_key
         assert found_key["_auth_user_hash"] == test[1]
+
+
+def test_django_negative():
+    x = DjangoSignedCookies()
+    found_key = x.check_secret(
+        ".eJxVjLsOAiEURP-F2hAuL8HSfr-BAPciq4ZNlt3K-O9KsoU2U8w5My8W4r7VsHdaw4zswoCdfrsU84PaAHiP7bbwvLRtnRMfCj9o59OC9Lwe7t9Bjb2OtbMkAEGQtQjekykmJy9JZIW-6CgUaCGsA6eSyV65s1Qya_xGKZrY-wPVYjdw:1ojOrE:bfOktjgLlUykwCBADSECRETSMM3-UypscEN57ECtXis"
+    )
+    assert not found_key
