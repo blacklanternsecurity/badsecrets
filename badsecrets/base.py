@@ -59,9 +59,8 @@ class BadsecretsBase:
     @staticmethod
     def search_dict(d, query):
         items = [key for key, value in d.items() if query == value]
-        if not items:
-            return None
-        return items
+        if items:
+            return items
 
 
 def check_all_modules(secret):
