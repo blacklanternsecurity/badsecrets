@@ -167,3 +167,13 @@ def test_bad_sourcefile():
         "AAAAAAAA",
     )
     assert not found_key
+
+
+def test_viewstate_negative():
+
+    x = ASPNETViewstate()
+    found_key = x.check_secret(
+        "KLox5XeGYfb7Lo8zFzr1YepUagXuixcxX55lpFht+rrW6VGheZi831vdusH6DCMfxIhsLG1EPU3BadSecretsXBc/fj0ew15TQ1zBmmKWJVns4=",
+        "AAAAAAAA",
+    )
+    assert not found_key
