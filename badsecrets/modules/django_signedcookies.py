@@ -24,4 +24,3 @@ class DjangoSignedCookies(BadsecretsBase):
             if r:
                 r["secret_key"] = secret_key
                 return dict(r)
-        return None
