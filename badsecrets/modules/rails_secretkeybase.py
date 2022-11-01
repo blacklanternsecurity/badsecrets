@@ -10,7 +10,7 @@ from Crypto.Protocol.KDF import PBKDF2
 from badsecrets.base import BadsecretsBase
 
 
-class Rails_SignedCookies(BadsecretsBase):
+class Rails_SecretKeyBase(BadsecretsBase):
 
     identify_regex = re.compile(r"^[\.a-zA-z-0-9\%=]+--[\.a-zA-z-0-9%=]+$")
 
@@ -22,7 +22,10 @@ class Rails_SignedCookies(BadsecretsBase):
         # Cookie is likely signed but not encrypted
         if split_rails_cookie[0].startswith("eyJ"):
             signature = split_rails_cookie[1]
-            hash_alg = self.search_dict(self.hash_sizes, len(binascii.unhexlify(signature)))[0]
+            try:
+                hash_alg = self.search_dict(self.hash_sizes, len(binascii.unhexlify(signature)))[0]
+            except binascii.Error:
+                return None
             hmac_secret = PBKDF2(secret_key_base, "signed cookie", 64, 1000)
             h = hmac.new(hmac_secret, data.encode(), hash_alg)
             if h.hexdigest() == signature:
@@ -60,9 +63,6 @@ class Rails_SignedCookies(BadsecretsBase):
                 return {"secret_key_base": secret_key_base, "data": json_data, "encryption_algorithm": "AES_GCM"}
             except ValueError:
                 return None
-
-        else:
-            return None
 
     def check_secret(self, rails_cookie):
 

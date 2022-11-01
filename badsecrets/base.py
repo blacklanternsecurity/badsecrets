@@ -1,6 +1,8 @@
 import re
 import os
 import hashlib
+import badsecrets.errors
+from abc import abstractmethod
 
 generic_base64_regex = re.compile(
     r"^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}={2})$"
@@ -24,12 +26,26 @@ class BadsecretsBase:
 
     output_parameters = None
 
+    def __init__(self, **kwargs):
+        setattr(self, "custom_resource", kwargs.get("custom_resource", None))
+
+        if self.custom_resource:
+            if not os.path.exists(self.custom_resource):
+                raise badsecrets.errors.LoadResourceException(
+                    f"Custom resource [{self.custom_resource}] does not exist"
+                )
+
+    @abstractmethod
     def check_secret(self, secret):
-        if not self.identify(secret):
-            return None
+        raise NotImplementedError
 
     def load_resource(self, resource):
-        with open(f"{os.path.dirname(os.path.abspath(__file__))}/resources/{resource}") as r:
+
+        if self.custom_resource:
+            filepath = self.custom_resource
+        else:
+            filepath = f"{os.path.dirname(os.path.abspath(__file__))}/resources/{resource}"
+        with open(filepath) as r:
             for l in r.readlines():
                 if len(l) > 0:
                     yield l
@@ -43,9 +59,8 @@ class BadsecretsBase:
     @staticmethod
     def search_dict(d, query):
         items = [key for key, value in d.items() if query == value]
-        if not items:
-            return None
-        return items
+        if items:
+            return items
 
 
 def check_all_modules(secret):
@@ -56,8 +71,3 @@ def check_all_modules(secret):
             r["detecting_module"] = m.__name__
             return r
     return None
-
-
-# class all_modules(BadSecretsBase):
-#    def __init__(self):
-#        self

@@ -1,5 +1,5 @@
 import re
-from django.core.signing import loads as djangoLoads
+from django.core.signing import loads as djangoLoads, BadSignature
 from badsecrets.base import BadsecretsBase
 
 
@@ -12,15 +12,15 @@ class DjangoSignedCookies(BadsecretsBase):
             return False
         for l in self.load_resource("django_secret_keys.txt"):
             secret_key = l.rstrip()
-            r = djangoLoads(
-                django_signed_cookie,
-                key=secret_key,
-                fallback_keys="",
-                salt="django.contrib.sessions.backends.signed_cookies",
-            )
-
+            try:
+                r = djangoLoads(
+                    django_signed_cookie,
+                    key=secret_key,
+                    fallback_keys="",
+                    salt="django.contrib.sessions.backends.signed_cookies",
+                )
+            except BadSignature:
+                return None
             if r:
                 r["secret_key"] = secret_key
-
                 return dict(r)
-        return None

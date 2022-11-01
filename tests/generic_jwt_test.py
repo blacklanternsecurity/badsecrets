@@ -16,9 +16,18 @@ tests = [
 ]
 
 
-def test_flask():
+def test_generic_jwt():
     x = Generic_JWT()
     for test in tests:
         found_key = x.check_secret(test[2])
         assert found_key
         assert found_key[test[0]] == test[1]
+
+
+def test_generic_jwt_negative():
+
+    x = Generic_JWT()
+    found_key = x.check_secret(
+        "eyJhbGciOiJIGzI4NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVcEVEbEFtESI6IkJhZFNlE3JldHMiLCJlEHAiOjE1OTMxMzE0ODMsImlhdEI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo"
+    )
+    assert not found_key
