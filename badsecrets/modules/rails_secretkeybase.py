@@ -64,9 +64,6 @@ class Rails_SecretKeyBase(BadsecretsBase):
             except ValueError:
                 return None
 
-        else:
-            return None
-
     def check_secret(self, rails_cookie):
 
         if not self.identify(rails_cookie):
