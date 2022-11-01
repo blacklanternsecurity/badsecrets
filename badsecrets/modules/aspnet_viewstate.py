@@ -23,13 +23,9 @@ class ASPNET_Viewstate(BadsecretsBase):
             return True
         return False
 
-    def viewstate_decrypt(self, ekey, hash_alg, viewstate_B64):
+    def viewstate_decrypt(self, ekey_bytes, hash_alg, viewstate_B64):
 
         viewstate_bytes = base64.b64decode(viewstate_B64)
-        try:
-            ekey_bytes = binascii.unhexlify(ekey)
-        except binascii.Error:
-            return
 
         vs_size = len(viewstate_bytes)
         dec_algos = set()
@@ -130,9 +126,11 @@ class ASPNET_Viewstate(BadsecretsBase):
                 confirmed_ekey = None
                 decryptionAlgo = None
                 if encrypted:
-                    decryptionAlgo = self.viewstate_decrypt(ekey, validationAlgo, viewstate_B64)
-                    if decryptionAlgo:
-                        confirmed_ekey = ekey
+                    with suppress(binascii.Error):
+                        ekey_bytes = binascii.unhexlify(ekey)
+                        decryptionAlgo = self.viewstate_decrypt(ekey_bytes, validationAlgo, viewstate_B64)
+                        if decryptionAlgo:
+                            confirmed_ekey = ekey
 
                 return {
                     "validationKey": vkey,
