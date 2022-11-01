@@ -162,6 +162,7 @@ def test_bad_sourcefile():
     x = ASPNETViewstate(
         custom_resource=f"{os.path.dirname(os.path.abspath(__file__))}/../tests/resources/aspnet_viewstate_bad.txt"
     )
+
     found_key = x.check_secret(
         "KLox5XeGYfb7Lo8zFzr1YepUagXuixcxX55lpFht+rrW6VGheZi831vdusH6DCMfxIhsLG1EPU3OuPvqN2XBc/fj0ew15TQ1zBmmKWJVns4=",
         "AAAAAAAA",
@@ -170,6 +171,11 @@ def test_bad_sourcefile():
 
     found_key = x.check_secret(
         "QhNlfAmxL3x1eiDHXDyjc8Nv7IsFX/OsUgF2hrtevccYC3a56XmssuVxjhHAYqgBNSOMlN1IztaNEGRMl56UOofadCc="
+    )
+    assert not found_key
+
+    found_key = x.check_secret(
+        "9nfDnyarfH1kpayLGDxJc1gP41dwZnd2628oPoPAFLtgTUzJf2gWrGE7QyZZbVb5mDbGQnbb+pScC4i2SDRLdm5G98OCIY9ZqSghKzXCWvHd+ABrmb5Nk8iKYybHRZkb0Q0jUHq2SEclIewYJiGMlw=="
     )
     assert not found_key
 
