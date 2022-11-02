@@ -25,6 +25,19 @@ Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a de
 
 ## Examples
 
+
+### Blacklist3r
+
+Bad secrets includes a [fully functional CLI example](https://github.com/blacklanternsecurity/badsecrets/blob/dev/examples/blacklist3r.py) which replicates the functionality of [blacklist3r](https://github.com/NotSoSecure/Blacklist3r) in python examples/blacklist3r. 
+
+```
+python examples/blacklist3r.py --url http://vulnerablesite/vulnerablepage.aspx
+python examples/blacklist3r.py --viewstate /wEPDwUJODExMDE5NzY5ZGQMKS6jehX5HkJgXxrPh09vumNTKQ== --generator EDD8C9AE
+```
+
+### Basic library usage
+
+
 ```
 from badsecrets import modules_loaded
 
