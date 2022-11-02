@@ -10,8 +10,6 @@ from viewstate import ViewState
 from contextlib import suppress
 from badsecrets.base import BadsecretsBase, generic_base64_regex
 
-unpad = lambda s: s[: -ord(s[len(s) - 1 :])]
-
 
 class ASPNET_Viewstate(BadsecretsBase):
 
@@ -23,8 +21,11 @@ class ASPNET_Viewstate(BadsecretsBase):
             return True
         return False
 
-    def viewstate_decrypt(self, ekey_bytes, hash_alg, viewstate_B64):
+    @staticmethod
+    def unpad(s):
+        return s[: -ord(s[len(s) - 1 :])]
 
+    def viewstate_decrypt(self, ekey_bytes, hash_alg, viewstate_B64):
         viewstate_bytes = base64.b64decode(viewstate_B64)
 
         vs_size = len(viewstate_bytes)
@@ -36,14 +37,17 @@ class ASPNET_Viewstate(BadsecretsBase):
         if (vs_size - hash_size) % DES.block_size == 0:
             dec_algos.add("DES")
             dec_algos.add("3DES")
-
         for dec_algo in list(dec_algos):
             with suppress(ValueError):
                 if dec_algo == "AES":
                     block_size = AES.block_size
                     iv = viewstate_bytes[0:block_size]
                     cipher = AES.new(ekey_bytes, AES.MODE_CBC, iv)
-                    blockpadlen = 8
+                    blockpadlen_raw = len(ekey_bytes) % AES.block_size
+                    if blockpadlen_raw == 0:
+                        blockpadlen = block_size
+                    else:
+                        blockpadlen = blockpadlen_raw
 
                 elif dec_algo == "3DES":
                     block_size = DES3.block_size
@@ -59,10 +63,16 @@ class ASPNET_Viewstate(BadsecretsBase):
 
             encrypted_raw = viewstate_bytes[block_size:-hash_size]
             decrypted_raw = cipher.decrypt(encrypted_raw)
-            decrypt = unpad(decrypted_raw[blockpadlen:])
+
+            try:
+                decrypt = self.unpad(decrypted_raw[blockpadlen:])
+            except TypeError:
+                continue
 
             if self.valid_preamble(decrypt):
                 return dec_algo
+            else:
+                continue
 
     def viewstate_validate(self, vkey, encrypted, viewstate_B64, generator):
         viewstate_bytes = base64.b64decode(viewstate_B64)
