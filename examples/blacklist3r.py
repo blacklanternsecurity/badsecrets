@@ -12,6 +12,7 @@ from badsecrets import modules_loaded
 
 ASPNET_Viewstate = modules_loaded["aspnet_viewstate"]
 
+
 def check_viewstate(viewstate, generator):
     bs_vs = ASPNET_Viewstate()
     r = bs_vs.check_secret(viewstate, generator=generator)

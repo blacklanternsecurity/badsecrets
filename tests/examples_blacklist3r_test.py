@@ -46,8 +46,6 @@ no_viewstate_page = "<html>Just a website</html>"
 
 def test_examples_blacklist3r_manual(monkeypatch, capsys):
 
-
-
     # Valid Viewstate Unencrypted W/Generator
     monkeypatch.setattr(
         "sys.argv",
@@ -122,7 +120,7 @@ def test_examples_blacklist3r_manual(monkeypatch, capsys):
 def test_examples_blacklist3r_offline(monkeypatch, capsys):
 
     with patch("sys.exit") as exit_mock:
-        
+
         # Invalid URL is rejected
         monkeypatch.setattr("sys.argv", ["python", "--url", "hxxp://notaurl"])
         blacklist3r.main()
