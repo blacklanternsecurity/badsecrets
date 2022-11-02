@@ -20,7 +20,7 @@ jobs:
           timeout_minutes: 20
           retry_wait_seconds: 0
           command: |
-            poetry run pytest --exitfirst --disable-warnings --log-cli-level=DEBUG --cov-report xml:cov.xml --cov=badsecrets .
+            poetry run pytest --exitfirst --disable-warnings --log-cli-level=DEBUG --cov-report xml:cov.xml --cov=badsecrets --cov=examples
       - name: Upload Code Coverage
         uses: codecov/codecov-action@v3
         with:
