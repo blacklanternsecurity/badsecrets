@@ -188,3 +188,30 @@ def test_viewstate_negative():
         "AAAAAAAA",
     )
     assert not found_key
+
+
+def test_viewstate_alt_keys():
+
+    x = ASPNETViewstate()
+    alt_val_key = "1072571233BFEF38A826132393CE26DAA961DC1B690B717AC7F163307C3621423A57BD0ACD88414E7DD1C9A09BDCC7AC62CB70A01636FFB3DB3B105962AC3AB3"
+    alt_enc_key = "D25D27814E26F3911BF59FDCC86B20EAB603E7F0265E3756C0A121790B169167"
+
+    print("Alternate Key SHA1+AES")
+    found_key = x.check_secret(
+        "P+3D4YDL6eY1+Wv7BELihCm0W3UrrWZi1j9N60Oli5MdZie+DaPDnSakzKnNSQtiMJkzjYuSfAE2bPZ/pnvxifJzmytFGTbkjUrH/VvXQHEF83US",
+        modifier,
+    )
+    assert found_key
+    print(found_key)
+    assert found_key["validationKey"] == alt_val_key
+    assert found_key["validationAlgo"] == "SHA1"
+    assert found_key["encryptionKey"] == alt_enc_key
+    assert found_key["encryptionAlgo"] == "AES"
+
+    found_key = x.check_secret("tBfCi5Y/zYSviC1i0SBK9U+ZYZbzPwJomXaDenkuSWc4WLiaY+W/aKkPeCtEoH+Utlgg0Q==", modifier)
+    assert found_key
+    print(found_key)
+    assert found_key["validationKey"] == alt_val_key
+    assert found_key["validationAlgo"] == "SHA1"
+    assert found_key["encryptionKey"] == alt_enc_key
+    assert found_key["encryptionAlgo"] == "DES"
