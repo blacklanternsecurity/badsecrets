@@ -10,7 +10,9 @@ class DjangoSignedCookies(BadsecretsBase):
     def check_secret(self, django_signed_cookie):
         if not self.identify(django_signed_cookie):
             return False
-        for l in self.load_resource("django_secret_keys.txt"):
+        for l in set(
+            list(self.load_resource("django_secret_keys.txt")) + list(self.load_resource("top_10000_passwords.txt"))
+        ):
             secret_key = l.rstrip()
             try:
                 r = djangoLoads(
@@ -20,7 +22,7 @@ class DjangoSignedCookies(BadsecretsBase):
                     salt="django.contrib.sessions.backends.signed_cookies",
                 )
             except BadSignature:
-                return None
+                continue
             if r:
                 r["secret_key"] = secret_key
                 return dict(r)
