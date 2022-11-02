@@ -70,6 +70,10 @@ def main():
     parser.add_argument("-g", "--generator", type=validate_generator)
     args = parser.parse_args()
 
+    if not args.viewstate and not args.url:
+        parser.error("One of --url or --viewstate is required")
+        return
+
     if (args.url and args.viewstate) or (args.url and args.generator):
         parser.error("--viewstate/--generator options and --url option are mutually exclusive")
         return
@@ -96,15 +100,12 @@ def main():
             generator = args.generator
         else:
             print("Warning: non-encrypted viewstates will fail without --generator value")
-    else:
-        parser.error("One of --url or --viewstate is required")
 
-    if viewstate:
-        r = check_viewstate(viewstate, generator)
-        if r:
-            print_result(r)
-        else:
-            print("Matching MachineKeys NOT found")
+    r = check_viewstate(viewstate, generator)
+    if r:
+        print_result(r)
+    else:
+        print("Matching MachineKeys NOT found")
 
 
 if __name__ == "__main__":
