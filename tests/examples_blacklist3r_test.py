@@ -116,6 +116,22 @@ def test_examples_blacklist3r_manual(monkeypatch, capsys):
         captured = capsys.readouterr()
         assert "Generator is not formatted correctly" in captured.err
 
+    # Viewstate doesn't match pattern and is rejected
+    with patch("sys.exit") as exit_mock:
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "python",
+                "--viewstate",
+                "^INVALID^",
+                "--generator",
+                "EDD8C9AE",
+            ],
+        )
+        blacklist3r.main()
+        captured = capsys.readouterr()
+        assert "Viewstate is not formatted correctly" in captured.err
+
 
 def test_examples_blacklist3r_offline(monkeypatch, capsys):
 

@@ -64,15 +64,13 @@ class ASPNET_Viewstate(BadsecretsBase):
             encrypted_raw = viewstate_bytes[block_size:-hash_size]
             decrypted_raw = cipher.decrypt(encrypted_raw)
 
-            try:
+            with suppress(TypeError):
                 decrypt = self.unpad(decrypted_raw[blockpadlen:])
-            except TypeError:
-                continue
 
-            if self.valid_preamble(decrypt):
-                return dec_algo
-            else:
-                continue
+                if self.valid_preamble(decrypt):
+                    return dec_algo
+                else:
+                    continue
 
     def viewstate_validate(self, vkey, encrypted, viewstate_B64, generator):
         viewstate_bytes = base64.b64decode(viewstate_B64)
