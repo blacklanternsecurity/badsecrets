@@ -36,3 +36,10 @@ class Telerik_HashKey(BadsecretsBase):
                 if base64.b64encode(h.digest()) == dp_hash:
                     return {"Telerik.Upload.ConfigurationHashKey": vkey}
         return None
+
+    def hashkey_probe_generator(self):
+        test_string = b"AAAA"
+        dp_hash = base64.b64encode(test_string)
+        for vkey in self.prepare_keylist():
+            h = hmac.new(vkey.encode(), dp_hash, self.hash_algs["SHA256"])
+            yield (f"{dp_hash.decode()}{base64.b64encode(h.digest()).decode()}", vkey)
