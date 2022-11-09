@@ -20,10 +20,6 @@ class Telerik_EncryptionKey(BadsecretsBase):
 
     identify_regex = re.compile(r"^(?:[A-Za-z0-9+\/=%]+)$")
 
-    @classmethod
-    def password_derive_key(self, password, salt, length, count):
-        return KDF.PBKDF1(password, salt, length, count=100)
-
     def prepare_keylist(self, include_machinekeys=False):
 
         if include_machinekeys:
