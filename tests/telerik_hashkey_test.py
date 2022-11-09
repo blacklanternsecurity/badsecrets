@@ -1,6 +1,7 @@
+import base64
 from badsecrets import modules_loaded
 
-TelerikHashKey = modules_loaded["telerik_hashkey"]
+Telerik_HashKey = modules_loaded["telerik_hashkey"]
 
 
 tests = [
@@ -23,9 +24,26 @@ F5144F1A581A57BA3B60311AF7562A855998F7DD203CD8A71405599B980D8694B5C986C888BE4FC0
 """
 
 
-def test_viewstates():
-    x = TelerikHashKey()
+def test_hash_key():
+    x = Telerik_HashKey()
     for test in tests:
         found_key = x.check_secret(test[1])
         assert found_key
         assert found_key["Telerik.Upload.ConfigurationHashKey"] == test[0]
+
+
+def test_hashkey_probe_generator():
+    x = Telerik_HashKey()
+
+    match = None
+
+    # Ensure test probes generated with hashkey_probe_generator are solved with matching key
+    # Try the first 100
+
+    count = 0
+    for y in x.hashkey_probe_generator():
+        found_key = x.check_secret(y[0])
+        assert found_key
+        count += 1
+        if count >= 100:
+            break
