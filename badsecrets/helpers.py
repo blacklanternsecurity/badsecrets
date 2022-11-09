@@ -1,10 +1,13 @@
 import hashlib
 
+
 def unpad(s):
     return s[: -ord(s[len(s) - 1 :])]
 
+
 class csharp_pbkdf1_exception(Exception):
     pass
+
 
 class Csharp_pbkdf1:
     def __init__(self, passwordBytes, saltBytes, iterations):
