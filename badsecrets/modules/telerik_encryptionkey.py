@@ -81,13 +81,13 @@ class Telerik_EncryptionKey(BadsecretsBase):
 
         return dialog_parameters
 
-    def check_secret(self, dialogParameters_raw, key_derive_mode="PBKDF1_MS"):
+    def check_secret(self, dialogParameters_raw, key_derive_mode="PBKDF1_MS",include_machinekeys=True):
         if not self.identify(dialogParameters_raw):
             return None
 
         dialogParametersB64 = urllib.parse.unquote(dialogParameters_raw)
         dp_enc = base64.b64decode(dialogParametersB64[:-44])
-        for ekey in self.prepare_keylist():
+        for ekey in self.prepare_keylist(include_machinekeys=include_machinekeys):
             derivedKey, derivedIV = self.telerik_derivekeys(ekey, key_derive_mode)
             dialog_parameters = self.telerik_decrypt(derivedKey, derivedIV, dp_enc)
             if not dialog_parameters:
