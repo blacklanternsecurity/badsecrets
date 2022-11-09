@@ -53,7 +53,10 @@ class Telerik_EncryptionKey(BadsecretsBase):
             return None
 
         cipher = AES.new(derivedKey, AES.MODE_CBC, derivedIV)
-        pt_raw = cipher.decrypt(dp_enc)
+        try:
+            pt_raw = cipher.decrypt(dp_enc)
+        except ValueError:
+            return None
         original_bytes = unpad(pt_raw)
         try:
             decoded_bytes = original_bytes.decode("utf-16le")
