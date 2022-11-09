@@ -36,6 +36,9 @@ class Csharp_pbkdf1:
 
     def GetBytes(self, keylen):
 
+        if not isinstance(keylen, int):
+            raise Csharp_pbkdf1_exception("GetBytes() must be called with an int")
+
         result = bytearray()
 
         if len(self.extra) > 0:
