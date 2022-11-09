@@ -1,6 +1,8 @@
+import pytest
 import base64
 import urllib.parse
 from badsecrets import modules_loaded
+from badsecrets.helpers import Csharp_pbkdf1, Csharp_pbkdf1_exception
 
 Telerik_EncryptionKey = modules_loaded["telerik_encryptionkey"]
 
@@ -77,3 +79,18 @@ def test_PBKDF1_MS_crypt():
 
         pt2 = x.telerik_decrypt(derivedKey, derivedIV, base64.b64decode(ct))
         assert pt == pt2
+
+
+def test_csharp_pbkdf1_error_handling():
+
+    # try a key that isn't bytes
+    with pytest.raises(Csharp_pbkdf1_exception):
+        csharp_pbkdf1 = Csharp_pbkdf1("string", b"salt", 100)
+
+    # try an IV that isn't bytes
+    with pytest.raises(Csharp_pbkdf1_exception):
+        csharp_pbkdf1 = Csharp_pbkdf1(b"string", "salt", 100)
+
+    # try iterations that arent > 0
+    with pytest.raises(Csharp_pbkdf1_exception):
+        csharp_pbkdf1 = Csharp_pbkdf1(b"string", b"salt", -1)

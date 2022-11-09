@@ -5,7 +5,7 @@ def unpad(s):
     return s[: -ord(s[len(s) - 1 :])]
 
 
-class csharp_pbkdf1_exception(Exception):
+class Csharp_pbkdf1_exception(Exception):
     pass
 
 
@@ -19,9 +19,13 @@ class Csharp_pbkdf1:
         self.extra_count = 0
         self.magic_number = 0
         if not iterations > 0:
-            raise csharp_pbkdf1_exception("Iterations must be greater than 0")
+            raise Csharp_pbkdf1_exception("Iterations must be greater than 0")
 
-        self.lasthash = hashlib.sha1(passwordBytes + saltBytes).digest()
+        try:
+            self.lasthash = hashlib.sha1(passwordBytes + saltBytes).digest()
+        except TypeError:
+            raise Csharp_pbkdf1_exception("Password and Salt must be of type bytes")
+
         self.iterations -= 1
 
         for i in range(self.iterations - 1):
