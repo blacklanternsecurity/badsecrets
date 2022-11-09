@@ -127,3 +127,12 @@ def test_csharp_ppkdf1_accuracy():
     multiblock = base64.b64encode(csharp_pbkdf1_2.GetBytes(61)).decode()
 
     assert multiblock == "0E96sqkdWxaKP6LiS51AZPiaf69vGRSrs5uQDKgTvHo3A4pO5Q425VtsgB181hzo3dWed76Wlpim4uhcRw=="
+
+
+    csharp_pbkdf1_3 = Csharp_pbkdf1(testing_password, testing_salt, 100)
+    halfblock1 = base64.b64encode(csharp_pbkdf1_3.GetBytes(10)).decode()
+    halfblock2 = base64.b64encode(csharp_pbkdf1_3.GetBytes(10)).decode()
+
+    assert halfblock1 == "0E96sqkdWxaKPw=="
+    assert halfblock2 == "ouJLnUBk+Jp/rw=="
+
