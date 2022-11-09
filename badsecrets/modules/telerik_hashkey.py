@@ -39,7 +39,12 @@ class Telerik_HashKey(BadsecretsBase):
 
     def hashkey_probe_generator(self):
         test_string = b"AAAA"
-        dp_hash = base64.b64encode(test_string)
+        dp_enc = base64.b64encode(test_string)
         for vkey in self.prepare_keylist():
-            h = hmac.new(vkey.encode(), dp_hash, self.hash_algs["SHA256"])
-            yield (f"{dp_hash.decode()}{base64.b64encode(h.digest()).decode()}", vkey)
+            h = hmac.new(vkey.encode(), dp_enc, self.hash_algs["SHA256"])
+            yield (f"{dp_enc.decode()}{base64.b64encode(h.digest()).decode()}", vkey)
+
+    def sign_enc_dialog_params(self, hash_key, enc_dialog_params):
+        dp_enc = enc_dialog_params.encode()
+        h = hmac.new(hash_key.encode(), dp_enc, self.hash_algs["SHA256"])
+        return urllib.parse.quote(f"{dp_enc.decode()}{base64.b64encode(h.digest()).decode()}", safe="/")
