@@ -74,7 +74,11 @@ class Telerik_EncryptionKey(BadsecretsBase):
             decoded_bytes = original_bytes.decode("utf-16le")
         except UnicodeDecodeError:
             return None
-        dialog_parameters = base64.b64decode(decoded_bytes).decode()
+        try:
+            dialog_parameters = base64.b64decode(decoded_bytes).decode()
+        except ValueError:
+            return None
+
         return dialog_parameters
 
     def check_secret(self, dialogParameters_raw, key_derive_mode="PBKDF1_MS"):
