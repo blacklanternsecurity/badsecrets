@@ -187,8 +187,7 @@ def main():
 
     elif key_derive_mode == "PBKDF2":
 
-        #  for hash_key in x.prepare_keylist():
-        for hash_key in ["YOUR_ENCRYPTION_KEY_TO_GO_HERE"]:
+        for hash_key in x.prepare_keylist():
             for encryption_key_probe, encryption_key in y.encryptionkey_probe_generator(hash_key, key_derive_mode):
 
                 data = {"dialogParametersHolder": encryption_key_probe}
