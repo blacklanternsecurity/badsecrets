@@ -81,6 +81,12 @@ def main():
             break
         elif "The hash is not valid!" in resp_body:
             continue
+
+        elif "Exception of the 'System.Exception' was thrown" in resp_body:
+            print(
+                "Telerik instance appears to be non-functional. It still may be vulnerable to CVE-2017-9248 when repaired or have a known key"
+            )
+            return
         elif "The input is not a valid Base-64 string":
             print("The target appears to be a pre-2017 version, and does not have a hash key.")
             print("This means it should be vulnerable to CVE-2017-9248!!!")
