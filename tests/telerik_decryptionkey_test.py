@@ -2,6 +2,7 @@ import pytest
 import base64
 import urllib.parse
 from badsecrets import modules_loaded
+from badsecrets.errors import Telerik_EncryptionKey_Exception
 from badsecrets.helpers import Csharp_pbkdf1, Csharp_pbkdf1_exception
 
 Telerik_EncryptionKey = modules_loaded["telerik_encryptionkey"]
@@ -79,6 +80,11 @@ def test_PBKDF1_MS_crypt():
 
         pt2 = x.telerik_decrypt(derivedKey, derivedIV, base64.b64decode(ct))
         assert pt == pt2
+
+def test_derive_keys_error_handling():
+    x = Telerik_EncryptionKey()
+    with pytest.raises(Telerik_EncryptionKey_Exception):
+        derivedKey, derivedIV = x.telerik_derivekeys(b"test", "something")
 
 
 def test_csharp_pbkdf1_error_handling():

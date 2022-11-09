@@ -1,11 +1,11 @@
 import hashlib
-
+from badsecrets.errors import BadsecretsException
 
 def unpad(s):
     return s[: -ord(s[len(s) - 1 :])]
 
 
-class Csharp_pbkdf1_exception(Exception):
+class Csharp_pbkdf1_exception(BadsecretsException):
     pass
 
 

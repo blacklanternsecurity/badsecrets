@@ -8,12 +8,9 @@ from Crypto.Util.Padding import pad
 from badsecrets.helpers import unpad
 from badsecrets.base import BadsecretsBase
 from badsecrets.helpers import Csharp_pbkdf1
+from badsecrets.errors import Telerik_EncryptionKey_Exception
 
 telerik_hardcoded_salt = [58, 84, 91, 25, 10, 34, 29, 68, 60, 88, 44, 51, 1]
-
-
-class Telerik_EncryptionKey_Exception(Exception):
-    pass
 
 
 class Telerik_EncryptionKey(BadsecretsBase):
