@@ -94,3 +94,32 @@ def test_csharp_pbkdf1_error_handling():
     # try iterations that arent > 0
     with pytest.raises(Csharp_pbkdf1_exception):
         csharp_pbkdf1 = Csharp_pbkdf1(b"string", b"salt", -1)
+
+
+    # try getting bytes with a non-int
+
+    csharp_pbkdf1 = Csharp_pbkdf1(b"string", b"salt", 100)
+    with pytest.raises(Csharp_pbkdf1_exception):
+        csharp_pbkdf1.GetBytes("10")
+
+
+def test_csharp_ppkdf1_accuracy():
+
+    testing_password = b"6YXEG7IH4XYNKdt772p2ni6nbeDT772P2NI6NBE4@"
+    testing_salt = bytes([58, 84, 91, 25, 10, 34, 29, 68, 60, 88, 44, 51, 1])
+
+    csharp_pbkdf1 = Csharp_pbkdf1(testing_password, testing_salt, 100)
+
+    first32 = base64.b64encode(csharp_pbkdf1.GetBytes(32)).decode()
+    second16 = base64.b64encode(csharp_pbkdf1.GetBytes(16)).decode()
+    extra4 = base64.b64encode(csharp_pbkdf1.GetBytes(4)).decode()
+
+    assert first32 == "0E96sqkdWxaKP6LiS51AZPiaf69vGRSrs5uQDKgTvHo="
+    assert second16 == "ij+i4kudQGRbbIAdfNYc6A=="
+    assert extra4 == "3dWedw=="
+
+
+    csharp_pbkdf1_2 = Csharp_pbkdf1(testing_password, testing_salt, 100)
+    multiblock = base64.b64encode(csharp_pbkdf1_2.GetBytes(61)).decode()
+
+    assert multiblock == "0E96sqkdWxaKP6LiS51AZPiaf69vGRSrs5uQDKgTvHo3A4pO5Q425VtsgB181hzo3dWed76Wlpim4uhcRw=="
