@@ -6,6 +6,7 @@ from badsecrets.errors import Telerik_EncryptionKey_Exception
 from badsecrets.helpers import Csharp_pbkdf1, Csharp_pbkdf1_exception
 
 Telerik_EncryptionKey = modules_loaded["telerik_encryptionkey"]
+Telerik_HashKey = modules_loaded["telerik_hashkey"]
 
 testing_encryption_keys = ["6YXEG7IH4XYNKdt772p2ni6nbeDT772P2NI6NBE4@", "d2a312d9-7af4-43de-be5a-ae717b46cea6"]
 
@@ -135,3 +136,19 @@ def test_csharp_ppkdf1_accuracy():
 
     assert halfblock1 == "0E96sqkdWxaKPw=="
     assert halfblock2 == "ouJLnUBk+Jp/rw=="
+
+
+def test_encryptionkey_probe_generator():
+
+    x = Telerik_EncryptionKey()
+    y = Telerik_HashKey()
+
+    test_hashkey = "6YXEG7IH4XYNKdt772p2ni6nbeDT772P2NI6NBE4@"
+
+    for key_derive_mode in ['PBKDF1_MS','PBKDF2']:
+        for encryption_key_probe, encryption_key in x.encryptionkey_probe_generator(test_hashkey, key_derive_mode, include_machinekeys=False):
+  
+            r = x.check_secret(encryption_key_probe,key_derive_mode)
+            assert r
+            assert r['DialogParameters'] == "QUFBQUFBQUFBQUFBQUFBQUFBQUE="
+  
