@@ -95,7 +95,6 @@ def test_csharp_pbkdf1_error_handling():
     with pytest.raises(Csharp_pbkdf1_exception):
         csharp_pbkdf1 = Csharp_pbkdf1(b"string", b"salt", -1)
 
-
     # try getting bytes with a non-int
 
     csharp_pbkdf1 = Csharp_pbkdf1(b"string", b"salt", 100)
@@ -117,7 +116,6 @@ def test_csharp_ppkdf1_accuracy():
     assert first32 == "0E96sqkdWxaKP6LiS51AZPiaf69vGRSrs5uQDKgTvHo="
     assert second16 == "ij+i4kudQGRbbIAdfNYc6A=="
     assert extra4 == "3dWedw=="
-
 
     csharp_pbkdf1_2 = Csharp_pbkdf1(testing_password, testing_salt, 100)
     multiblock = base64.b64encode(csharp_pbkdf1_2.GetBytes(61)).decode()
