@@ -1,6 +1,7 @@
 import hashlib
 from badsecrets.errors import BadsecretsException
 
+
 def unpad(s):
     return s[: -ord(s[len(s) - 1 :])]
 
