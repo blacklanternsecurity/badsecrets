@@ -481,6 +481,7 @@ lock-version = "1.1"
 python-versions = "^3.9"
 content-hash = "c76bd4989831065a622c679b1491bf5bab2a384c8a9251a3a655c5eb14f06960"
 
+
 [metadata.files]
 asgiref = [
     {file = "asgiref-3.5.2-py3-none-any.whl", hash = "sha256:1d2880b792ae8757289136f1db2b7b99100ce959b2aa57fd69dab783d05afac4"},
