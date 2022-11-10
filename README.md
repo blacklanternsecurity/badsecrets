@@ -15,9 +15,10 @@ Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a de
 
 | Name     | Description |
 | ----------- | ----------- |
-| ASPNET_Viewstate      | Checks the viewstate/generator against a list of known machine keys.|
-| Telerik_HashKey   | Checks patched (2017+) versions of Telerik UI for a known TelerikUploadConfigurationHashKey|
-| Flask_SignedCookies  | Checks for weak Flask cookie signing password. Wrapper for [flask-unsign](https://github.com/Paradoxis/Flask-Unsign)       |
+| ASPNET_Viewstate      | Checks the viewstate/generator against a list of known machine keys. |
+| Telerik_HashKey   | Checks patched (2017+) versions of Telerik UI for a known Telerik.Upload.ConfigurationHashKey |
+| Telerik_EncryptionKey   | Checks patched (2017+) versions of Telerik UI for a known Telerik.Web.UI.DialogParametersEncryptionKey |
+| Flask_SignedCookies  | Checks for weak Flask cookie signing password. Wrapper for [flask-unsign](https://github.com/Paradoxis/Flask-Unsign) |
 | Peoplesoft_PSToken  | Can check a peoplesoft PS_TOKEN for a bad/weak signing password |
 | Django_SignedCookies   | Checks django's session cookies (when in signed_cookie mode) for known django secret_key |
 | Rails_SecretKeyBase   | Checks Ruby on Rails signed or encrypted session cookies (from multiple major releases) for known secret_key_base |
@@ -46,6 +47,7 @@ ASPNET_Viewstate = modules_loaded["aspnet_viewstate"]
 Flask_SignedCookies = modules_loaded["flask_signedcookies"]
 Peoplesoft_PSToken = modules_loaded["peoplesoft_pstoken"]
 Telerik_HashKey = modules_loaded["telerik_hashkey"]
+Telerik_EncryptionKey = modules_loaded["telerik_encryptionkey"]
 Rails_SecretKeyBase = modules_loaded["rails_secretkeybase"]
 Generic_JWT = modules_loaded["generic_jwt"]
 
