@@ -4,6 +4,9 @@ import sys
 import argparse
 import requests
 import urllib.parse
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
@@ -68,6 +71,19 @@ def main():
     )
     parser.add_argument("-v", "--viewstate", type=validate_viewstate)
     parser.add_argument("-g", "--generator", type=validate_generator)
+
+    parser.add_argument(
+        "-p",
+        "--proxy",
+        help="Optionally specificy an HTTP proxy",
+    )
+
+    parser.add_argument(
+        "-a",
+        "--user-agent",
+        help="Optionally set a custom user-agent",
+    )
+
     args = parser.parse_args()
 
     if not args.viewstate and not args.url:
@@ -78,9 +94,18 @@ def main():
         parser.error("--viewstate/--generator options and --url option are mutually exclusive")
         return
 
+    proxies = None
+    if args.proxy:
+        proxies = {"http": args.proxy, "https": args.proxy}
+
     if args.url:
+
+        headers = {}
+        if args.user_agent:
+            headers["User-agent"] = args.user_agent
+
         try:
-            res = requests.get(args.url)
+            res = requests.get(args.url, proxies=proxies, headers=headers, verify=False)
         except (requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout):
             print(f"Error connecting to URL: [{args.url}]")
             return
