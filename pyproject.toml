@@ -26,3 +26,9 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 119
+
+[tool.poetry-dynamic-versioning]
+enable = true
+metadata = false
+format = 'v0.0.{distance}'
+
