@@ -84,7 +84,7 @@ class Telerik_EncryptionKey(BadsecretsBase):
     def check_secret(self, dialogParameters_raw, key_derive_mode=None, include_machinekeys=True):
 
         if not key_derive_mode:
-            key_derive_modes = ['PBKDF1_MS','PBKDF2']
+            key_derive_modes = ["PBKDF1_MS", "PBKDF2"]
         else:
             key_derive_modes = [key_derive_mode]
 
@@ -95,7 +95,7 @@ class Telerik_EncryptionKey(BadsecretsBase):
         dp_enc = base64.b64decode(dialogParametersB64[:-44])
         for key_derive_mode in key_derive_modes:
             for ekey in self.prepare_keylist(include_machinekeys=include_machinekeys):
-                
+
                 derivedKey, derivedIV = self.telerik_derivekeys(ekey, key_derive_mode)
                 dialog_parameters = self.telerik_decrypt(derivedKey, derivedIV, dp_enc)
                 if not dialog_parameters:
