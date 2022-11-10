@@ -31,4 +31,3 @@ line-length = 119
 enable = true
 metadata = false
 format = 'v0.0.{distance}'
-
