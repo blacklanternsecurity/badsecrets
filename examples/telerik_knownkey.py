@@ -63,7 +63,6 @@ def probe_version(
     r = requests.post(url, data=dialog_parameters_data, verify=False, proxies=proxies)
     if r.status_code == 200:
         return dialog_parameters
-    return None
 
 
 def validate_url(
