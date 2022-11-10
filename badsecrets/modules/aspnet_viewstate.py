@@ -8,6 +8,7 @@ from Crypto.Cipher import DES
 from Crypto.Cipher import DES3
 from viewstate import ViewState
 from contextlib import suppress
+from badsecrets.helpers import unpad
 from badsecrets.base import BadsecretsBase, generic_base64_regex
 
 
@@ -20,10 +21,6 @@ class ASPNET_Viewstate(BadsecretsBase):
         if sourcebytes[0:2] == b"\xff\x01":
             return True
         return False
-
-    @staticmethod
-    def unpad(s):
-        return s[: -ord(s[len(s) - 1 :])]
 
     def viewstate_decrypt(self, ekey_bytes, hash_alg, viewstate_B64):
         viewstate_bytes = base64.b64decode(viewstate_B64)
@@ -65,7 +62,7 @@ class ASPNET_Viewstate(BadsecretsBase):
             decrypted_raw = cipher.decrypt(encrypted_raw)
 
             with suppress(TypeError):
-                decrypt = self.unpad(decrypted_raw[blockpadlen:])
+                decrypt = unpad(decrypted_raw[blockpadlen:])
 
                 if self.valid_preamble(decrypt):
                     return dec_algo
