@@ -81,7 +81,7 @@ class Telerik_EncryptionKey(BadsecretsBase):
 
         return dialog_parameters
 
-    def check_secret(self, dialogParameters_raw, key_derive_mode="PBKDF1_MS",include_machinekeys=True):
+    def check_secret(self, dialogParameters_raw, key_derive_mode="PBKDF1_MS", include_machinekeys=True):
         if not self.identify(dialogParameters_raw):
             return None
 

