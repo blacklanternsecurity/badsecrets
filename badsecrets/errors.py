@@ -4,3 +4,7 @@ class BadsecretsException(Exception):
 
 class LoadResourceException(BadsecretsException):
     pass
+
+
+class Telerik_EncryptionKey_Exception(BadsecretsException):
+    pass
