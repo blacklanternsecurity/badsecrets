@@ -19,13 +19,14 @@ requests-mock = "^1.10.0"
 mock = "^4.0.3"
 requests = "^2.28.1"
 pytest-mock = "^3.10.0"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+poetry-dynamic-versioning = {extras = ["plugin"], version = "^0.21.1"}
 
 [tool.black]
 line-length = 119
+
+[build-system]
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
+build-backend = "poetry_dynamic_versioning.backend"
 
 [tool.poetry-dynamic-versioning]
 enable = true
