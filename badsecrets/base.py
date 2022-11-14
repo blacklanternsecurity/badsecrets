@@ -1,6 +1,7 @@
 import re
 import os
 import hashlib
+import requests
 import badsecrets.errors
 from abc import abstractmethod
 
@@ -23,8 +24,6 @@ class BadsecretsBase:
         "AES": hashlib.sha1,
         "3DES": hashlib.sha1,
     }
-
-    output_parameters = None
 
     def __init__(self, **kwargs):
         setattr(self, "custom_resource", kwargs.get("custom_resource", None))
@@ -50,6 +49,27 @@ class BadsecretsBase:
                 if len(l) > 0:
                     yield l
 
+    @abstractmethod
+    def carve_regex(self):
+        return None
+
+    def carve(self, source):
+        results = []
+        if type(source) == requests.models.Response:
+            for c in source.cookies.keys():
+                r = self.check_secret(source.cookies[c])
+                if r:
+                    results.append(r)
+            source = source.text
+
+        if self.carve_regex():
+            s = re.search(self.carve_regex(), source)
+            if s:
+                r = self.check_secret(s.groups()[0])
+                if r:
+                    results.append(r)
+        return results
+
     @classmethod
     def identify(self, secret):
         if re.match(self.identify_regex, secret):
@@ -71,3 +91,16 @@ def check_all_modules(secret):
             r["detecting_module"] = m.__name__
             return r
     return None
+
+
+def carve_all_modules(source):
+    results = []
+    for m in BadsecretsBase.__subclasses__():
+        x = m()
+        r_list = x.carve(source)
+        if len(r_list) > 0:
+            for r in r_list:
+                r["detecting_module"] = m.__name__
+                results.append(r)
+    if results:
+        return results

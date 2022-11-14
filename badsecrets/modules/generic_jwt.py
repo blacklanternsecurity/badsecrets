@@ -7,6 +7,9 @@ class Generic_JWT(BadsecretsBase):
 
     identify_regex = re.compile(r"eyJ(?:[\w-]*\.)(?:[\w-]*\.)[\w-]*")
 
+    def carve_regex(self):
+        return re.compile(r"(eyJ(?:[\w-]*\.)(?:[\w-]*\.)[\w-]*)")
+
     def jwtVerify(self, JWT, key, algorithm):
         try:
             r = j.decode(JWT, key, algorithms=[algorithm], options={"verify_exp": False})
@@ -23,9 +26,14 @@ class Generic_JWT(BadsecretsBase):
 
         # if the JWT is not well formed, stop here
         except j.exceptions.DecodeError:
-            return
+            return None
 
-        algorithm = jwt_headers["alg"]
+        try:
+            algorithm = jwt_headers["alg"]
+
+        # It could be a JWT-like token that is actually a different format, for example a flask cookie
+        except KeyError:
+            return None
 
         if algorithm[0].lower() == "h":
 
