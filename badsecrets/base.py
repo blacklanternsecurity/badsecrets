@@ -91,3 +91,16 @@ def check_all_modules(secret):
             r["detecting_module"] = m.__name__
             return r
     return None
+
+
+def carve_all_modules(source):
+    results = []
+    for m in BadsecretsBase.__subclasses__():
+        x = m()
+        r_list = x.carve(source)
+        if len(r_list) > 0:
+            for r in r_list:
+                r["detecting_module"] = m.__name__
+                results.append(r)
+    if results:
+        return results

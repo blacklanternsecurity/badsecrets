@@ -249,7 +249,7 @@ def test_multiple_results():
 
 def test_generic_jwt_body_carve():
 
-    fake_html = """
+    jwt_html = """
     <html>
 <head>
 <title>Test</title>
@@ -268,9 +268,36 @@ def test_generic_jwt_body_carve():
         m.get(
             f"http://body.generic-jwt.badsecrets.com/",
             status_code=200,
-            text=fake_html,
+            text=jwt_html,
         )
         res = requests.get("http://body.generic-jwt.badsecrets.com/")
         r = x.carve(res)
         assert r
         assert r[0]["jwt_secret"] == "1234"
+
+
+def test_carve_negative():
+
+    x = Generic_JWT()
+    useless_html = """
+    <html>
+    <head>
+    </head>
+    <body>
+    <p>This is just some text.</p>
+    </body>
+    <html>
+    """
+
+    r = x.carve(useless_html)
+    assert not r
+
+    with requests_mock.Mocker() as m:
+        m.get(
+            f"http://negative.generic-jwt.badsecrets.com/",
+            status_code=200,
+            text=useless_html,
+        )
+        res = requests.get("http://negative.generic-jwt.badsecrets.com/")
+        r = x.carve(res)
+        assert not r
