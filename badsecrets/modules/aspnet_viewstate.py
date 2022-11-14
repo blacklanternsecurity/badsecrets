@@ -1,3 +1,4 @@
+import re
 import hmac
 import struct
 import base64
@@ -15,6 +16,20 @@ from badsecrets.base import BadsecretsBase, generic_base64_regex
 class ASPNET_Viewstate(BadsecretsBase):
 
     identify_regex = generic_base64_regex
+
+    def carve_regex(self):
+        return re.compile(
+            r"<input.+__VIEWSTATE\"\svalue=\"(.+)\"[\S\s]+<input.+__VIEWSTATEGENERATOR\"\svalue=\"(\w+)\""
+        )
+
+    def carve(self, source):
+        results = []
+        s = re.search(self.carve_regex(), source)
+        if s:
+            r = self.check_secret(s.groups()[0], generator=s.groups()[1])
+            if r:
+                results.append(r)
+        return results
 
     @staticmethod
     def valid_preamble(sourcebytes):

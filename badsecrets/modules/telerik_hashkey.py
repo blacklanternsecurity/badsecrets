@@ -11,6 +11,9 @@ class Telerik_HashKey(BadsecretsBase):
 
     identify_regex = re.compile(r"^(?:[A-Za-z0-9+\/=%]+)$")
 
+    def carve_regex(self):
+        return re.compile(r"{\"SerializedParameters\":\"([^\"]*)\"")
+
     def prepare_keylist(self, include_machinekeys=True):
 
         if include_machinekeys:

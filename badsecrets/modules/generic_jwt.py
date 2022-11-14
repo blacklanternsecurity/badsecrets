@@ -7,6 +7,9 @@ class Generic_JWT(BadsecretsBase):
 
     identify_regex = re.compile(r"eyJ(?:[\w-]*\.)(?:[\w-]*\.)[\w-]*")
 
+    def carve_regex(self):
+        return re.compile(r"(eyJ(?:[\w-]*\.)(?:[\w-]*\.)[\w-]*)")
+
     def jwtVerify(self, JWT, key, algorithm):
         try:
             r = j.decode(JWT, key, algorithms=[algorithm], options={"verify_exp": False})
