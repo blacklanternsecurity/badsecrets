@@ -4,6 +4,7 @@ import struct
 import base64
 import hashlib
 import binascii
+import requests
 from Crypto.Cipher import AES
 from Crypto.Cipher import DES
 from Crypto.Cipher import DES3
@@ -24,6 +25,8 @@ class ASPNET_Viewstate(BadsecretsBase):
 
     def carve(self, source):
         results = []
+        if type(source) == requests.models.Response:
+            source = source.text
         s = re.search(self.carve_regex(), source)
         if s:
             r = self.check_secret(s.groups()[0], generator=s.groups()[1])

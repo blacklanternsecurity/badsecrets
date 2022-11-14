@@ -48,6 +48,10 @@ python examples/telerik_knownkey.py --url http://vulnerablesite/Telerik.Web.UI.D
 ### Basic library usage
 
 
+#### check_secret
+
+See if a token or other cryptographic product was produced with a known key
+
 ```
 from badsecrets import modules_loaded
 
@@ -127,6 +131,12 @@ else:
     
 ```
 
+#### Carve
+
+An additional layer of abstraction above check_secret, which accepts a python requests.response object or a string
+
+```
+```
 
 
 ### Check all modules at once
@@ -151,3 +161,35 @@ for test in tests:
     else:
         print("Key not found!")
 ```
+
+```
+import requests
+from badsecrets.base import carve_all_modules
+    
+### using python requests response object
+
+res = requests.get(f"http://example.com/")
+r_list = carve_all_modules(res)
+print(r_list)
+
+### Using string
+
+carve_source_text = """
+    <html>
+<head>
+<title>Test</title>
+</head>
+<body>
+<p>Some text</p>
+<div class="JWT_IN_PAGE">
+<p>eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo</p>
+</div>
+</body>
+</html>
+"""
+
+r_list = carve_all_modules(carve_source_text)
+print(r_list)
+
+```
+
