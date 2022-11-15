@@ -188,7 +188,7 @@ def main():
 
     elif key_derive_mode == "PBKDF2":
 
-        for hash_key in x.prepare_keylist():
+        for hash_key in x.prepare_keylist(include_machinekeys=False):
             for encryption_key_probe, encryption_key in y.encryptionkey_probe_generator(
                 hash_key, key_derive_mode, include_machinekeys=False
             ):
