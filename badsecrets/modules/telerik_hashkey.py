@@ -14,7 +14,7 @@ class Telerik_HashKey(BadsecretsBase):
     def carve_regex(self):
         return re.compile(r"{\"SerializedParameters\":\"([^\"]*)\"")
 
-    def prepare_keylist(self, include_machinekeys=True):
+    def prepare_keylist(self, include_machinekeys=False):
 
         if include_machinekeys:
             for l in self.load_resource("aspnet_machinekeys.txt"):
