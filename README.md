@@ -44,6 +44,7 @@ Fully functional CLI example for identifying known Telerik Hash keys and Encrypt
 ```
 python examples/telerik_knownkey.py --url http://vulnerablesite/Telerik.Web.UI.DialogHandler.aspx
 ```
+Optionally include ASP.NET MachineKeys with --machine-keys (Will SIGNIFICANTLY increase brute-forcing time)
 
 ### Basic library usage
 
