@@ -177,6 +177,7 @@ def main():
                 if "Index was outside the bounds of the array" in res.text:
                     print(f"Found Encryption key! [{encryption_key}]")
                     found_encryption_key = True
+                    break
 
             if found_encryption_key == False:
                 print("Could not identify encryption key.")
