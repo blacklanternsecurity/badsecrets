@@ -11,12 +11,14 @@ from Crypto.Cipher import DES3
 from viewstate import ViewState
 from contextlib import suppress
 from badsecrets.helpers import unpad
+from viewstate.exceptions import ViewStateException
 from badsecrets.base import BadsecretsBase, generic_base64_regex
 
 
 class ASPNET_Viewstate(BadsecretsBase):
 
     identify_regex = generic_base64_regex
+    description = {"Product": "ASP.NET Viewstate", "Secret": "ASP.NET MachineKey"}
 
     def carve_regex(self):
         return re.compile(
@@ -31,7 +33,15 @@ class ASPNET_Viewstate(BadsecretsBase):
         if s:
             r = self.check_secret(s.groups()[0], generator=s.groups()[1])
             if r:
-                results.append(r)
+                r["type"] = "SecretFound"
+
+            else:
+                r = {"type": "IdentifyOnly"}
+
+            r["source"] = f"{s.groups()[0]}:{s.groups()[1]}"
+            r["description"] = self.get_description()
+
+            results.append(r)
         return results
 
     @staticmethod
@@ -95,7 +105,10 @@ class ASPNET_Viewstate(BadsecretsBase):
 
         else:
             vs = ViewState(viewstate_B64)
-            vs.decode()
+            try:
+                vs.decode()
+            except ViewStateException:
+                return None
             signature_len = len(vs.signature)
             candidate_hash_algs = self.search_dict(self.hash_sizes, signature_len)
 

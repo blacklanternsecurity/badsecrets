@@ -13,6 +13,7 @@ generic_base64_regex = re.compile(
 class BadsecretsBase:
 
     identify_regex = re.compile(r".+")
+    description = {"Product": "Undefined", "Secret": "Undefined"}
 
     hash_sizes = {"SHA1": 20, "MD5": 16, "SHA256": 32, "SHA384": 48, "SHA512": 64}
     hash_algs = {
@@ -37,6 +38,10 @@ class BadsecretsBase:
     @abstractmethod
     def check_secret(self, secret):
         raise NotImplementedError
+
+    @classmethod
+    def get_description(self):
+        return self.description
 
     def load_resource(self, resource):
 
@@ -67,7 +72,15 @@ class BadsecretsBase:
             if s:
                 r = self.check_secret(s.groups()[0])
                 if r:
-                    results.append(r)
+                    r["type"] = "SecretFound"
+
+                else:
+                    r = {"type": "IdentifyOnly"}
+
+                r["source"] = s.groups()[0]
+                r["description"] = self.get_description()
+
+                results.append(r)
         return results
 
     @classmethod
