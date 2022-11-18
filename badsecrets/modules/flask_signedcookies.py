@@ -6,6 +6,7 @@ from badsecrets.base import BadsecretsBase
 class Flask_SignedCookies(BadsecretsBase):
 
     identify_regex = re.compile(r"eyJ(?:[\w-]*\.)(?:[\w-]*\.)[\w-]*")
+    description = {"Product": "Flask Signed Cookie", "Secret": "Flask Password"}
 
     def check_secret(self, flask_cookie):
         if not self.identify(flask_cookie):
