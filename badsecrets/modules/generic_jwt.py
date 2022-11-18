@@ -6,6 +6,7 @@ from badsecrets.base import BadsecretsBase
 class Generic_JWT(BadsecretsBase):
 
     identify_regex = re.compile(r"eyJ(?:[\w-]*\.)(?:[\w-]*\.)[\w-]*")
+    description = {"Product": "JSON Web Token (JWT)", "Secret": "HMAC/RSA Key"}
 
     def carve_regex(self):
         return re.compile(r"(eyJ(?:[\w-]*\.)(?:[\w-]*\.)[\w-]*)")
