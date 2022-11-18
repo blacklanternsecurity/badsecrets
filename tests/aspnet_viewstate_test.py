@@ -1,8 +1,5 @@
 import os
-import pytest
-import viewstate
 from badsecrets import modules_loaded
-from viewstate.exceptions import ViewStateException
 
 ASPNETViewstate = modules_loaded["aspnet_viewstate"]
 
