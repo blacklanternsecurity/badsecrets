@@ -274,6 +274,7 @@ def test_generic_jwt_body_carve():
         r = x.carve(res)
         assert r
         assert r[0]["jwt_secret"] == "1234"
+        assert r[0]["type"] == "SecretFound"
 
 
 def test_carve_negative():
@@ -289,9 +290,6 @@ def test_carve_negative():
     <html>
     """
 
-    r = x.carve(useless_html)
-    assert not r
-
     with requests_mock.Mocker() as m:
         m.get(
             f"http://negative.generic-jwt.badsecrets.com/",
@@ -301,3 +299,25 @@ def test_carve_negative():
         res = requests.get("http://negative.generic-jwt.badsecrets.com/")
         r = x.carve(res)
         assert not r
+
+    x = Generic_JWT()
+    useless_html = """
+    <html>
+    <head>
+    </head>
+    <body>
+    <p>eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJAAAA</p>
+    </body>
+    <html>
+    """
+
+    with requests_mock.Mocker() as m:
+        m.get(
+            f"http://identifyonly.generic-jwt.badsecrets.com/",
+            status_code=200,
+            text=useless_html,
+        )
+        res = requests.get("http://identifyonly.generic-jwt.badsecrets.com/")
+        r = x.carve(res)
+        assert r
+        assert r[0]["type"] == "IdentifyOnly"
