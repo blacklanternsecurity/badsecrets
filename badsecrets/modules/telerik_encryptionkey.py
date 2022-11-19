@@ -85,7 +85,7 @@ class Telerik_EncryptionKey(BadsecretsBase):
 
         return dialog_parameters
 
-    def check_secret(self, dialogParameters_raw, key_derive_mode=None, include_machinekeys=True):
+    def check_secret(self, dialogParameters_raw, key_derive_mode=None, include_machinekeys=False):
 
         if not key_derive_mode:
             key_derive_modes = ["PBKDF1_MS", "PBKDF2"]
@@ -111,7 +111,7 @@ class Telerik_EncryptionKey(BadsecretsBase):
                     }
         return None
 
-    def encryptionkey_probe_generator(self, hash_key, key_derive_mode, include_machinekeys=True):
+    def encryptionkey_probe_generator(self, hash_key, key_derive_mode, include_machinekeys=False):
         test_string = b"AAAAAAAAAAAAAAAAAAAA"
         dp_enc = base64.b64encode(test_string).decode()
 
