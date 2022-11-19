@@ -8,3 +8,7 @@ class LoadResourceException(BadsecretsException):
 
 class Telerik_EncryptionKey_Exception(BadsecretsException):
     pass
+
+
+class CarveException(BadsecretsException):
+    pass

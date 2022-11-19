@@ -4,7 +4,6 @@ import struct
 import base64
 import hashlib
 import binascii
-import requests
 from Crypto.Cipher import AES
 from Crypto.Cipher import DES
 from Crypto.Cipher import DES3
@@ -25,24 +24,11 @@ class ASPNET_Viewstate(BadsecretsBase):
             r"<input.+__VIEWSTATE\"\svalue=\"(.+)\"[\S\s]+<input.+__VIEWSTATEGENERATOR\"\svalue=\"(\w+)\""
         )
 
-    def carve(self, source):
-        results = []
-        if type(source) == requests.models.Response:
-            source = source.text
-        s = re.search(self.carve_regex(), source)
-        if s:
+    def carve_to_check_secret(self, s):
+        if len(s.groups()) == 2:
             r = self.check_secret(s.groups()[0], generator=s.groups()[1])
-            if r:
-                r["type"] = "SecretFound"
-
-            else:
-                r = {"type": "IdentifyOnly"}
-
-            r["source"] = f"{s.groups()[0]}:{s.groups()[1]}"
-            r["description"] = self.get_description()
-
-            results.append(r)
-        return results
+            return r
+        return None
 
     @staticmethod
     def valid_preamble(sourcebytes):

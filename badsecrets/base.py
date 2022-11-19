@@ -54,33 +54,61 @@ class BadsecretsBase:
                 if len(l) > 0:
                     yield l
 
+    def carve_to_check_secret(self, s):
+        if s.groups():
+            r = self.check_secret(s.groups()[0])
+            return r
+        return None
+
     @abstractmethod
     def carve_regex(self):
         return None
 
-    def carve(self, source):
-        results = []
-        if type(source) == requests.models.Response:
-            for c in source.cookies.keys():
-                r = self.check_secret(source.cookies[c])
-                if r:
-                    results.append(r)
-            source = source.text
+    def carve(self, body=None, cookies=None, requests_response=None):
 
-        if self.carve_regex():
-            s = re.search(self.carve_regex(), source)
-            if s:
-                r = self.check_secret(s.groups()[0])
+        results = []
+
+        if not body and not cookies and not requests_response:
+            raise badsecrets.errors.CarveException("Either body/cookies or requests_response required")
+
+        if requests_response:
+
+            if body or cookies:
+                raise badsecrets.errors.CarveException("Body/cookies and requests_response cannot both be set")
+
+            if type(requests_response) == requests.models.Response:
+                print("yes")
+                body = requests_response.text
+                cookies = dict(requests_response.cookies)
+            else:
+                raise badsecrets.errors.CarveException("requests_response must be a requests.models.Response object")
+
+        if cookies:
+            if type(cookies) != dict:
+                raise badsecrets.errors.CarveException("Header argument must be type dict")
+            for k, v in cookies.items():
+                r = self.check_secret(v)
                 if r:
                     r["type"] = "SecretFound"
+                    r["source"] = v
+                    results.append(r)
+        if body:
+            if type(body) != str:
+                raise badsecrets.errors.CarveException("Body argument must be type str")
+            if self.carve_regex():
 
-                else:
-                    r = {"type": "IdentifyOnly"}
+                s = re.search(self.carve_regex(), body)
+                if s:
+                    r = self.carve_to_check_secret(s)
+                    if r:
+                        r["type"] = "SecretFound"
+                    else:
+                        r = {"type": "IdentifyOnly"}
+                    r["source"] = s.groups()[0]
+                    results.append(r)
 
-                r["source"] = s.groups()[0]
-                r["description"] = self.get_description()
-
-                results.append(r)
+        for r in results:
+            r["description"] = self.get_description()
         return results
 
     @classmethod
@@ -106,11 +134,11 @@ def check_all_modules(secret):
     return None
 
 
-def carve_all_modules(source):
+def carve_all_modules(**kwargs):
     results = []
     for m in BadsecretsBase.__subclasses__():
         x = m()
-        r_list = x.carve(source)
+        r_list = x.carve(**kwargs)
         if len(r_list) > 0:
             for r in r_list:
                 r["detecting_module"] = m.__name__

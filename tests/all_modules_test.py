@@ -81,14 +81,15 @@ jwt_html = """
 def test_carve_all_body():
     # text-only results
     for sample in [aspnet_viewstate_sample, telerik_dialogparameters_sample, jwt_html]:
-        r_list = carve_all_modules(sample)
+        print(type(sample))
+        r_list = carve_all_modules(body=sample)
         assert len(r_list) > 0
 
     with requests_mock.Mocker() as m:
         for idx, sample in enumerate([aspnet_viewstate_sample, telerik_dialogparameters_sample, jwt_html]):
             m.get(f"http://{idx}.carve-all.badsecrets.com/", status_code=200, text=sample)
             res = requests.get(f"http://{idx}.carve-all.badsecrets.com/")
-            r_list = carve_all_modules(res)
+            r_list = carve_all_modules(requests_response=res)
             assert len(r_list) > 0
 
 
@@ -117,5 +118,5 @@ def test_carve_all_cookies():
         )
 
         res = requests.get(f"http://cookies.carve-all.badsecrets.com/")
-        r_list = carve_all_modules(res)
+        r_list = carve_all_modules(requests_response=res)
         assert len(r_list) == 6
