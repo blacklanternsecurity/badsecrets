@@ -76,7 +76,6 @@ class BadsecretsBase:
                 raise badsecrets.errors.CarveException("Body/cookies and requests_response cannot both be set")
 
             if type(requests_response) == requests.models.Response:
-                print("yes")
                 body = requests_response.text
                 cookies = dict(requests_response.cookies)
             else:
