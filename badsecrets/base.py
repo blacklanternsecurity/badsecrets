@@ -2,12 +2,11 @@ import re
 import os
 import hashlib
 import requests
-import urllib.parse
 import badsecrets.errors
 from abc import abstractmethod
 
 generic_base64_regex = re.compile(
-    r"^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}={2})$"
+    r"^(?:[A-Za-z0-9+\/]{4}){8,}(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}={2})$"
 )
 
 
@@ -86,7 +85,7 @@ class BadsecretsBase:
             if type(cookies) != dict:
                 raise badsecrets.errors.CarveException("Header argument must be type dict")
             for k, v in cookies.items():
-                r = self.check_secret(urllib.parse.unquote(v))
+                r = self.check_secret(v)
                 if r:
                     r["type"] = "SecretFound"
                     r["source"] = v
