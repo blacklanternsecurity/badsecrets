@@ -1,5 +1,7 @@
+import pytest
 import requests
 import requests_mock
+import badsecrets.errors
 
 from badsecrets import modules_loaded
 
@@ -16,7 +18,7 @@ aspnet_viewstate_sample = """
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" >
 <head><title>
-	Untitled Page
+    Untitled Page
 </title></head>
 <body>
     <form method="post" action="./query.aspx" id="form1">
@@ -26,8 +28,8 @@ aspnet_viewstate_sample = """
 
 <div class="aspNetHidden">
 
-	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="EDD8C9AE" />
-	<input type="hidden" name="__VIEWSTATEENCRYPTED" id="__VIEWSTATEENCRYPTED" value="" />
+    <input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="EDD8C9AE" />
+    <input type="hidden" name="__VIEWSTATEENCRYPTED" id="__VIEWSTATEENCRYPTED" value="" />
 </div>
     <div>
         <span id="dft">test</span>
@@ -97,7 +99,7 @@ def test_carve_cookies():
         )
 
         res = requests.get("http://ps_token.badsecrets.com/")
-        r = x.carve(res)
+        r = x.carve(requests_response=res)
         print(r)
         assert len(r) > 0
         assert r[0]["PS_TOKEN_password"] == "password"
@@ -119,7 +121,7 @@ def test_carve_cookies():
         )
 
         res = requests.get("http://django.badsecrets.com/")
-        r = x.carve(res)
+        r = x.carve(requests_response=res)
         print(r)
         assert len(r) > 0
         assert r[0]["_auth_user_hash"] == "d86e01d10e66d199e5f5cb92e0c3d9f4a03140068183b5c9387232c4d32cff4e"
@@ -141,7 +143,7 @@ def test_carve_cookies():
         )
 
         res = requests.get("http://flask.badsecrets.com/")
-        r = x.carve(res)
+        r = x.carve(requests_response=res)
         print(r)
         assert len(r) > 0
         assert r[0]["flask_password"] == "CHANGEME"
@@ -163,7 +165,7 @@ def test_carve_cookies():
         )
 
         res = requests.get("http://rails.badsecrets.com/")
-        r = x.carve(res)
+        r = x.carve(requests_response=res)
         print(r)
         assert len(r) > 0
         assert (
@@ -188,7 +190,7 @@ def test_carve_cookies():
         )
 
         res = requests.get("http://hmac.generic-jwt.badsecrets.com/")
-        r = x.carve(res)
+        r = x.carve(requests_response=res)
         print(r)
         assert len(r) > 0
         assert r[0]["jwt_secret"] == "1234"
@@ -207,7 +209,7 @@ def test_carve_cookies():
         )
 
         res = requests.get("http://rsa.generic-jwt.badsecrets.com/")
-        r = x.carve(res)
+        r = x.carve(requests_response=res)
         print(r)
         assert len(r) > 0
         assert r[0]["jwt_private_key_index"] == "1"
@@ -234,7 +236,7 @@ def test_multiple_results():
         )
 
         res = requests.get("http://rails.badsecrets.com/")
-        r = x.carve(res)
+        r = x.carve(requests_response=res)
         print(r)
         assert len(r) == 2
         assert (
@@ -271,7 +273,7 @@ def test_generic_jwt_body_carve():
             text=jwt_html,
         )
         res = requests.get("http://body.generic-jwt.badsecrets.com/")
-        r = x.carve(res)
+        r = x.carve(requests_response=res)
         assert r
         assert r[0]["jwt_secret"] == "1234"
         assert r[0]["type"] == "SecretFound"
@@ -297,7 +299,7 @@ def test_carve_negative():
             text=useless_html,
         )
         res = requests.get("http://negative.generic-jwt.badsecrets.com/")
-        r = x.carve(res)
+        r = x.carve(requests_response=res)
         assert not r
 
     x = Generic_JWT()
@@ -318,6 +320,64 @@ def test_carve_negative():
             text=useless_html,
         )
         res = requests.get("http://identifyonly.generic-jwt.badsecrets.com/")
-        r = x.carve(res)
+        r = x.carve(requests_response=res)
         assert r
         assert r[0]["type"] == "IdentifyOnly"
+
+
+def test_invalid_carve_args():
+
+    useless_html = """
+    <html>
+    <head>
+    </head>
+    <body>
+    <p>This is just some text.</p>
+    </body>
+    <html>
+    """
+    cookies = {"random-cookie": "useless_data"}
+    x = Generic_JWT()
+    with requests_mock.Mocker() as m:
+        m.get(
+            f"http://invalidcarveargs.generic-jwt.badsecrets.com/", status_code=200, text=useless_html, cookies=cookies
+        )
+        res = requests.get("http://invalidcarveargs.generic-jwt.badsecrets.com/")
+
+    with pytest.raises(badsecrets.errors.CarveException):
+        x.carve(body=useless_html, cookies=cookies, requests_response=res)
+
+    with pytest.raises(badsecrets.errors.CarveException):
+        x.carve(body=useless_html, cookies="cookies")
+
+    with pytest.raises(badsecrets.errors.CarveException):
+        x.carve(body=({}))
+
+    with pytest.raises(badsecrets.errors.CarveException):
+        x.carve(requests_response=("AAAA"))
+
+    with pytest.raises(badsecrets.errors.CarveException):
+        x.carve()
+
+
+def test_cookie_dict():
+
+    useless_html = """
+    <html>
+    <head>
+    </head>
+    <body>
+    <p>This is just some text.</p>
+    </body>
+    <html>
+    """
+    x = Generic_JWT()
+    r = x.carve(
+        body=useless_html,
+        cookies={
+            "arbitrary": "eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo"
+        },
+    )
+    assert r
+    assert r[0]["jwt_secret"] == "1234"
+    assert r[0]["type"] == "SecretFound"
