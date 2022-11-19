@@ -30,7 +30,7 @@ class Rails_SecretKeyBase(BadsecretsBase):
             hmac_secret = PBKDF2(secret_key_base, "signed cookie", 64, 1000)
             h = hmac.new(hmac_secret, data.encode(), hash_alg)
             if h.hexdigest() == signature:
-                return {"secret_key_base": secret_key_base, "data": base64.b64decode(data), "hash_algorithm": hash_alg}
+                return {"json_data": base64.b64decode(data), "hash_algorithm": hash_alg}
 
         # Cookie is likely Rails 4/5/6 AES-CBC Cookie
         elif len(split_rails_cookie) == 2:
@@ -48,7 +48,7 @@ class Rails_SecretKeyBase(BadsecretsBase):
                 try:
                     dec = unpad(cipher.decrypt(base64.b64decode(data)), 16)
                     json_data = json.loads(dec.decode())
-                    return {"secret_key_base": secret_key_base, "data": json_data, "encryption_algorithm": "AES_CBC"}
+                    return {"json_data": json_data, "encryption_algorithm": "AES_CBC"}
                 except ValueError:
                     pass
 
@@ -61,7 +61,7 @@ class Rails_SecretKeyBase(BadsecretsBase):
             try:
                 dec = cipher.decrypt(base64.b64decode(data))
                 json_data = json.loads(dec.decode())
-                return {"secret_key_base": secret_key_base, "data": json_data, "encryption_algorithm": "AES_GCM"}
+                return {"json_data": json_data, "encryption_algorithm": "AES_GCM"}
             except ValueError:
                 return None
 
@@ -73,5 +73,5 @@ class Rails_SecretKeyBase(BadsecretsBase):
             secret_key_base = l.rstrip()
             r = self.rails(rails_cookie, secret_key_base)
             if r:
-                return r
+                return {"secret": secret_key_base, "details": r}
         return None

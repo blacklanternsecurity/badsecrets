@@ -29,7 +29,7 @@ def test_hash_key():
     for test in tests:
         found_key = x.check_secret(test[1])
         assert found_key
-        assert found_key["Telerik.Upload.ConfigurationHashKey"] == test[0]
+        assert found_key["secret"] == test[0]
 
 
 def test_hashkey_probe_generator():
@@ -57,4 +57,4 @@ def test_sign_enc_dialog_params():
     r = x.check_secret(signed_encrypted_dp)
 
     assert r
-    assert r["Telerik.Upload.ConfigurationHashKey"] == test_hashkey
+    assert r["secret"] == test_hashkey

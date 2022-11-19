@@ -145,13 +145,13 @@ def test_viewstates():
 
         found_key = x.check_secret(test[3], modifier)
         assert found_key
-        assert found_key["validationKey"] == validation_key
-        assert found_key["validationAlgo"] == test[2]
+        assert validation_key in found_key["secret"]
+        assert test[2] in found_key["secret"]
 
         if "NOENC" not in test[0]:
             print(test)
-            assert found_key["encryptionKey"] == enc_key
-            assert found_key["encryptionAlgo"] == test[1]
+            assert enc_key in found_key["secret"]
+            assert test[1] in found_key["secret"]
 
     # negative test
     found_key = x.check_secret("Ad5AwfMUcwXM5rJFA9dtrSgoT3ezfxneYLjsXW7pB/TjlgNbzsx3dY/P+FlXTZReIA==", "AAAAAAAA")
@@ -203,18 +203,18 @@ def test_viewstate_alt_keys():
     )
     assert found_key
     print(found_key)
-    assert found_key["validationKey"] == alt_val_key
-    assert found_key["validationAlgo"] == "SHA1"
-    assert found_key["encryptionKey"] == alt_enc_key
-    assert found_key["encryptionAlgo"] == "AES"
+    assert alt_val_key in found_key["secret"]
+    assert "SHA1" in found_key["secret"]
+    assert alt_enc_key in found_key["secret"]
+    assert "AES" in found_key["secret"]
 
     found_key = x.check_secret("tBfCi5Y/zYSviC1i0SBK9U+ZYZbzPwJomXaDenkuSWc4WLiaY+W/aKkPeCtEoH+Utlgg0Q==", modifier)
     assert found_key
     print(found_key)
-    assert found_key["validationKey"] == alt_val_key
-    assert found_key["validationAlgo"] == "SHA1"
-    assert found_key["encryptionKey"] == alt_enc_key
-    assert found_key["encryptionAlgo"] == "DES"
+    assert alt_val_key in found_key["secret"]
+    assert "SHA1" in found_key["secret"]
+    assert alt_enc_key in found_key["secret"]
+    assert "DES" in found_key["secret"]
 
 
 def test_viewstate_handle_decode_error():

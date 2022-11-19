@@ -40,7 +40,7 @@ class Telerik_HashKey(BadsecretsBase):
             with suppress(binascii.Error):
                 h = hmac.new(vkey.encode(), dp_enc, self.hash_algs["SHA256"])
                 if base64.b64encode(h.digest()) == dp_hash:
-                    return {"Telerik.Upload.ConfigurationHashKey": vkey}
+                    return {"secret": vkey, "details": None}
         return None
 
     def hashkey_probe_generator(self, include_machinekeys=False):

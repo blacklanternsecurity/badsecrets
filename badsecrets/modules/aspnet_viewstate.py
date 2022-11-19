@@ -154,10 +154,8 @@ class ASPNET_Viewstate(BadsecretsBase):
                         if decryptionAlgo:
                             confirmed_ekey = ekey
 
-                return {
-                    "validationKey": vkey,
-                    "validationAlgo": validationAlgo,
-                    "encryptionKey": confirmed_ekey,
-                    "encryptionAlgo": decryptionAlgo,
-                }
+                result = f"validationKey: {vkey} validationAlgo: {validationAlgo}"
+                if confirmed_ekey:
+                    result += f" encryptionKey: {confirmed_ekey} encryptionAlgo: {decryptionAlgo}"
+                return {"secret": result, "details": None}
         return None

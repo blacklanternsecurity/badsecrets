@@ -21,8 +21,7 @@ def test_peoplesoft():
     for test in tests:
 
         found_key = x.check_secret(test[2])
-        assert found_key["username"] == test[0]
-        assert found_key["PS_TOKEN_password"] == test[1]
+        assert found_key["secret"] == f"Username: {test[0]} Password: {test[1]}"
 
 
 def test_peoplesoft_negative():
