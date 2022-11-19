@@ -58,7 +58,6 @@ class BadsecretsBase:
         if s.groups():
             r = self.check_secret(s.groups()[0])
             return r
-        return None
 
     @abstractmethod
     def carve_regex(self):
