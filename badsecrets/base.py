@@ -85,7 +85,7 @@ class BadsecretsBase:
             if type(cookies) != dict:
                 raise badsecrets.errors.CarveException("Header argument must be type dict")
             for k, v in cookies.items():
-                r = self.check_secret(v)
+                r = self.check_secret(urllib.parse.unquote(v))
                 if r:
                     r["type"] = "SecretFound"
                     r["source"] = v
