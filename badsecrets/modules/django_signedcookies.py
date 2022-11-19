@@ -25,5 +25,4 @@ class DjangoSignedCookies(BadsecretsBase):
             except BadSignature:
                 continue
             if r:
-                r["secret_key"] = secret_key
-                return dict(r)
+                return {"secret": secret_key, "details": r}

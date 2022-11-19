@@ -52,8 +52,8 @@ def test_rails():
         print(test)
         found_key = x.check_secret(test[3])
         assert found_key
-        assert found_key["secret_key_base"] == test[2]
-        assert found_key[test[0]] == test[1]
+        assert found_key["secret"] == test[2]
+        assert found_key["details"][test[0]] == test[1]
 
 
 def test_rails_negative():

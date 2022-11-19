@@ -10,4 +10,4 @@ def test_flask():
     for test in tests:
         found_key = x.check_secret(test[1])
         assert found_key
-        assert found_key["flask_password"] == test[0]
+        assert found_key["secret"] == test[0]

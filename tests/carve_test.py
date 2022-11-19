@@ -52,8 +52,8 @@ def test_carve_aspnet_viewstate():
     print(r)
     assert r
     assert (
-        r[0]["validationKey"]
-        == "0F97BAE23F6F36801ABDB5F145124E00A6F795A97093D778EE5CD24F35B78B6FC4C0D0D4420657689C4F321F8596B59E83F02E296E970C4DEAD2DFE226294979"
+        "0F97BAE23F6F36801ABDB5F145124E00A6F795A97093D778EE5CD24F35B78B6FC4C0D0D4420657689C4F321F8596B59E83F02E296E970C4DEAD2DFE226294979"
+        in r[0]["secret"]
     )
 
     t = x.carve("INVALID")
@@ -66,7 +66,7 @@ def test_carve_telerik():
     r = x.carve(telerik_dialogparameters_sample)
     print(r)
     assert r
-    assert r[0]["Telerik.Upload.ConfigurationHashKey"] == "YOUR_ENCRYPTION_KEY_TO_GO_HERE"
+    assert r[0]["secret"] == "YOUR_ENCRYPTION_KEY_TO_GO_HERE"
 
     t = x.carve("INVALID")
     assert not t
@@ -75,7 +75,7 @@ def test_carve_telerik():
     r = y.carve(telerik_dialogparameters_sample)
     print(r)
     assert r
-    assert r[0]["Telerik.Web.UI.DialogParametersEncryptionKey"] == "d2a312d9-7af4-43de-be5a-ae717b46cea6"
+    assert r[0]["secret"] == "d2a312d9-7af4-43de-be5a-ae717b46cea6"
 
 
 def test_carve_cookies():
@@ -102,7 +102,7 @@ def test_carve_cookies():
         r = x.carve(requests_response=res)
         print(r)
         assert len(r) > 0
-        assert r[0]["PS_TOKEN_password"] == "password"
+        assert r[0]["secret"] == "Username: badsecrets Password: password"
 
         # django_signedcookies
         x = Django_SignedCookies()
@@ -124,7 +124,7 @@ def test_carve_cookies():
         r = x.carve(requests_response=res)
         print(r)
         assert len(r) > 0
-        assert r[0]["_auth_user_hash"] == "d86e01d10e66d199e5f5cb92e0c3d9f4a03140068183b5c9387232c4d32cff4e"
+        assert r[0]["details"]["_auth_user_hash"] == "d86e01d10e66d199e5f5cb92e0c3d9f4a03140068183b5c9387232c4d32cff4e"
 
         # flash_signedcookies
         x = Flask_SignedCookies()
@@ -146,7 +146,7 @@ def test_carve_cookies():
         r = x.carve(requests_response=res)
         print(r)
         assert len(r) > 0
-        assert r[0]["flask_password"] == "CHANGEME"
+        assert r[0]["secret"] == "CHANGEME"
 
         # rails_secretkeybase
         x = Rails_SecretKeyBase()
@@ -169,7 +169,7 @@ def test_carve_cookies():
         print(r)
         assert len(r) > 0
         assert (
-            r[0]["secret_key_base"]
+            r[0]["secret"]
             == "4698bc5d99f3103ca76ab57f28a6b8f75f5f0768aab4f2e3f3743383594ad91f43e78c1b86138602f5859a811927698180ebfae7c490333f37b87521ca5a5f8c"
         )
 
@@ -193,7 +193,7 @@ def test_carve_cookies():
         r = x.carve(requests_response=res)
         print(r)
         assert len(r) > 0
-        assert r[0]["jwt_secret"] == "1234"
+        assert r[0]["secret"] == "1234"
 
         cookies = {
             "random-cookie": "useless_data",
@@ -212,7 +212,7 @@ def test_carve_cookies():
         r = x.carve(requests_response=res)
         print(r)
         assert len(r) > 0
-        assert r[0]["jwt_private_key_index"] == "1"
+        assert r[0]["secret"] == "Private key Name: 1"
 
 
 def test_multiple_results():
@@ -240,11 +240,11 @@ def test_multiple_results():
         print(r)
         assert len(r) == 2
         assert (
-            r[0]["secret_key_base"]
+            r[0]["secret"]
             == "4698bc5d99f3103ca76ab57f28a6b8f75f5f0768aab4f2e3f3743383594ad91f43e78c1b86138602f5859a811927698180ebfae7c490333f37b87521ca5a5f8c"
         )
         assert (
-            r[1]["secret_key_base"]
+            r[1]["secret"]
             == "4698bc5d99f3103ca76ab57f28a6b8f75f5f0768aab4f2e3f3743383594ad91f43e78c1b86138602f5859a811927698180ebfae7c490333f37b87521ca5a5f8c"
         )
 
@@ -275,7 +275,7 @@ def test_generic_jwt_body_carve():
         res = requests.get("http://body.generic-jwt.badsecrets.com/")
         r = x.carve(requests_response=res)
         assert r
-        assert r[0]["jwt_secret"] == "1234"
+        assert r[0]["secret"] == "1234"
         assert r[0]["type"] == "SecretFound"
 
 
@@ -379,5 +379,5 @@ def test_cookie_dict():
         },
     )
     assert r
-    assert r[0]["jwt_secret"] == "1234"
+    assert r[0]["secret"] == "1234"
     assert r[0]["type"] == "SecretFound"

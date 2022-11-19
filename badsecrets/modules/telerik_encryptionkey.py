@@ -106,8 +106,8 @@ class Telerik_EncryptionKey(BadsecretsBase):
                     continue
                 if dialog_parameters.isascii():
                     return {
-                        "Telerik.Web.UI.DialogParametersEncryptionKey": ekey,
-                        "DialogParameters": dialog_parameters,
+                        "secret": ekey,
+                        "details": {"DialogParameters": dialog_parameters},
                     }
         return None
 
