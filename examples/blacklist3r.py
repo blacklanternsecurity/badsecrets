@@ -24,10 +24,7 @@ def check_viewstate(viewstate, generator):
 
 def print_result(r):
     print("Matching MachineKeys found!")
-    print(f"Validation Key: {r['validationKey']}")
-    print(f"Validation Algo: {r['validationAlgo']}")
-    print(f"Encryption Key: {r['encryptionKey']}")
-    print(f"Encryption Algo: {r['encryptionAlgo']}")
+    print(r["secret"])
 
 
 def validate_viewstate(arg_value, pattern=re.compile(r"^(?:[A-Za-z0-9+\/=%]+)$")):

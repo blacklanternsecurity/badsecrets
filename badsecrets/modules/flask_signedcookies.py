@@ -15,5 +15,5 @@ class Flask_SignedCookies(BadsecretsBase):
             password = l.rstrip()
             r = flaskVerify(value=flask_cookie, secret=password)
             if r:
-                return {"flask_password": password}
+                return {"secret": password, "details": r}
         return None
