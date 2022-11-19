@@ -2,6 +2,7 @@ import re
 import os
 import hashlib
 import requests
+import urllib.parse
 import badsecrets.errors
 from abc import abstractmethod
 
