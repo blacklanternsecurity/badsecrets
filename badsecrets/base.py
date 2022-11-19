@@ -6,7 +6,7 @@ import badsecrets.errors
 from abc import abstractmethod
 
 generic_base64_regex = re.compile(
-    r"^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}={2})$"
+    r"^(?:[A-Za-z0-9+\/]{4}){8,}(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}={2})$"
 )
 
 
@@ -58,7 +58,6 @@ class BadsecretsBase:
         if s.groups():
             r = self.check_secret(s.groups()[0])
             return r
-        return None
 
     @abstractmethod
     def carve_regex(self):
@@ -77,7 +76,6 @@ class BadsecretsBase:
                 raise badsecrets.errors.CarveException("Body/cookies and requests_response cannot both be set")
 
             if type(requests_response) == requests.models.Response:
-                print("yes")
                 body = requests_response.text
                 cookies = dict(requests_response.cookies)
             else:

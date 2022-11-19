@@ -351,7 +351,7 @@ def test_invalid_carve_args():
         x.carve(body=useless_html, cookies="cookies")
 
     with pytest.raises(badsecrets.errors.CarveException):
-        x.carve(body=({}))
+        x.carve(body={"dict": "dict"})
 
     with pytest.raises(badsecrets.errors.CarveException):
         x.carve(requests_response=("AAAA"))
