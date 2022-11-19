@@ -25,7 +25,7 @@ class Peoplesoft_PSToken(BadsecretsBase):
         # try no password
         h = hashlib.sha1(PS_TOKEN_DATA)
         if h.digest() == SHA1_mac:
-            return {"PS_TOKEN_password": "BLANK PASSWORD!", "username": username}
+            return {"secret": f"Username: {username} Password: BLANK PASSWORD!", "details": None}
 
         for l in set(
             list(self.load_resource("peoplesoft_passwords.txt")) + list(self.load_resource("top_10000_passwords.txt"))
@@ -34,6 +34,6 @@ class Peoplesoft_PSToken(BadsecretsBase):
 
             h = hashlib.sha1(PS_TOKEN_DATA + password.encode("utf_16_le", errors="ignore"))
             if h.digest() == SHA1_mac:
-                return {"PS_TOKEN_password": password, "username": username}
+                return {"secret": f"Username: {username} Password: {password}", "details": None}
 
         return None

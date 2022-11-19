@@ -64,7 +64,7 @@ def test_examples_blacklist3r_manual(monkeypatch, capsys):
         "F5144F1A581A57BA3B60311AF7562A855998F7DD203CD8A71405599B980D8694B5C986C888BE4FC0E6571C2CE600D58CE82B8FA13106B17D77EA4CECDDBBEC1B"
         in captured.out
     )
-    assert "Validation Algo: SHA1" in captured.out
+    assert "validationAlgo: SHA1" in captured.out
 
     # Valid Viewstate Encrypted
     monkeypatch.setattr(
@@ -82,7 +82,7 @@ def test_examples_blacklist3r_manual(monkeypatch, capsys):
         "F5144F1A581A57BA3B60311AF7562A855998F7DD203CD8A71405599B980D8694B5C986C888BE4FC0E6571C2CE600D58CE82B8FA13106B17D77EA4CECDDBBEC1B"
         in captured.out
     )
-    assert "Encryption Algo: DES" in captured.out
+    assert "encryptionAlgo: DES" in captured.out
 
     # Invalid viewstate is Rejected
     monkeypatch.setattr(
@@ -188,7 +188,7 @@ def test_examples_blacklist3r_offline(monkeypatch, capsys):
             "F4F0AC3A8889DFBB6FC9D24275A8F0E523C1FB1A2F3FA0C3F3B36320A80670E1D62D15A16A335F0CB14F8AECE7002A5BD8A980F677EA82666B49167947F0A669"
             in captured.out
         )
-        assert "Encryption Algo: AES" in captured.out
+        assert "encryptionAlgo: AES" in captured.out
 
         # URL Mode - Valid URL is visited, contains viewstate, viewstate is NOT vulnerable
         monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/nonvulnerableviewstate.aspx"])

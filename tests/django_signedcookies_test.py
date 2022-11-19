@@ -15,7 +15,7 @@ def test_django():
     for test in tests:
         found_key = x.check_secret(test[0])
         assert found_key
-        assert found_key["_auth_user_hash"] == test[1]
+        assert found_key["details"]["_auth_user_hash"] == test[1]
 
 
 def test_django_negative():
