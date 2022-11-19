@@ -28,7 +28,6 @@ class ASPNET_Viewstate(BadsecretsBase):
         if len(s.groups()) == 2:
             r = self.check_secret(s.groups()[0], generator=s.groups()[1])
             return r
-        return None
 
     @staticmethod
     def valid_preamble(sourcebytes):
