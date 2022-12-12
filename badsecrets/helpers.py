@@ -1,3 +1,4 @@
+import sys
 import hashlib
 from badsecrets.errors import BadsecretsException
 
@@ -70,3 +71,53 @@ class Csharp_pbkdf1:
 
         self.derivedBytes = bytes([])
         return result
+
+
+def twos_compliment(unsigned):
+    bs = bin(unsigned).replace("0b", "")
+    val = int(bs, 2)
+    b = val.to_bytes(1, byteorder=sys.byteorder, signed=False)
+    return int.from_bytes(b, byteorder=sys.byteorder, signed=True)
+
+
+def getSignedNumber(number, bitLength):
+    mask = (2**bitLength) - 1
+    if number & (1 << (bitLength - 1)):
+        return number | ~mask
+    else:
+        return number & mask
+
+
+class Java_sha1prng:
+    def __init__(self, key):
+        if not isinstance(key, bytes):
+            keyBytes = key.encode()
+        else:
+            keyBytes = key
+        self.seed = hashlib.sha1(keyBytes).digest()
+        self.state = None
+        self.outBytes = b""
+
+        # Simulate setseed()
+        self.state = hashlib.sha1(self.seed).digest()
+        self.outBytes = hashlib.sha1(self.state).digest()
+        self.updateState(self.outBytes)
+
+    def updateState(self, output):
+        last = 1
+        outputBytesArray = bytearray(output)
+        newState = bytearray()
+
+        for c, n in zip(self.state, outputBytesArray):
+            v = twos_compliment(c) + twos_compliment(n) + last
+            finalv = v & 255
+            newState.append(finalv)
+            last = v >> 8
+        self.state = newState
+
+    def get_sha1prng_key(self, outLen):
+        while len(self.outBytes) < outLen:
+            output = hashlib.sha1(self.state).digest()
+            self.outBytes += output
+            self.updateState(output)
+        return self.outBytes[:outLen]
