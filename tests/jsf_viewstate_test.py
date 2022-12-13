@@ -76,6 +76,206 @@ def test_aes():
     assert "AES Encrypted" in r["details"]["info"]
 
 
+# Myfaces JSF
+
+# DES/ECB/SHA1/NoCompression
+def test_myfaces_des_ecb_sha1():
+
+    s = "wHo0wmLu5ceItIi+I7XkEi1GAb4h12WZ894pA+Z4OH7bco2jXEy1RSCWwjtJcZNbWPcvPqL5zzfl03DoeMZfGGX7a9PSv+fUi1LWO6vtZ+EWjhGezWmugJxQ2Eo="
+    x = Jsf_viewstate()
+    r = x.check_secret(s)
+    assert r
+    assert r["secret"]["Hash Key"] == "SnNGOTg3Ni0="
+    assert r["secret"]["Decryption Key"] == "SnNGOTg3Ni0="
+    assert r["secret"]["Decryption Algo"] == "DES"
+    assert r["secret"]["Decryption Mode"] == "ECB"
+    assert r["secret"]["Hash Algo"] == "SHA1"
+    assert r["details"]["compression"] == False
+    assert "JSF Viewstate (Myfaces)" in r["details"]["info"]
+
+
+# DES/CBC/SHA1/NoCompression
+def test_myfaces_des_cbc_sha1():
+
+    s = "Zw1z6gRrHxlOFRhb4WnoOrS9m7bQivOWVyOLggR74US+3hLpcd0gXh9Dv+4WjbsAF2SuwHqnWa3qTjvogQHQMe1sDwbEp8PILVrrsFnl0D0GRjEABRyc0C4zZkg="
+    x = Jsf_viewstate()
+    r = x.check_secret(s)
+    assert r
+    assert r["secret"]["Hash Key"] == "SnNGOTg3Ni0="
+    assert r["secret"]["Decryption Key"] == "SnNGOTg3Ni0="
+    assert r["secret"]["Decryption Algo"] == "DES"
+    assert r["secret"]["Decryption Mode"] == "CBC"
+    assert r["secret"]["Hash Algo"] == "SHA1"
+    assert r["details"]["compression"] == False
+    assert "JSF Viewstate (Myfaces)" in r["details"]["info"]
+
+
+# DES/ No Signature
+
+
+# AES/CBC/SHA1/NoCompression
+def test_myfaces_aes_cbc_sha1():
+
+    s = "jYL4rrAMxAUGTAoHk8nlTnT7dej5+8dWVbTv0liQn/XEm2J6UGxOFyRifCBkmHGrdyRK/2sEXdpu/nl8c0QJkWBNLOI2MDc58fFzo4Gf2UWw4BYzfXSAvq5/2YEICT2hG6Y9WQ=="
+    x = Jsf_viewstate()
+    r = x.check_secret(s)
+    assert r
+    assert r["secret"]["Hash Key"] == "UEFTU1dPUkRQQVNTV09SRA=="
+    assert r["secret"]["Decryption Key"] == "UEFTU1dPUkRQQVNTV09SRA=="
+    assert r["secret"]["Decryption Algo"] == "AES"
+    assert r["secret"]["Decryption Mode"] == "CBC"
+    assert r["secret"]["Hash Algo"] == "SHA1"
+    assert r["secret"]["Decryption IV"] == "UEFTU1dPUkRQQVNTV09SRA=="
+    assert r["details"]["compression"] == False
+    assert "JSF Viewstate (Myfaces)" in r["details"]["info"]
+
+
+# AES/ECB/SHA1/NoCompression
+def test_myfaces_aes_ecb_sha1():
+
+    s = "pBZgkQwn04iTzlwq/D0QMkpyddzl3ZykcI0Z60tu51sS1PGvDaWuG8nIqcH6m+xIupBoUYKfQ29HU4Aj2oQVTsakM34wklFTxBDGibP5G0gGHsYPfBcj66uGNnHY+5pgR9IuSA=="
+    x = Jsf_viewstate()
+    r = x.check_secret(s)
+    assert r
+    assert r["secret"]["Hash Key"] == "UEFTU1dPUkRQQVNTV09SRA=="
+    assert r["secret"]["Decryption Key"] == "UEFTU1dPUkRQQVNTV09SRA=="
+    assert r["secret"]["Decryption Algo"] == "AES"
+    assert r["secret"]["Decryption Mode"] == "ECB"
+    assert r["secret"]["Hash Algo"] == "SHA1"
+    assert r["details"]["compression"] == False
+    assert "JSF Viewstate (Myfaces)" in r["details"]["info"]
+
+
+# 3DES/CBC/SHA1/NoCompression
+def test_myfaces_3des_cbc_sha1():
+
+    s = "ryvk9O4nTbphFjFZNbgb9HZy0f+YFDJZdngV8i+fwGof0LYom4hQfw7kV1kyYI8FMlC/vU0d0oYptIFJKmQ/0A+dGyGMAgCHpsqXdbu8dHZLzVvvTYVyCwSQeZ8="
+    x = Jsf_viewstate()
+    r = x.check_secret(s)
+    assert r
+    assert r["secret"]["Hash Key"] == "M0RFUzNERVMxMjM0MTIzNDU2Nzg1Njc4"
+    assert r["secret"]["Decryption Key"] == "M0RFUzNERVMxMjM0MTIzNDU2Nzg1Njc4"
+    assert r["secret"]["Decryption Algo"] == "DES3"
+    assert r["secret"]["Decryption Mode"] == "CBC"
+    assert r["secret"]["Hash Algo"] == "SHA1"
+    assert r["secret"]["Decryption IV"] == "M0RFUzNERVM="
+    assert r["details"]["compression"] == False
+    assert "JSF Viewstate (Myfaces)" in r["details"]["info"]
+
+
+# 3DES/ECB/SHA1
+def test_myfaces_3des_ecb_sha1():
+
+    s = "YfpcoNIuQKFpaBCzskZ2moZjOVfAXr2duxADqVgkgWOlTqR8sB7xApnKu/O1vJG1qbiy3N6wAfi/2FD5xbi/bp81+ZmL72GV6k3OYCuB3J69jq+b0jOgyJ7uGp8="
+    x = Jsf_viewstate()
+    r = x.check_secret(s)
+    assert r
+    assert r["secret"]["Hash Key"] == "M0RFUzNERVMxMjM0MTIzNDU2Nzg1Njc4"
+    assert r["secret"]["Decryption Key"] == "M0RFUzNERVMxMjM0MTIzNDU2Nzg1Njc4"
+    assert r["secret"]["Decryption Algo"] == "DES3"
+    assert r["secret"]["Decryption Mode"] == "ECB"
+    assert r["secret"]["Hash Algo"] == "SHA1"
+    assert r["details"]["compression"] == False
+    assert "JSF Viewstate (Myfaces)" in r["details"]["info"]
+
+
+# DES/ECB/MD5/NoCompression
+def test_myfaces_des_ecb_md5():
+
+    s = "wHo0wmLu5ceItIi+I7XkEi1GAb4h12WZ894pA+Z4OH7bco2jXEy1RSCWwjtJcZNbWPcvPqL5zzfl03DoeMZfGGX7a9PSv+fUYxZ5XEIOtghaDC4uVpnB4Q=="
+    x = Jsf_viewstate()
+    r = x.check_secret(s)
+    assert r
+    assert r["secret"]["Hash Key"] == "SnNGOTg3Ni0="
+    assert r["secret"]["Decryption Key"] == "SnNGOTg3Ni0="
+    assert r["secret"]["Decryption Algo"] == "DES"
+    assert r["secret"]["Decryption Mode"] == "ECB"
+    assert r["secret"]["Hash Algo"] == "MD5"
+    assert r["details"]["compression"] == False
+    assert "JSF Viewstate (Myfaces)" in r["details"]["info"]
+
+
+# DES/ECB/SHA256/NoCompression
+def test_myfaces_des_ecb_sha256():
+
+    s = "wHo0wmLu5ceItIi+I7XkEi1GAb4h12WZ894pA+Z4OH7bco2jXEy1RSCWwjtJcZNbWPcvPqL5zzfl03DoeMZfGGX7a9PSv+fUKmvYzFYEqvO3FKF1HYNsHLQt/uV13NWzmalZxg+UL+4="
+    x = Jsf_viewstate()
+    r = x.check_secret(s)
+    assert r
+    assert r["secret"]["Hash Key"] == "SnNGOTg3Ni0="
+    assert r["secret"]["Decryption Key"] == "SnNGOTg3Ni0="
+    assert r["secret"]["Decryption Algo"] == "DES"
+    assert r["secret"]["Decryption Mode"] == "ECB"
+    assert r["secret"]["Hash Algo"] == "SHA256"
+    assert r["details"]["compression"] == False
+    assert "JSF Viewstate (Myfaces)" in r["details"]["info"]
+
+
+# DES/ECB/SHA384/NoCompression
+def test_myfaces_des_ecb_sha384():
+
+    s = "wHo0wmLu5ceItIi+I7XkEi1GAb4h12WZ894pA+Z4OH7bco2jXEy1RSCWwjtJcZNbWPcvPqL5zzfl03DoeMZfGGX7a9PSv+fUBrsnBq1D+nb2VllJZZckRZXkfioc95rZ1wlWlvuZwf8VhG5m3lVvhT5h/mAvj/sU"
+    x = Jsf_viewstate()
+    r = x.check_secret(s)
+    assert r
+    assert r["secret"]["Hash Key"] == "SnNGOTg3Ni0="
+    assert r["secret"]["Decryption Key"] == "SnNGOTg3Ni0="
+    assert r["secret"]["Decryption Algo"] == "DES"
+    assert r["secret"]["Decryption Mode"] == "ECB"
+    assert r["secret"]["Hash Algo"] == "SHA384"
+    assert r["details"]["compression"] == False
+    assert "JSF Viewstate (Myfaces)" in r["details"]["info"]
+
+
+# DES/ECB/SHA512/NoCompression
+def test_myfaces_des_ecb_sha512():
+
+    s = "wHo0wmLu5ceItIi+I7XkEi1GAb4h12WZ894pA+Z4OH7bco2jXEy1RSCWwjtJcZNbWPcvPqL5zzfl03DoeMZfGGX7a9PSv+fUT8MAeKNouAGj1dZuO8srXt8xZIGg+wPCWWCzcX6IhWOtgWUwiXeSojCDTKXklsYt+kzlVbk5wOsXvb2lTJoO0Q=="
+    x = Jsf_viewstate()
+    r = x.check_secret(s)
+    assert r
+    assert r["secret"]["Hash Key"] == "SnNGOTg3Ni0="
+    assert r["secret"]["Decryption Key"] == "SnNGOTg3Ni0="
+    assert r["secret"]["Decryption Algo"] == "DES"
+    assert r["secret"]["Decryption Mode"] == "ECB"
+    assert r["secret"]["Hash Algo"] == "SHA512"
+    assert r["details"]["compression"] == False
+    assert "JSF Viewstate (Myfaces)" in r["details"]["info"]
+
+
+# DES/ECB/SHA1/Compression
+def test_myfaces_des_ecb_sha1_compressed():
+
+    s = "8H61sylBH/Ad3thZCGDVLyaso2g499GnjAuqpNapesoJgoo5Zk3nxDqXoWfRDwzmKk6eDLTyWViTRTdnr8Su7+XzW6MMAcZo+Fa7UwdfE4pKJ2+z6OYK58l+/93LHZmgVUF5dqI3G8mLr3uI"
+    x = Jsf_viewstate()
+    r = x.check_secret(s)
+    assert r
+    assert r["secret"]["Hash Key"] == "SnNGOTg3Ni0="
+    assert r["secret"]["Decryption Key"] == "SnNGOTg3Ni0="
+    assert r["secret"]["Decryption Algo"] == "DES"
+    assert r["secret"]["Decryption Mode"] == "ECB"
+    assert r["secret"]["Hash Algo"] == "SHA1"
+    assert r["details"]["compression"] == True
+    assert "JSF Viewstate (Myfaces)" in r["details"]["info"]
+
+
+# 3DES/CBC/SHA1/NoCompression/UnknownIV
+def test_myfaces_3des_cbc_sha1_invalidIV():
+
+    s = "jBWXxyZZx1y12WYHCkj34qUMR+hVvTZOsK6VlaifRn8sXZJKOoW/v3WMZFpCP6+6VVbyv3MpBc2x57Dei+t7zZ6HiltEQqaMv1XnmgRtAWsKb9uiVMlfkcDWwl8="
+    x = Jsf_viewstate()
+    r = x.check_secret(s)
+    assert r
+    assert r["secret"]["Hash Key"] == "M0RFUzNERVMxMjM0MTIzNDU2Nzg1Njc4"
+    assert r["secret"]["Decryption Key"] == "M0RFUzNERVMxMjM0MTIzNDU2Nzg1Njc4"
+    assert r["secret"]["Decryption Algo"] == "DES3"
+    assert r["secret"]["Decryption Mode"] == "CBC"
+    assert r["secret"]["Hash Algo"] == "SHA1"
+    assert r["secret"]["Decryption IV"] == "INVALID"
+    assert r["details"]["compression"] == False
+    assert "JSF Viewstate (Myfaces)" in r["details"]["info"]
+
+
 def test_negative():
 
     s = "QUFBQUFBQUFBQUFBQUFBQUFBQUE="
