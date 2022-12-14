@@ -18,7 +18,7 @@ class Peoplesoft_PSToken(BadsecretsBase):
         try:
             PS_TOKEN_DATA = zlib.decompress(PS_TOKEN[76:])
         except zlib.error:
-            return False
+            return None
 
         username = PS_TOKEN_DATA[21 : 21 + PS_TOKEN_DATA[20]].replace(b"\x00", b"").decode()
 

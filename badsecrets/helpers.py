@@ -80,20 +80,13 @@ def twos_compliment(unsigned):
     return int.from_bytes(b, byteorder=sys.byteorder, signed=True)
 
 
-def getSignedNumber(number, bitLength):
-    mask = (2**bitLength) - 1
-    if number & (1 << (bitLength - 1)):
-        return number | ~mask
-    else:
-        return number & mask
-
-
 class Java_sha1prng:
     def __init__(self, key):
+
+        keyBytes = key
         if not isinstance(key, bytes):
             keyBytes = key.encode()
-        else:
-            keyBytes = key
+
         self.seed = hashlib.sha1(keyBytes).digest()
         self.state = None
         self.outBytes = b""

@@ -58,3 +58,10 @@ def test_sign_enc_dialog_params():
 
     assert r
     assert r["secret"] == test_hashkey
+
+
+def test_malformed_dp():
+
+    x=Telerik_HashKey(include_machinekeys=False)
+    r = x.check_secret("z2r1wMUG5YT66qgXyvpZiSYBdpdh2nUvUhGephVuEok=")
+    assert not r 
