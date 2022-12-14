@@ -161,3 +161,10 @@ def test_encryptionkey_probe_generator():
             r = x.check_secret(encryption_key_probe, key_derive_mode, include_machinekeys=False)
             assert r
             assert r["details"] == {"DialogParameters": "QUFBQUFBQUFBQUFBQUFBQUFBQUE="}
+
+
+def test_malformed_dp():
+
+    x = Telerik_EncryptionKey(include_machinekeys=False)
+    r = x.check_secret("z2r1wMUG5YT66qgXyvpZiSYBdpdh2nUvUhGephVuEok=")
+    assert not r

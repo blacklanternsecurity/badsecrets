@@ -4,6 +4,7 @@ import base64
 import urllib.parse
 from Crypto.Cipher import AES
 from Crypto.Protocol import KDF
+from contextlib import suppress
 from Crypto.Util.Padding import pad
 from badsecrets.helpers import unpad
 from badsecrets.base import BadsecretsBase
@@ -25,11 +26,10 @@ class Telerik_EncryptionKey(BadsecretsBase):
 
         if include_machinekeys:
             for l in self.load_resource("aspnet_machinekeys.txt"):
-                try:
+                with suppress(ValueError):
                     vkey, ekey = l.rstrip().split(",")
-                    yield ekey
-                except ValueError:
-                    continue
+                    if ekey:
+                        yield ekey
         for l in self.load_resource("telerik_encryption_keys.txt"):
             ekey = l.strip()
             yield ekey
