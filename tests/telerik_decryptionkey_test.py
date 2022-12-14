@@ -167,5 +167,4 @@ def test_malformed_dp():
 
     x = Telerik_EncryptionKey(include_machinekeys=False)
     r = x.check_secret("z2r1wMUG5YT66qgXyvpZiSYBdpdh2nUvUhGephVuEok=")
-    assert not r 
-
+    assert not r
