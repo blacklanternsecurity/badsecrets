@@ -39,3 +39,13 @@ def test_peoplesoft_negative():
         "owAAAAQDAgEBAAAAvAIAAAAAAAAsAAAABABTaGRyAk4Abwg4AC4AMQAwABRSZ/l0LBytKLW6TUnZ9GVFdgtqjWMAAAAFAFNkYXRhV3icJYhLDkAwFEVPSwztRFO0gw4lvgMimFuCDVqc17o3OffzAHmmlZJ8NUnlzklHz8rCRjEIpv8dubiZOXANlkZcUUuLbIWWgMFLGtmxh2SPk80Hk6gLyA=="
     )
     assert not found_key
+
+
+def test_peoplesoft_bad_compression():
+
+    x = Peoplesoft_PSToken()
+    found_key = x.check_secret(
+        "qAAAAAQDAgEBAAAAvAIAAAAAAAAsAAAABABTaGRyAk4AdQg4AC4AMQAwABT5mYioG/i325GsBHHNyDIM+9yf1GgAAAAFAFNkYXRhXHicHYfJDUBQAESfJY5O2iDWgwIsJxHcxdaApTvFGX8mefPmAVzHtizta2MSrCzsXBxsnOIt9yo6GvyekZqJmZaBPCUmVUMS2c9MjCmJKLSR/u+laUHPB1obDeg="
+    )
+
+    assert not found_key
