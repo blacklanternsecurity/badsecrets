@@ -69,3 +69,11 @@ def test_rails_malformed():
     x = Rails_SecretKeyBase()
     found_key = x.check_secret("AAECAwQF--AAECAwQF")
     assert not found_key
+
+
+def test_rails_unicode_error():
+
+    x = Rails_SecretKeyBase()
+    found_key = x.check_secret("dUEvRldLekFNcklGZ3ZSbU1XaHJ0ZGxsLzhYTHlNTW43T3BVN05kZXE3WUhQOVVKbVA3Rm5WaSs5eG5QQ1VIRVBzeDFNTnNpZ0xCM1FKbzFZTEJISzhaNzFmVGYzME0waDFURVpCYm5TQlJFRmRFclYzNUZhR3VuN29PMmlkVHBrRi8wb3AwZWgvWmxObkFOYnpkeHR1YWpWZ3lnN0Y4ZW9xSk9LNVlQd0U4MmFsbWtLZUI5VzkzRkM4YXBFWXBWeS9NMTBNZ1RadmU5ZlFnMWVZaXpaZz09--7efe7919a5210cfd1ac4c6228e3ff82c0600d841")
+    assert not found_key
+

@@ -135,10 +135,10 @@ class Jsf_viewstate(BadsecretsBase):
                         iv_guesses = []
                         # the most common misconfiguration will be setting the key as the IV
                         # Todo: Include other common IV possiblities
-                        if dec_algo.__name__ == "Crypto.Cipher.DES3":
+                        if dec_algo.__name__ == "Crypto.Cipher.DES3" or dec_algo.__name__ == "Crypto.Cipher.DES":
                             iv_guesses.append(password_bytes[:8])
                         else:
-                            iv_guesses.append(password_bytes)
+                            iv_guesses.append(password_bytes[:16])
 
                         iv_guesses.append(dec_algo.block_size * b"\x00")
                         iv_guesses.append(dec_algo.block_size * b"\xFF")
@@ -209,7 +209,7 @@ class Jsf_viewstate(BadsecretsBase):
             else:
                 jsf_viewstate_value = base64.b64encode(uncompressed)
 
-        for l in self.load_resource("jsf_viewstate_passwords.txt"):
+        for l in list(self.load_resource("jsf_viewstate_passwords.txt")) + list(self.load_resource("top_10000_passwords.txt")):
             password = l.rstrip()
             if self.DES3_decrypt(jsf_viewstate_value, password):
                 return {
@@ -223,6 +223,7 @@ class Jsf_viewstate(BadsecretsBase):
 
         # Mojarra decryption
         for l in self.load_resource("jsf_viewstate_passwords_b64.txt"):
+
             password_bytes = base64.b64decode(l.rstrip())
             decrypted = self.AES_decrypt(jsf_viewstate_value, password_bytes)
 
