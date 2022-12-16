@@ -1,5 +1,6 @@
 import pytest
 import base64
+import binascii
 import urllib.parse
 from badsecrets import modules_loaded
 from badsecrets.errors import Telerik_EncryptionKey_Exception
@@ -162,9 +163,14 @@ def test_encryptionkey_probe_generator():
             assert r
             assert r["details"] == {"DialogParameters": "QUFBQUFBQUFBQUFBQUFBQUFBQUE="}
 
-
 def test_malformed_dp():
 
     x = Telerik_EncryptionKey(include_machinekeys=False)
     r = x.check_secret("z2r1wMUG5YT66qgXyvpZiSYBdpdh2nUvUhGephVuEok=")
+    assert not r
+
+def test_malformed_b64():
+    
+    x = Telerik_EncryptionKey(include_machinekeys=False)
+    r = x.check_secret("01e8fb7a2a67f5ef3efb27fb85276d927f295fbde6b3e4da378c646de18262f7634386432e3716a4bea164f4eb98e1e7721b82bb66")
     assert not r

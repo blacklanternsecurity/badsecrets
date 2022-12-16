@@ -1,6 +1,7 @@
 import re
 import hmac
 import base64
+import binascii
 import urllib.parse
 from Crypto.Cipher import AES
 from Crypto.Protocol import KDF
@@ -96,7 +97,10 @@ class Telerik_EncryptionKey(BadsecretsBase):
             return None
 
         dialogParametersB64 = urllib.parse.unquote(dialogParameters_raw)
-        dp_enc = base64.b64decode(dialogParametersB64[:-44])
+        try:
+            dp_enc = base64.b64decode(dialogParametersB64[:-44])
+        except binascii.Error:
+            return None
         for key_derive_mode in key_derive_modes:
             for ekey in self.prepare_keylist(include_machinekeys=include_machinekeys):
 
