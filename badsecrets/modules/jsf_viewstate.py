@@ -27,7 +27,7 @@ class Jsf_viewstate(BadsecretsBase):
         return uncompressed
 
     def carve_regex(self):
-        return re.compile(r"<input.+name=\"javax\.faces\.ViewState\".+value=\"([^\"]*)\"")
+        return re.compile(r"<input.+?name=\"javax\.faces\.ViewState\".+?value=\"([^\"]*)\"")
 
     # Mojarra 1.2.x - 2.0.3
     def DES3_decrypt(self, ct, password):
