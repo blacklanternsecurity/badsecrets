@@ -1,6 +1,5 @@
 import pytest
 import base64
-import binascii
 import urllib.parse
 from badsecrets import modules_loaded
 from badsecrets.errors import Telerik_EncryptionKey_Exception
