@@ -1,9 +1,11 @@
 import re
 import hmac
 import base64
+import binascii
 import urllib.parse
 from Crypto.Cipher import AES
 from Crypto.Protocol import KDF
+from contextlib import suppress
 from Crypto.Util.Padding import pad
 from badsecrets.helpers import unpad
 from badsecrets.base import BadsecretsBase
@@ -25,11 +27,10 @@ class Telerik_EncryptionKey(BadsecretsBase):
 
         if include_machinekeys:
             for l in self.load_resource("aspnet_machinekeys.txt"):
-                try:
+                with suppress(ValueError):
                     vkey, ekey = l.rstrip().split(",")
-                    yield ekey
-                except ValueError:
-                    continue
+                    if ekey:
+                        yield ekey
         for l in self.load_resource("telerik_encryption_keys.txt"):
             ekey = l.strip()
             yield ekey
@@ -96,7 +97,10 @@ class Telerik_EncryptionKey(BadsecretsBase):
             return None
 
         dialogParametersB64 = urllib.parse.unquote(dialogParameters_raw)
-        dp_enc = base64.b64decode(dialogParametersB64[:-44])
+        try:
+            dp_enc = base64.b64decode(dialogParametersB64[:-44])
+        except binascii.Error:
+            return None
         for key_derive_mode in key_derive_modes:
             for ekey in self.prepare_keylist(include_machinekeys=include_machinekeys):
 
