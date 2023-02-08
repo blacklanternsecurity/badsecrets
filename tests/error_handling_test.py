@@ -4,6 +4,7 @@ import random
 import string
 import os
 
+
 # Handle bad custom resource
 def test_handle_bad_resource():
     for module_name, mod in modules_loaded.items():
@@ -26,7 +27,6 @@ def test_load_resource():
 
 
 def test_use_custom_resource():
-
     Generic_JWT = modules_loaded["generic_jwt"]
 
     x = Generic_JWT(
@@ -39,7 +39,6 @@ def test_use_custom_resource():
 
 
 def test_identity_non_match():
-
     Generic_JWT = modules_loaded["generic_jwt"]
     x = Generic_JWT()
     r = x.check_secret("N0T_Val1D")

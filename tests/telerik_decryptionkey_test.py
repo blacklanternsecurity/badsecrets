@@ -99,7 +99,6 @@ def test_derive_keys_error_handling():
 
 
 def test_csharp_pbkdf1_error_handling():
-
     # try a key that isn't bytes
     with pytest.raises(Csharp_pbkdf1_exception):
         csharp_pbkdf1 = Csharp_pbkdf1("string", b"salt", 100)
@@ -120,7 +119,6 @@ def test_csharp_pbkdf1_error_handling():
 
 
 def test_csharp_ppkdf1_accuracy():
-
     testing_password = b"6YXEG7IH4XYNKdt772p2ni6nbeDT772P2NI6NBE4@"
     testing_salt = bytes([58, 84, 91, 25, 10, 34, 29, 68, 60, 88, 44, 51, 1])
 
@@ -148,7 +146,6 @@ def test_csharp_ppkdf1_accuracy():
 
 
 def test_encryptionkey_probe_generator():
-
     x = Telerik_EncryptionKey()
 
     test_hashkey = "6YXEG7IH4XYNKdt772p2ni6nbeDT772P2NI6NBE4@"
@@ -157,21 +154,18 @@ def test_encryptionkey_probe_generator():
         for encryption_key_probe, encryption_key in x.encryptionkey_probe_generator(
             test_hashkey, key_derive_mode, include_machinekeys=False
         ):
-
             r = x.check_secret(encryption_key_probe, key_derive_mode, include_machinekeys=False)
             assert r
             assert r["details"] == {"DialogParameters": "QUFBQUFBQUFBQUFBQUFBQUFBQUE="}
 
 
 def test_malformed_dp():
-
     x = Telerik_EncryptionKey(include_machinekeys=False)
     r = x.check_secret("z2r1wMUG5YT66qgXyvpZiSYBdpdh2nUvUhGephVuEok=")
     assert not r
 
 
 def test_malformed_b64():
-
     x = Telerik_EncryptionKey(include_machinekeys=False)
     r = x.check_secret(
         "01e8fb7a2a67f5ef3efb27fb85276d927f295fbde6b3e4da378c646de18262f7634386432e3716a4bea164f4eb98e1e7721b82bb66"

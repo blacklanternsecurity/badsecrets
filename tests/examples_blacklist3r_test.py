@@ -45,7 +45,6 @@ no_viewstate_page = "<html>Just a website</html>"
 
 
 def test_examples_blacklist3r_manual(monkeypatch, capsys):
-
     # Valid Viewstate Unencrypted W/Generator
     monkeypatch.setattr(
         "sys.argv",
@@ -134,9 +133,7 @@ def test_examples_blacklist3r_manual(monkeypatch, capsys):
 
 
 def test_examples_blacklist3r_offline(monkeypatch, capsys):
-
     with patch("sys.exit") as exit_mock:
-
         # Invalid URL is rejected
         monkeypatch.setattr("sys.argv", ["python", "--url", "hxxp://notaurl"])
         blacklist3r.main()
@@ -145,8 +142,7 @@ def test_examples_blacklist3r_offline(monkeypatch, capsys):
         assert "error: One of --url or --viewstate is required" in captured.err
 
     with patch("sys.exit") as exit_mock:
-
-        # Both URL and viewstate are supplied - rejected appropritely
+        # Both URL and viewstate are supplied - rejected appropriately
         monkeypatch.setattr(
             "sys.argv",
             [
@@ -163,7 +159,6 @@ def test_examples_blacklist3r_offline(monkeypatch, capsys):
         assert "error: --viewstate/--generator options and --url option are mutually exclusive" in captured.err
 
     with requests_mock.Mocker() as m:
-
         m.get(
             f"http://example.com/vulnerableviewstate.aspx",
             status_code=200,

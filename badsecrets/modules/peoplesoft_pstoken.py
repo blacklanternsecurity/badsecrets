@@ -5,12 +5,10 @@ from badsecrets.base import BadsecretsBase, generic_base64_regex
 
 
 class Peoplesoft_PSToken(BadsecretsBase):
-
     identify_regex = generic_base64_regex
     description = {"Product": "Peoplesoft PS_TOKEN", "Secret": "Peoplesoft Secret"}
 
     def check_secret(self, PS_TOKEN_B64):
-
         if not self.identify(PS_TOKEN_B64):
             return None
         PS_TOKEN = base64.b64decode(PS_TOKEN_B64)

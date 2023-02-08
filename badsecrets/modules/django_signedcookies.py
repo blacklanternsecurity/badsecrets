@@ -4,7 +4,6 @@ from badsecrets.base import BadsecretsBase
 
 
 class DjangoSignedCookies(BadsecretsBase):
-
     identify_regex = re.compile(r"^[\.a-zA-z-0-9]+:[\.a-zA-z-0-9:]+$")
     description = {"Product": "Djangno Signed Cookie", "Secret": "Django secret_key"}
 

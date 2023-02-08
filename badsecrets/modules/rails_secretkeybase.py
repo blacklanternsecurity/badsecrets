@@ -11,12 +11,10 @@ from badsecrets.base import BadsecretsBase
 
 
 class Rails_SecretKeyBase(BadsecretsBase):
-
     identify_regex = re.compile(r"^[\.a-zA-z-0-9\%=]{32,}--[\.a-zA-z-0-9%=]{16,}$")
     description = {"Product": "Rails Signed Cookie", "Secret": "Rails secret_key_base"}
 
     def rails(self, rails_cookie, secret_key_base):
-
         split_rails_cookie = urllib.parse.unquote(rails_cookie).split("--")
         data = split_rails_cookie[0]
 
@@ -34,7 +32,6 @@ class Rails_SecretKeyBase(BadsecretsBase):
 
         # Cookie is likely Rails 4/5/6 AES-CBC Cookie
         elif len(split_rails_cookie) == 2:
-
             try:
                 encrypted_data = base64.b64decode(data).decode()
                 iv = encrypted_data.split("--")[1]
@@ -66,7 +63,6 @@ class Rails_SecretKeyBase(BadsecretsBase):
                 return None
 
     def check_secret(self, rails_cookie):
-
         if not self.identify(rails_cookie):
             return None
         for l in self.load_resource("rails_secret_key_base.txt"):
