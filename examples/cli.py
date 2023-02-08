@@ -97,6 +97,6 @@ def main():
 
 if __name__ == "__main__":
     print("badsecrets - example command line interface\n")
-    print("Black Lantern Security - https://blacklanternsecurity.com")
+    print("Black Lantern Security - https://www.blacklanternsecurity.com")
     print("@paulmmueller\n")
     main()
