@@ -32,12 +32,12 @@ Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a de
 
 Bad secrets includes an [example CLI](https://github.com/blacklanternsecurity/badsecrets/blob/dev/examples/blacklist3r.py) for convenience when manually checking secrets. It also has a URL mode, which will connect to a target and attempt to carve for cryptographic products and check any it finds against all modules. 
 
-Basic usage - checking a crytographic product for a known secret (against all modules):
+* Basic usage - checking a crytographic product for a known secret (against all modules):
 ```
 python examples/cli.py eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo
 ```
 
-URL Mode - Connecting to a target and carving for a cryptographic product, and if found checking it for known secrets (against all modules):
+* URL Mode - Connecting to a target and carving for a cryptographic product, and if found checking it for known secrets (against all modules):
 
 ```
 python examples/cli.py --url http://example.com/contains_bad_secret.html
