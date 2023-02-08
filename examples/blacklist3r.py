@@ -52,7 +52,6 @@ def validate_url(
 
 
 def main():
-
     viewstate = None
     generator = "0000"
 
@@ -96,7 +95,6 @@ def main():
         proxies = {"http": args.proxy, "https": args.proxy}
 
     if args.url:
-
         headers = {}
         if args.user_agent:
             headers["User-agent"] = args.user_agent
@@ -131,4 +129,8 @@ def main():
 
 
 if __name__ == "__main__":
+    print("badsecrets - python 'blacklist3r' tool")
+    print("Inspired by blacklist3r  - https://github.com/NotSoSecure/Blacklist3r\n")
+    print("Black Lantern Security - https://blacklanternsecurity.com")
+    print("@paulmmueller\n")
     main()

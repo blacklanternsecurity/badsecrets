@@ -46,7 +46,6 @@ Sys.Application.add_init(function() {
 
 
 def test_carve_aspnet_viewstate():
-
     x = ASPNET_Viewstate()
     r = x.carve(aspnet_viewstate_sample)
     print(r)
@@ -61,7 +60,6 @@ def test_carve_aspnet_viewstate():
 
 
 def test_carve_telerik():
-
     x = Telerik_HashKey()
     r = x.carve(telerik_dialogparameters_sample)
     print(r)
@@ -79,9 +77,7 @@ def test_carve_telerik():
 
 
 def test_carve_cookies():
-
     with requests_mock.Mocker() as m:
-
         # peoplesoft_pstoken
         x = Peoplesoft_PSToken()
 
@@ -216,7 +212,6 @@ def test_carve_cookies():
 
 
 def test_multiple_results():
-
     with requests_mock.Mocker() as m:
         # rails_secretkeybase
         x = Rails_SecretKeyBase()
@@ -250,7 +245,6 @@ def test_multiple_results():
 
 
 def test_generic_jwt_body_carve():
-
     jwt_html = """
     <html>
 <head>
@@ -280,7 +274,6 @@ def test_generic_jwt_body_carve():
 
 
 def test_carve_negative():
-
     x = Generic_JWT()
     useless_html = """
     <html>
@@ -326,7 +319,6 @@ def test_carve_negative():
 
 
 def test_invalid_carve_args():
-
     useless_html = """
     <html>
     <head>
@@ -361,7 +353,6 @@ def test_invalid_carve_args():
 
 
 def test_cookie_dict():
-
     useless_html = """
     <html>
     <head>

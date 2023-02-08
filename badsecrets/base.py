@@ -11,7 +11,6 @@ generic_base64_regex = re.compile(
 
 
 class BadsecretsBase:
-
     identify_regex = re.compile(r".+")
     description = {"Product": "Undefined", "Secret": "Undefined"}
 
@@ -25,6 +24,8 @@ class BadsecretsBase:
         "AES": hashlib.sha1,
         "3DES": hashlib.sha1,
     }
+
+    check_secret_args = 1
 
     def __init__(self, **kwargs):
         setattr(self, "custom_resource", kwargs.get("custom_resource", None))
@@ -44,7 +45,6 @@ class BadsecretsBase:
         return self.description
 
     def load_resource(self, resource):
-
         if self.custom_resource:
             filepath = self.custom_resource
         else:
@@ -64,14 +64,12 @@ class BadsecretsBase:
         return None
 
     def carve(self, body=None, cookies=None, requests_response=None):
-
         results = []
 
         if not body and not cookies and not requests_response:
             raise badsecrets.errors.CarveException("Either body/cookies or requests_response required")
 
         if requests_response:
-
             if body or cookies:
                 raise badsecrets.errors.CarveException("Body/cookies and requests_response cannot both be set")
 
@@ -94,7 +92,6 @@ class BadsecretsBase:
             if type(body) != str:
                 raise badsecrets.errors.CarveException("Body argument must be type str")
             if self.carve_regex():
-
                 s = re.search(self.carve_regex(), body)
                 if s:
                     r = self.carve_to_check_secret(s)
@@ -122,10 +119,10 @@ class BadsecretsBase:
             return items
 
 
-def check_all_modules(secret):
+def check_all_modules(*args):
     for m in BadsecretsBase.__subclasses__():
         x = m()
-        r = x.check_secret(secret)
+        r = x.check_secret(*args[0 : x.check_secret_args])
         if r:
             r["detecting_module"] = m.__name__
             return r

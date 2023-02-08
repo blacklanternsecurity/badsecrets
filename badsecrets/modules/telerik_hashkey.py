@@ -8,7 +8,6 @@ from badsecrets.base import BadsecretsBase
 
 
 class Telerik_HashKey(BadsecretsBase):
-
     identify_regex = re.compile(r"^(?:[A-Za-z0-9+\/=%]{32,})$")
     description = {"Product": "Telerik DialogParameters", "Secret": "Telerik.Upload.ConfigurationHashKey"}
 
@@ -16,7 +15,6 @@ class Telerik_HashKey(BadsecretsBase):
         return re.compile(r"{\"SerializedParameters\":\"([^\"]*)\"")
 
     def prepare_keylist(self, include_machinekeys=True):
-
         if include_machinekeys:
             for l in self.load_resource("aspnet_machinekeys.txt"):
                 try:
