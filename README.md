@@ -28,6 +28,42 @@ Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a de
 ## Examples
 
 
+### cli.py
+
+Bad secrets includes an [example CLI](https://github.com/blacklanternsecurity/badsecrets/blob/dev/examples/blacklist3r.py) for convenience when manually checking secrets. It also has a URL mode, which will connect to a target and attempt to carve for cryptographic products and check any it finds against all modules. 
+
+* Basic usage - checking a crytographic product for a known secret (against all modules):
+```
+python examples/cli.py eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo
+```
+
+* URL Mode - Connecting to a target and carving for a cryptographic product, and if found checking it for known secrets (against all modules):
+
+```
+python examples/cli.py --url http://example.com/contains_bad_secret.html
+```
+
+You can also set a custom user-agent with `--user-agent "user-agent string"` or a proxy with `--proxy http://127.0.0.1` in this mode.
+
+Example output:
+
+```
+$ python examples/cli.py eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo
+badsecrets - example command line interface
+
+Black Lantern Security - https://www.blacklanternsecurity.com
+@paulmmueller
+
+***********************
+Known Secret Found!
+
+Detecting Module: Generic_JWT
+
+Secret: 1234
+Details: {'Issuer': 'Issuer', 'Username': 'BadSecrets', 'exp': 1593133483, 'iat': 1466903083, 'jwt_headers': {'alg': 'HS256'}}
+***********************
+```
+
 ### Blacklist3r.py
 
 Bad secrets includes a [fully functional CLI example](https://github.com/blacklanternsecurity/badsecrets/blob/dev/examples/blacklist3r.py) which replicates the functionality of [blacklist3r](https://github.com/NotSoSecure/Blacklist3r) in python examples/blacklist3r. 

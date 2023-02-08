@@ -19,13 +19,11 @@ tests = [
 def test_peoplesoft():
     x = Peoplesoft_PSToken()
     for test in tests:
-
         found_key = x.check_secret(test[2])
         assert found_key["secret"] == f"Username: {test[0]} Password: {test[1]}"
 
 
 def test_peoplesoft_negative():
-
     # Token doesn't decode properly
     x = Peoplesoft_PSToken()
     found_key = x.check_secret(
@@ -42,7 +40,6 @@ def test_peoplesoft_negative():
 
 
 def test_peoplesoft_bad_compression():
-
     x = Peoplesoft_PSToken()
     found_key = x.check_secret(
         "qAAAAAQDAgEBAAAAvAIAAAAAAAAsAAAABABTaGRyAk4AdQg4AC4AMQAwABT5mYioG/i325GsBHHNyDIM+9yf1GgAAAAFAFNkYXRhXHicHYfJDUBQAESfJY5O2iDWgwIsJxHcxdaApTvFGX8mefPmAVzHtizta2MSrCzsXBxsnOIt9yo6GvyekZqJmZaBPCUmVUMS2c9MjCmJKLSR/u+laUHPB1obDeg="

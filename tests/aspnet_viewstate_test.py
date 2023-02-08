@@ -136,11 +136,9 @@ modifier = "EDD8C9AE"
 
 
 def test_viewstates():
-
     x = ASPNETViewstate()
 
     for test in tests:
-
         print(test[0])
 
         found_key = x.check_secret(test[3], modifier)
@@ -181,7 +179,6 @@ def test_bad_sourcefile():
 
 
 def test_viewstate_negative():
-
     x = ASPNETViewstate()
     found_key = x.check_secret(
         "KLox5XeGYfb7Lo8zFzr1YepUagXuixcxX55lpFht+rrW6VGheZi831vdusH6DCMfxIhsLG1EPU3BadSecretsXBc/fj0ew15TQ1zBmmKWJVns4=",
@@ -191,7 +188,6 @@ def test_viewstate_negative():
 
 
 def test_viewstate_alt_keys():
-
     x = ASPNETViewstate()
     alt_val_key = "1072571233BFEF38A826132393CE26DAA961DC1B690B717AC7F163307C3621423A57BD0ACD88414E7DD1C9A09BDCC7AC62CB70A01636FFB3DB3B105962AC3AB3"
     alt_enc_key = "D25D27814E26F3911BF59FDCC86B20EAB603E7F0265E3756C0A121790B169167"

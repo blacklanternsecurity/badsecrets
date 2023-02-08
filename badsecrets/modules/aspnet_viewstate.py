@@ -15,6 +15,7 @@ from badsecrets.base import BadsecretsBase, generic_base64_regex
 
 
 class ASPNET_Viewstate(BadsecretsBase):
+    check_secret_args = 2
 
     identify_regex = generic_base64_regex
     description = {"Product": "ASP.NET Viewstate", "Secret": "ASP.NET MachineKey"}
@@ -127,7 +128,6 @@ class ASPNET_Viewstate(BadsecretsBase):
         return None
 
     def check_secret(self, viewstate_B64, generator="0000"):
-
         if not self.identify(viewstate_B64):
             return None
 

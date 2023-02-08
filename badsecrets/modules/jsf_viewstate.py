@@ -12,7 +12,6 @@ from badsecrets.base import BadsecretsBase, generic_base64_regex
 
 
 class Jsf_viewstate(BadsecretsBase):
-
     myfaces_candidate_decryption_algorithms = [DES3, AES, DES]
 
     identify_regex = generic_base64_regex
@@ -31,7 +30,6 @@ class Jsf_viewstate(BadsecretsBase):
 
     # Mojarra 1.2.x - 2.0.3
     def DES3_decrypt(self, ct, password):
-
         x = Java_sha1prng(password)
         derivedKey = x.get_sha1prng_key(24)
         cipher = DES3.new(
@@ -67,7 +65,6 @@ class Jsf_viewstate(BadsecretsBase):
             return pt_b64
 
     def myfaces_mac(self, ct_bytes, password_bytes):
-
         candidate_hash_algs = list(self.hash_sizes.keys())
         for hash_alg in candidate_hash_algs:
             data = ct_bytes[: -self.hash_sizes[hash_alg]]
@@ -87,7 +84,6 @@ class Jsf_viewstate(BadsecretsBase):
                 decrypted = uncompressed
 
         if b"java." in decrypted:
-
             # instead of b64 encoding and looking for rO0, stay in bytes and look for as many as you can
             if b"\xAC\xED\x00\x05" in decrypted and ord(bytes([decrypted[4]])) in list(range(112, 126)):
                 return (True, True, uncompressed)
@@ -98,11 +94,9 @@ class Jsf_viewstate(BadsecretsBase):
     def myfaces_decrypt(self, ct_bytes, password_bytes, dec_algos, hash_sizes):
         invalid_iv_match = None
         for hash_size in hash_sizes:
-
             encrypted_data = ct_bytes[:-hash_size]
 
             for dec_algo in dec_algos:
-
                 if str(dec_algo.__name__) == "Crypto.Cipher.DES" and len(password_bytes) != 8:
                     continue
 
@@ -113,7 +107,6 @@ class Jsf_viewstate(BadsecretsBase):
                     continue
 
                 for cipher_mode in ["CBC", "ECB"]:
-
                     if cipher_mode == "ECB":
                         cipher = dec_algo.new(password_bytes, dec_algo.MODE_ECB)
                         try:
@@ -182,7 +175,6 @@ class Jsf_viewstate(BadsecretsBase):
             return (None, None, None, None, None)
 
     def check_secret(self, jsf_viewstate_value):
-
         jsf_viewstate_value = urllib.parse.unquote(jsf_viewstate_value)
 
         if jsf_viewstate_value.startswith("rO0"):
@@ -199,10 +191,10 @@ class Jsf_viewstate(BadsecretsBase):
         if uncompressed:
             if b"java." in uncompressed:
                 return {
-                    "secret": "UNPROTECTED",
+                    "secret": "UNPROTECTED (COMPRESSED)",
                     "details": {
                         "source": jsf_viewstate_value,
-                        "info": "JSF Viewstate (Unprotected)",
+                        "info": "JSF Viewstate (Unprotected, Compressed)",
                         "compression": True,
                     },
                 }
@@ -225,7 +217,6 @@ class Jsf_viewstate(BadsecretsBase):
 
         # Mojarra decryption
         for l in self.load_resource("jsf_viewstate_passwords_b64.txt"):
-
             password_bytes = base64.b64decode(l.rstrip())
             decrypted = self.AES_decrypt(jsf_viewstate_value, password_bytes)
 

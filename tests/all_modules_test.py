@@ -96,7 +96,6 @@ def test_carve_all_body():
 
 
 def test_carve_all_cookies():
-
     cookies = {
         "random-cookie": "useless_data",
         "rails_session": "eyJfcmFpbHMiOnsibWVzc2FnZSI6IklraGxiR3h2TENCSklHRnRJR0VnYzJsbmJtVmtJSEpoYVd4ek5pQkRiMjlyYVdVaElnPT0iLCJleHAiOm51bGwsInB1ciI6ImNvb2tpZS5zaWduZWQifX0%3D--eb1ea3ddc55deb16ffc58ac165edfbb554067edc",

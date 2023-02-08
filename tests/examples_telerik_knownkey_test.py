@@ -91,7 +91,6 @@ def PBKDF1_MS_version_probe_matcher_incorrect(request):
 
 
 def test_examples_telerik_knownkey_argparsing(monkeypatch, capsys):
-
     # URL is required
     monkeypatch.setattr(
         "sys.argv",
@@ -123,7 +122,6 @@ def test_examples_telerik_knownkey_argparsing(monkeypatch, capsys):
 def test_non_telerik_ui(monkeypatch, capsys):
     # Non-Telerk UI is detected
     with requests_mock.Mocker() as m:
-
         m.get(
             f"http://nottelerik.com/Telerik.Web.UI.DialogHandler.aspx",
             status_code=200,
@@ -140,7 +138,6 @@ def test_non_telerik_ui(monkeypatch, capsys):
 
 
 def test_url_not_up(monkeypatch, capsys):
-
     with requests_mock.Mocker() as m:
         # URL is down - handled correctly
 
@@ -152,7 +149,6 @@ def test_url_not_up(monkeypatch, capsys):
 
 
 def test_full_run_PBKDF2(monkeypatch, capsys, mocker):
-
     mocker.patch.object(
         Telerik_EncryptionKey,
         "prepare_keylist",
@@ -203,7 +199,6 @@ def test_full_run_PBKDF2(monkeypatch, capsys, mocker):
 
 
 def test_full_run_PBKDF1_MS(monkeypatch, capsys, mocker):
-
     mocker.patch.object(
         Telerik_EncryptionKey,
         "prepare_keylist",
