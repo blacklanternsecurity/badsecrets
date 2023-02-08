@@ -1,6 +1,5 @@
 import os
 import sys
-import requests
 import requests_mock
 from mock import patch
 
