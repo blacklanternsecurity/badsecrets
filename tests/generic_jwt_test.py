@@ -22,7 +22,6 @@ def test_generic_jwt_rsa():
 
 
 def test_generic_jwt_negative():
-
     x = Generic_JWT()
     found_key = x.check_secret(
         "eyJhbGciOiJIGzI4NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVcEVEbEFtESI6IkJhZFNlE3JldHMiLCJlEHAiOjE1OTMxMzE0ODMsImlhdEI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo"

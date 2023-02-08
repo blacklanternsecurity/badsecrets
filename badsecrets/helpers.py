@@ -13,7 +13,6 @@ class Csharp_pbkdf1_exception(BadsecretsException):
 
 class Csharp_pbkdf1:
     def __init__(self, passwordBytes, saltBytes, iterations):
-
         self.passwordBytes = passwordBytes
         self.saltBytes = saltBytes
         self.iterations = iterations
@@ -37,7 +36,6 @@ class Csharp_pbkdf1:
         self.ctrl = 1
 
     def GetBytes(self, keylen):
-
         if not isinstance(keylen, int):
             raise Csharp_pbkdf1_exception("GetBytes() must be called with an int")
 
@@ -46,7 +44,6 @@ class Csharp_pbkdf1:
         if len(self.extra) > 0:
             self.magic_number = len(self.extra) - self.extra_count
             if self.magic_number >= keylen:
-
                 result.extend(self.extra[self.extra_count : self.extra_count + keylen])
                 if self.magic_number > keylen:
                     self.extra_count += keylen
@@ -65,7 +62,6 @@ class Csharp_pbkdf1:
         result.extend(self.derivedBytes[: keylen - self.magic_number])
 
         if (len(self.derivedBytes) + self.magic_number) > keylen:
-
             self.extra = self.derivedBytes
             self.extra_count = keylen - self.magic_number
 
@@ -82,7 +78,6 @@ def twos_compliment(unsigned):
 
 class Java_sha1prng:
     def __init__(self, key):
-
         keyBytes = key
         if not isinstance(key, bytes):
             keyBytes = key.encode()

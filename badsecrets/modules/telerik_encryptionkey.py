@@ -16,7 +16,6 @@ telerik_hardcoded_salt = [58, 84, 91, 25, 10, 34, 29, 68, 60, 88, 44, 51, 1]
 
 
 class Telerik_EncryptionKey(BadsecretsBase):
-
     identify_regex = re.compile(r"^(?:[A-Za-z0-9+\/=%]{32,})$")
     description = {"Product": "Telerik DialogParameters", "Secret": "Telerik.Web.UI.DialogParametersEncryptionKey"}
 
@@ -24,7 +23,6 @@ class Telerik_EncryptionKey(BadsecretsBase):
         return re.compile(r"{\"SerializedParameters\":\"([^\"]*)\"")
 
     def prepare_keylist(self, include_machinekeys=False):
-
         if include_machinekeys:
             for l in self.load_resource("aspnet_machinekeys.txt"):
                 with suppress(ValueError):
@@ -57,7 +55,6 @@ class Telerik_EncryptionKey(BadsecretsBase):
 
     @classmethod
     def telerik_encrypt(self, derivedKey, derivedIV, dialog_parameters_pt):
-
         cipher = AES.new(derivedKey, AES.MODE_CBC, derivedIV)
         dialog_parameters_b64 = base64.b64encode(dialog_parameters_pt.encode()).decode().encode("utf-16le")
         dialog_parameters_raw = pad(dialog_parameters_b64, AES.block_size)
@@ -87,7 +84,6 @@ class Telerik_EncryptionKey(BadsecretsBase):
         return dialog_parameters
 
     def check_secret(self, dialogParameters_raw, key_derive_mode=None, include_machinekeys=False):
-
         if not key_derive_mode:
             key_derive_modes = ["PBKDF1_MS", "PBKDF2"]
         else:
@@ -103,7 +99,6 @@ class Telerik_EncryptionKey(BadsecretsBase):
             return None
         for key_derive_mode in key_derive_modes:
             for ekey in self.prepare_keylist(include_machinekeys=include_machinekeys):
-
                 derivedKey, derivedIV = self.telerik_derivekeys(ekey, key_derive_mode)
                 dialog_parameters = self.telerik_decrypt(derivedKey, derivedIV, dp_enc)
                 if not dialog_parameters:
