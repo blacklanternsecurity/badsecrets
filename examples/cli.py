@@ -94,6 +94,7 @@ def main():
         else:
             print("No secrets found :(")
 
+
 if __name__ == "__main__":
     print("badsecrets - example command line interface\n")
     print("Black Lantern Security - https://blacklanternsecurity.com")
