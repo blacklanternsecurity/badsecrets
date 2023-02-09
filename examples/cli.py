@@ -5,6 +5,11 @@ import sys
 import os
 import re
 
+from urllib3.exceptions import InsecureRequestWarning
+
+# Suppress only the single warning from urllib3 needed.
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
