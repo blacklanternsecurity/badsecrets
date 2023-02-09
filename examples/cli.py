@@ -5,6 +5,11 @@ import sys
 import os
 import re
 
+from urllib3.exceptions import InsecureRequestWarning
+
+# Suppress only the single warning from urllib3 needed.
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
@@ -16,7 +21,14 @@ def report_finding(x):
     print(f"Secret: {x['secret']}")
     if x["details"] != None:
         print(f"Details: {x['details']}")
+
+
+def report_identify(x):
     print("***********************")
+    print("Cryptographic Product Identified (no vulnerability)\n")
+    print(f"Detecting Module: {x['detecting_module']}\n")
+    print(f"Product: {x['description']['Product']}")
+    print(f"Secret: {x['description']['Secret']}")
 
 
 def validate_url(
@@ -83,7 +95,10 @@ def main():
         r_list = carve_all_modules(requests_response=res)
         if r_list:
             for r in r_list:
-                report_finding(r)
+                if r["type"] == "IdentifyOnly":
+                    report_identify(r)
+                else:
+                    report_finding(r)
         else:
             print("No secrets found :(")
 
