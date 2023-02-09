@@ -83,7 +83,8 @@ def main():
         r_list = carve_all_modules(requests_response=res)
         if r_list:
             for r in r_list:
-                report_finding(r)
+                if r["type"] != "IdentifyOnly":
+                    report_finding(r)
         else:
             print("No secrets found :(")
 
