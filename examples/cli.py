@@ -16,7 +16,14 @@ def report_finding(x):
     print(f"Secret: {x['secret']}")
     if x["details"] != None:
         print(f"Details: {x['details']}")
+
+
+def report_identify(x):
     print("***********************")
+    print("Cryptographic Product Identified (no vulnerability)\n")
+    print(f"Detecting Module: {x['detecting_module']}\n")
+    print(f"Product: {x['description']['Product']}")
+    print(f"Secret: {x['description']['Secret']}")
 
 
 def validate_url(
@@ -83,7 +90,9 @@ def main():
         r_list = carve_all_modules(requests_response=res)
         if r_list:
             for r in r_list:
-                if r["type"] != "IdentifyOnly":
+                if r["type"] == "IdentifyOnly":
+                    report_identify(r)
+                else:
                     report_finding(r)
         else:
             print("No secrets found :(")
