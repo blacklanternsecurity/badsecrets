@@ -18,6 +18,17 @@ base_vulnerable_page = """
 </html>
 """
 
+base_identifyonly_page = """
+<html>
+<head>
+</head>
+<body>
+<p>test</p>
+<p> heres a JWT for fun: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_zzzzzzz"</p>
+</body>
+</html>
+"""
+
 base_non_vulnerable_page = "<html>Just a website</html>"
 
 
@@ -92,3 +103,17 @@ def test_example_cli_not_vulnerable_url(monkeypatch, capsys):
         cli.main()
         captured = capsys.readouterr()
         assert "No secrets found :(" in captured.out
+
+
+def test_example_cli_identifyonly_url(monkeypatch, capsys):
+    with requests_mock.Mocker() as m:
+        m.get(
+            f"http://example.com/identifyonly.html",
+            status_code=200,
+            text=base_identifyonly_page,
+        )
+
+        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/identifyonly.html"])
+        cli.main()
+        captured = capsys.readouterr()
+        assert "Cryptographic Product Identified (no vulnerability)" in captured.out
