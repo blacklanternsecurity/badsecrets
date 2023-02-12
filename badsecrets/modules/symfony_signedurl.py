@@ -1,7 +1,6 @@
 import re
 import base64
 import hmac
-import hashlib
 
 from badsecrets.base import BadsecretsBase
 
