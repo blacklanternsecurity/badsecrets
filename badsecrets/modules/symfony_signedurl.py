@@ -1,6 +1,7 @@
 import re
-import base64
 import hmac
+import base64
+
 
 from badsecrets.base import BadsecretsBase
 
@@ -8,13 +9,11 @@ from badsecrets.base import BadsecretsBase
 
 
 class Symfony_SignedURL(BadsecretsBase):
-    identify_regex = re.compile(r"http(?:s)?:\/\/[^\/]+\/_fragment[^\s]+_hash=[\/a-zA-z-0-9\+=%]{44,132}")
+    identify_regex = re.compile(r"http(?:s)?:\/\/[^\/]+\/_fragment[^\s]+_hash=[\/a-zA-z-0-9\+=%]{24,132}")
     description = {"Product": "Symfony Signed URL", "Secret": "Symfony APP_SECRET"}
 
-    "https://localhost/_fragment?_path=_controller%3Dsystem%26command%3Did%26return_value%3Dnull&_hash=Xnsvx/yLVQaimEd1CfepgH0rEXr422JnRSn/uaCE3gs="
-
     def carve_regex(self):
-        return re.compile(r"(http(?:s)?:\/\/[^\/]+\/_fragment[^\s]+_hash=[\/a-zA-z-0-9\+=%]{44,132})")
+        return re.compile(r"(http(?:s)?:\/\/[^\/]+\/_fragment[^\s]+_hash=[\/a-zA-z-0-9\+=%]{24,132})")
 
     def symfonyHMAC(self, url, secret, hash_algorithm):
         return base64.b64encode(hmac.HMAC(secret.encode(), url.encode(), hash_algorithm).digest())
@@ -29,7 +28,8 @@ class Symfony_SignedURL(BadsecretsBase):
 
     def symfonyVerify(self, value, secret):
         url, url_hash = value.split("&_hash=")
-        for hash_algorithm in self.hash_algs.values():
+        for hash_algorithm_str in self.search_dict(self.hash_sizes, len(base64.b64decode(url_hash))):
+            hash_algorithm = self.hash_algs[hash_algorithm_str]
             generated_hash = self.symfonyHMAC(url, secret, hash_algorithm)
             if generated_hash == url_hash.encode():
                 return {
