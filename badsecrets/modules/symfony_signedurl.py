@@ -30,7 +30,7 @@ class Symfony_SignedURL(BadsecretsBase):
 
     def symfonyVerify(self, value, secret):
         url, url_hash = value.split("&_hash=")
-        for hash_algorithm in [hashlib.sha256, hashlib.sha1, hashlib.sha385, hashlib.sha512]:
+        for hash_algorithm in self.hash_algs.values():
             generated_hash = self.symfonyHMAC(url, secret, hash_algorithm)
             if generated_hash == url_hash.encode():
                 return {
