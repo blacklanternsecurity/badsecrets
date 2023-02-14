@@ -2,6 +2,7 @@ import os
 import sys
 import requests
 import requests_mock
+from mock import patch
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(f"{os.path.dirname(SCRIPT_DIR)}/examples")
@@ -21,6 +22,17 @@ def test_symfony_url_not_up(monkeypatch, capsys):
         symfony_knownkey.main()
         captured = capsys.readouterr()
         assert "Error connecting to URL" in captured.out
+
+
+def test_symfony_url_malformed(monkeypatch, capsys):
+    # URL is not properly formatted
+
+    with patch("sys.exit") as exit_mock:
+        monkeypatch.setattr("sys.argv", ["python", "--url", "hxxp://notreal.com"])
+        symfony_knownkey.main()
+        assert exit_mock.called
+        captured = capsys.readouterr()
+        assert "URL is not formatted correctly" in captured.err
 
 
 def test_symfony_brute_success(monkeypatch, capsys, mocker):
