@@ -18,7 +18,7 @@ def test_symfony_url_not_up(monkeypatch, capsys):
     with requests_mock.Mocker() as m:
         # URL is down - handled correctly
 
-        m.get(f"http://notreal.com/", exc=requests.exceptions.ConnectTimeout)
+        m.get(f"http://notreal.com/_fragment", exc=requests.exceptions.ConnectTimeout)
         monkeypatch.setattr("sys.argv", ["python", "--url", "http://notreal.com"])
         symfony_knownkey.main()
         captured = capsys.readouterr()
