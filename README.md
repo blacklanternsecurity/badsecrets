@@ -84,6 +84,14 @@ python examples/telerik_knownkey.py --url http://vulnerablesite/Telerik.Web.UI.D
 ```
 Optionally include ASP.NET MachineKeys with --machine-keys (Will SIGNIFICANTLY increase brute-forcing time)
 
+### Symfony_knownkey.py
+
+Brute-force detection of Symfony known secret key when "\_fragment" URLs are enabled, even when no example URL containing a hash can be located. [Relevent Blog Post](https://www.ambionics.io/blog/symfony-secret-fragment).
+
+```
+python examples/symfony_knownkey.py --url https://localhost/
+```
+
 ### Basic library usage
 
 
