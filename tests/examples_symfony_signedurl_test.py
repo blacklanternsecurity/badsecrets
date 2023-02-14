@@ -2,8 +2,6 @@ import os
 import sys
 import requests
 import requests_mock
-from mock import patch
-
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(f"{os.path.dirname(SCRIPT_DIR)}/examples")

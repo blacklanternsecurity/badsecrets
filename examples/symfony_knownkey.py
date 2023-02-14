@@ -1,7 +1,6 @@
 import re
 import os
 import sys
-import string
 import hashlib
 import argparse
 import requests
