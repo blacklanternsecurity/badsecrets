@@ -51,10 +51,6 @@ def main():
         help="Optionally set a custom user-agent",
     )
 
-    parser.add_argument(
-        "-m", "--machine-keys", help="Optionally include ASP.NET MachineKeys when loading keys", action="store_true"
-    )
-
     args = parser.parse_args()
 
     if not args.url:
