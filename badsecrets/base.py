@@ -66,10 +66,10 @@ class BadsecretsBase:
     def carve(self, body=None, cookies=None, requests_response=None):
         results = []
 
-        if not body and not cookies and not requests_response:
+        if not body and not cookies and requests_response == None:
             raise badsecrets.errors.CarveException("Either body/cookies or requests_response required")
 
-        if requests_response:
+        if requests_response != None:
             if body or cookies:
                 raise badsecrets.errors.CarveException("Body/cookies and requests_response cannot both be set")
 
