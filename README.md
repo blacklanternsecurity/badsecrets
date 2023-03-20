@@ -11,6 +11,8 @@ A pure python library for identifying the use of known or very weak cryptographi
 
 Knowing when a 'bad secret' was used is usually a matter of examining some cryptographic product in which the secret was used: for example, a cookie which is signed with a keyed hashing algorithm. Things can get complicated when you dive into the individual implementation oddities each platform provides, which this library aims to alleviate. 
 
+Check out our full [blog post](https://blog.blacklanternsecurity.com/p/introducing-badsecrets) on the Black Lantern Security blog!
+
 Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a desire to expand on the supported platforms and remove language and operating system dependencies. 
 
 ## Current Modules
