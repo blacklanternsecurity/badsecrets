@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+# badsecrets - python 'blacklist3r' tool
+# Inspired by blacklist3r  - https://github.com/NotSoSecure/Blacklist3r\n")
+# Black Lantern Security - https://www.blacklanternsecurity.com")
+# @paulmmueller
+
 import re
 import os
 import sys
@@ -129,8 +135,5 @@ def main():
 
 
 if __name__ == "__main__":
-    print("badsecrets - python 'blacklist3r' tool")
-    print("Inspired by blacklist3r  - https://github.com/NotSoSecure/Blacklist3r\n")
-    print("Black Lantern Security - https://www.blacklanternsecurity.com")
-    print("@paulmmueller\n")
+    print("badsecrets - python 'blacklist3r' tool\n")
     main()

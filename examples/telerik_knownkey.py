@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+# badsecrets - Telerik UI known key exploitation tool
+# Black Lantern Security - https://www.blacklanternsecurity.com
+# @paulmmueller
+
 import os
 import re
 import sys
@@ -263,6 +268,4 @@ def main():
 
 if __name__ == "__main__":
     print("badsecrets - Telerik UI known key exploitation tool\n")
-    print("Black Lantern Security - https://www.blacklanternsecurity.com")
-    print("@paulmmueller\n")
     main()
