@@ -96,6 +96,18 @@ Brute-force detection of Symfony known secret key when "\_fragment" URLs are ena
 python examples/symfony_knownkey.py --url https://localhost/
 ```
 
+## BBOT Module
+
+One of the best ways to use Badsecrets, especially for the `ASPNET_Viewstate` and `Jsf_viewstate` modules is with the Badsecrets [BBOT](https://github.com/blacklanternsecurity/bbot) module. This will allow you to easily check across thousands of systems in conjunction with subdomain enummeration. 
+
+```
+bbot -f subdomain-enum -m badsecrets -t evil.corp
+```
+
+![badsecrets](https://user-images.githubusercontent.com/24899338/227044294-59e0408e-c55f-481a-a494-7ee5dd0a39be.png)
+
+
+
 ### Basic library usage
 
 
