@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+# badsecrets - example command line interface
+# Black Lantern Security - https://www.blacklanternsecurity.com
+# @paulmmueller
+
 from badsecrets.base import check_all_modules, carve_all_modules
 import requests
 import argparse
@@ -112,6 +117,4 @@ def main():
 
 if __name__ == "__main__":
     print("badsecrets - example command line interface\n")
-    print("Black Lantern Security - https://www.blacklanternsecurity.com")
-    print("@paulmmueller\n")
     main()
