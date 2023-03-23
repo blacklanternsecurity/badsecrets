@@ -30,8 +30,22 @@ Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a de
 | Jsf_viewstate | Checks Both Mojarra and Myfaces implimentations of Java Server Faces (JSF) for use of known or weak secret keys | 
 | Symfony_SignedURL | Checks symfony "_fragment" urls for known HMAC key. Operates on Full URL, including hash |
 
-## Examples
+## Installation
 
+We have a [pypi](https://pypi.org/project/badsecrets/) package, so you can just do `pip install badsecrets` to make use of the library.
+
+To use the examples, after doing the pip install just `git clone` the repo and `cd` into the `badsecrets` directory:
+
+```
+git clone https://github.com/blacklanternsecurity/badsecrets.git
+cd badsecrets
+```
+
+The commands in the example section below assume you are in this directory.
+
+If you are using the Badsecrets [BBOT](https://github.com/blacklanternsecurity/bbot) module, you don't need to do anything else - BBOT will install the package for you.
+
+## Examples
 
 ### cli.py
 
