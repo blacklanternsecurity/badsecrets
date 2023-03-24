@@ -70,9 +70,6 @@ Example output:
 $ python examples/cli.py eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo
 badsecrets - example command line interface
 
-Black Lantern Security - https://www.blacklanternsecurity.com
-@paulmmueller
-
 ***********************
 Known Secret Found!
 
