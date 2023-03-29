@@ -2,7 +2,10 @@ from badsecrets import modules_loaded
 
 FlaskSignedCookies = modules_loaded["flask_signedcookies"]
 
-tests = [("CHANGEME", "eyJoZWxsbyI6IndvcmxkIn0.XDtqeQ.1qsBdjyRJLokwRzJdzXMVCSyRTA")]
+tests = [
+    ("CHANGEME", "eyJoZWxsbyI6IndvcmxkIn0.XDtqeQ.1qsBdjyRJLokwRzJdzXMVCSyRTA"),
+    ("Attack at dawn!", "eyJsb2dnZWRfaW4iOnRydWV9.ZCONag.j2PHXgeT2B62qlYH72PKVuqjPvE"),
+]
 
 
 def test_flask():
