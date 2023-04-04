@@ -27,3 +27,11 @@ def test_generic_jwt_negative():
         "eyJhbGciOiJIGzI4NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVcEVEbEFtESI6IkJhZFNlE3JldHMiLCJlEHAiOjE1OTMxMzE0ODMsImlhdEI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo"
     )
     assert not found_key
+
+
+def test_generic_jwt_xmldsig():
+    x = Generic_JWT()
+    found_key = x.check_secret(
+        "eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+    )
+    assert found_key
