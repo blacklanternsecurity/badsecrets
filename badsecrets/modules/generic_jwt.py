@@ -1,11 +1,41 @@
 import re
 import jwt as j
+import json
+import base64
 from badsecrets.base import BadsecretsBase
+
+# XMLDSIG Translation Table
+
+XMLDSIG_table = {
+    "http://www.w3.org/2001/04/xmldsig-more#hmac-sha256": "HS256",
+    "http://www.w3.org/2001/04/xmldsig-more#hmac-sha384": "HS384",
+    "http://www.w3.org/2001/04/xmldsig-more#hmac-sha512": "HS512",
+    "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256": "RS256",
+    "http://www.w3.org/2001/04/xmldsig-more#rsa-sha384": "RS384",
+    "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512": "RS512",
+    "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256": "ES256",
+    "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha384": "ES384",
+    "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha512": "ES512",
+    "http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1": "PS256",
+    "http://www.w3.org/2007/05/xmldsig-more#sha384-rsa-MGF1": "PS384",
+    "http://www.w3.org/2007/05/xmldsig-more#sha512-rsa-MGF1": "PS512",
+}
 
 
 class Generic_JWT(BadsecretsBase):
     identify_regex = re.compile(r"eyJ(?:[\w-]*\.)(?:[\w-]*\.)[\w-]*")
     description = {"Product": "JSON Web Token (JWT)", "Secret": "HMAC/RSA Key"}
+
+    @staticmethod
+    def swap_algorithm(jwt, algorithm):
+        header = j.get_unverified_header(jwt)
+        header["alg"] = algorithm
+        header_encoded = (
+            base64.urlsafe_b64encode(json.dumps(header, separators=(",", ":")).encode()).rstrip(b"=").decode()
+        )
+        _, payload, signature = jwt.split(".")
+        new_jwt = f"{header_encoded}.{payload}.{signature}"
+        return new_jwt
 
     def carve_regex(self):
         return re.compile(r"(eyJ(?:[\w-]*\.)(?:[\w-]*\.)[\w-]*)")
@@ -35,6 +65,11 @@ class Generic_JWT(BadsecretsBase):
         except KeyError:
             return None
 
+        if algorithm in XMLDSIG_table.keys():
+            algorithm = XMLDSIG_table[algorithm]
+            JWT = self.swap_algorithm(JWT, algorithm)
+            print(JWT)
+
         if algorithm[0].lower() == "h":
             for l in self.load_resource("jwt_secrets.txt"):
                 key = l.strip()
@@ -48,8 +83,7 @@ class Generic_JWT(BadsecretsBase):
         elif algorithm[0].lower() == "r":
             for l in self.load_resource("jwt_rsakeys_public.txt"):
                 private_key_name = l.split(":")[0]
-                public_key = l.split(":")[1]
-                public_key = b"-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6cs10W3XKnr1MDoO0Ngf\nYEixdQy5e3m/E4POPC5t6yyc/eZZayytrA6CfaZXBKnYU4YKD06sJULj30qw/TJJ\nwphhb2a5s3sjXejL4KW2WTdP6F+DbSaokzvKVdaZ97GnLtiei8n6gnSE1xSsJ15+\nd9JHImekuW/ggksVbI26UTiXvfv7LUJ8ntt6wG1UQHWOvYbG81TTpZjItvZsYu1t\npekjNpOwCsIbO//S1JOiSgpuKp7HwCnQwABNEWyMuIAMlymMyocbTdQHcClogZC9\nbwokxTPZGmD9xZ+meaeVD5HONqASIJ1tOoFGsnwwwlEhwsul0FRs7qehuhJmKE5Z\nbwIDAQAB\n-----END PUBLIC KEY-----"
+                public_key = f"{l.split(':')[1]}".rstrip().encode().replace(b"\\n", b"\n")
                 r = self.jwtVerify(JWT, public_key, algorithm)
                 r["jwt_headers"] = jwt_headers
                 if r:
