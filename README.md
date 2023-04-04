@@ -3,13 +3,15 @@
 <p align="left"><img width="300" height="300" src="https://user-images.githubusercontent.com/24899338/223151619-6859bc93-1fe2-47c7-86a6-ecaa6b495ece.png"></p>
 
 [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-![License](https://img.shields.io/badge/license-GPLv3-f126EA.svg)
+![License](https://img.shields.io/badge/license-GPLv3-f126ea.svg)
 ![Tests](https://github.com/blacklanternsecurity/badsecrets/actions/workflows/tests.yaml/badge.svg?branch=main)
 [![codecov](https://codecov.io/gh/blacklanternsecurity/badsecrets/branch/main/graph/badge.svg?token=2PAE7NUM07)](https://codecov.io/gh/blacklanternsecurity/badsecrets)
 
 A pure python library for identifying the use of known or very weak cryptographic secrets across a variety of platforms. The project is designed to be both a repository of various "known secrets" (for example, ASP.NET machine keys found in examples in tutorials), and to provide a language-agnostic abstraction layer for identifying their use.  
 
 Knowing when a 'bad secret' was used is usually a matter of examining some cryptographic product in which the secret was used: for example, a cookie which is signed with a keyed hashing algorithm. Things can get complicated when you dive into the individual implementation oddities each platform provides, which this library aims to alleviate. 
+
+Check out our full [blog post](https://blog.blacklanternsecurity.com/p/introducing-badsecrets) on the Black Lantern Security blog!
 
 Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a desire to expand on the supported platforms and remove language and operating system dependencies. 
 
@@ -28,21 +30,35 @@ Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a de
 | Jsf_viewstate | Checks Both Mojarra and Myfaces implimentations of Java Server Faces (JSF) for use of known or weak secret keys | 
 | Symfony_SignedURL | Checks symfony "_fragment" urls for known HMAC key. Operates on Full URL, including hash |
 
-## Examples
+## Installation
 
+We have a [pypi](https://pypi.org/project/badsecrets/) package, so you can just do `pip install badsecrets` to make use of the library.
+
+To use the examples, after doing the pip install just `git clone` the repo and `cd` into the `badsecrets` directory:
+
+```
+git clone https://github.com/blacklanternsecurity/badsecrets.git
+cd badsecrets
+```
+
+The commands in the example section below assume you are in this directory.
+
+If you are using the Badsecrets [BBOT](https://github.com/blacklanternsecurity/bbot) module, you don't need to do anything else - BBOT will install the package for you.
+
+## Examples
 
 ### cli.py
 
 Bad secrets includes an [example CLI](https://github.com/blacklanternsecurity/badsecrets/blob/dev/examples/blacklist3r.py) for convenience when manually checking secrets. It also has a URL mode, which will connect to a target and attempt to carve for cryptographic products and check any it finds against all modules. 
 
 * Basic usage - checking a crytographic product for a known secret (against all modules):
-```
+```bash
 python examples/cli.py eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo
 ```
 
 * URL Mode - Connecting to a target and carving for a cryptographic product, and if found checking it for known secrets (against all modules):
 
-```
+```bash
 python examples/cli.py --url http://example.com/contains_bad_secret.html
 ```
 
@@ -50,12 +66,9 @@ You can also set a custom user-agent with `--user-agent "user-agent string"` or 
 
 Example output:
 
-```
+```bash
 $ python examples/cli.py eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo
 badsecrets - example command line interface
-
-Black Lantern Security - https://www.blacklanternsecurity.com
-@paulmmueller
 
 ***********************
 Known Secret Found!
@@ -71,7 +84,7 @@ Details: {'Issuer': 'Issuer', 'Username': 'BadSecrets', 'exp': 1593133483, 'iat'
 
 Bad secrets includes a [fully functional CLI example](https://github.com/blacklanternsecurity/badsecrets/blob/dev/examples/blacklist3r.py) which replicates the functionality of [blacklist3r](https://github.com/NotSoSecure/Blacklist3r) in python examples/blacklist3r. 
 
-```
+```bash
 python examples/blacklist3r.py --url http://vulnerablesite/vulnerablepage.aspx
 python examples/blacklist3r.py --viewstate /wEPDwUJODExMDE5NzY5ZGQMKS6jehX5HkJgXxrPh09vumNTKQ== --generator EDD8C9AE
 ```
@@ -81,7 +94,7 @@ python examples/blacklist3r.py --viewstate /wEPDwUJODExMDE5NzY5ZGQMKS6jehX5HkJgX
 
 Fully functional CLI example for identifying known Telerik Hash keys and Encryption keys for Post-2017 versions (those patched for CVE-2017-9248), and brute-forcing version / generating exploitation DialogParameters values.
 
-```
+```bash
 python examples/telerik_knownkey.py --url http://vulnerablesite/Telerik.Web.UI.DialogHandler.aspx
 ```
 Optionally include ASP.NET MachineKeys with --machine-keys (Will SIGNIFICANTLY increase brute-forcing time)
@@ -90,9 +103,21 @@ Optionally include ASP.NET MachineKeys with --machine-keys (Will SIGNIFICANTLY i
 
 Brute-force detection of Symfony known secret key when "\_fragment" URLs are enabled, even when no example URL containing a hash can be located. [Relevent Blog Post](https://www.ambionics.io/blog/symfony-secret-fragment).
 
-```
+```bash
 python examples/symfony_knownkey.py --url https://localhost/
 ```
+
+## BBOT Module
+
+One of the best ways to use Badsecrets, especially for the `ASPNET_Viewstate` and `Jsf_viewstate` modules is with the Badsecrets [BBOT](https://github.com/blacklanternsecurity/bbot) module. This will allow you to easily check across thousands of systems in conjunction with subdomain enummeration. 
+
+```
+bbot -f subdomain-enum -m badsecrets -t evil.corp
+```
+
+![badsecrets](https://user-images.githubusercontent.com/24899338/227044294-59e0408e-c55f-481a-a494-7ee5dd0a39be.png)
+
+
 
 ### Basic library usage
 
@@ -101,7 +126,7 @@ python examples/symfony_knownkey.py --url https://localhost/
 
 See if a token or other cryptographic product was produced with a known key
 
-```
+```python
 from badsecrets import modules_loaded
 
 Django_SignedCookies = modules_loaded["django_signedcookies"]
@@ -202,7 +227,7 @@ else:
 #### Carve
 An additional layer of abstraction above check_secret, which accepts a python requests.response object or a string
 
-```
+```python
 import requests
 from badsecrets import modules_loaded
 Telerik_HashKey = modules_loaded["telerik_hashkey"]
@@ -224,7 +249,7 @@ print(r_list)
 ```
 ### Check all modules at once
 
-```
+```python
 from badsecrets.base import check_all_modules
 
 tests = [
@@ -248,7 +273,7 @@ for test in tests:
 
 
 ### Carve all modules at once
-```
+```python
 import requests
 from badsecrets.base import carve_all_modules
     
@@ -278,4 +303,16 @@ r_list = carve_all_modules(body=carve_source_text)
 print(r_list)
 
 ```
+
+### Contributions
+
+Nothing would make us happier than getting a pull request with a new module! But the easiest way to contribute would be helping to populate our word lists! If you find publicly available keys help us make Badsecrets more useful by submitting a pull request to add them.
+
+Requests for modules are always very welcome as well!
+
+### Planned Modules
+
+- Laravel
+- Express
+
 
