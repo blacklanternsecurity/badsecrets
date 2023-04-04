@@ -68,7 +68,6 @@ class Generic_JWT(BadsecretsBase):
         if algorithm in XMLDSIG_table.keys():
             algorithm = XMLDSIG_table[algorithm]
             JWT = self.swap_algorithm(JWT, algorithm)
-            print(JWT)
 
         if algorithm[0].lower() == "h":
             for l in self.load_resource("jwt_secrets.txt"):
