@@ -304,3 +304,15 @@ print(r_list)
 
 ```
 
+### Contributions
+
+Nothing would make us happier than getting a pull request with a new module! But the easiest way to contribute would be helping to populate our word lists! If you find publicly available keys help us make Badsecrets more useful by submitting a pull request to add them.
+
+Requests for modules are always very welcome as well!
+
+### Planned Modules
+
+- Laravel
+- Express
+
+
