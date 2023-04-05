@@ -29,6 +29,7 @@ Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a de
 | Generic_JWT | Checks JWTs for known HMAC secrets or RSA private keys |
 | Jsf_viewstate | Checks Both Mojarra and Myfaces implimentations of Java Server Faces (JSF) for use of known or weak secret keys | 
 | Symfony_SignedURL | Checks symfony "_fragment" urls for known HMAC key. Operates on Full URL, including hash |
+| Express_SignedCookies | Checks express.js signed cookies and session cookies for session secret |
 
 ## Installation
 
@@ -139,6 +140,7 @@ Rails_SecretKeyBase = modules_loaded["rails_secretkeybase"]
 Generic_JWT = modules_loaded["generic_jwt"]
 Jsf_viewstate = modules_loaded["jsf_viewstate"]
 Symfony_SignedURL = modules_loaded["symfony_signedurl"]
+Express_SignedCookies = modules_loaded["express_signedcookies"]
 
 x = ASPNET_Viewstate()
 print(f"###{str(x.__class__.__name__)}###")
@@ -222,6 +224,15 @@ if r:
 else:
     print("KEY NOT FOUND :(")
 
+
+x = Express_SignedCookies()
+print(f"###{str(x.__class__.__name__)}###")
+r = x.check_secret("s%3A8FnPwdeM9kdGTZlWvdaVtQ0S1BCOhY5G.qys7H2oGSLLdRsEq7sqh7btOohHsaRKqyjV4LiVnBvc")
+if r:
+    print(r)
+else:
+    print("KEY NOT FOUND :(")
+
 ```
 
 #### Carve
@@ -260,7 +271,8 @@ tests = [
     ".eJxVjLsOAiEURP-F2hAuL8HSfr-BAPciq4ZNlt3K-O9KsoU2U8w5My8W4r7VsHdaw4zswoCdfrsU84PaAHiP7bbwvLRtnRMfCj9o59OC9Lwe7t9Bjb2OtbMkAEGQtQjekykmJy9JZIW-6CgUaCGsA6eSyV65s1Qya_xGKZrY-wPVYjdw:1ojOrE:bfOktjgLlUykwCIRIpvaTZRQMM3-UypscEN57ECtXis",
     "eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo",
     "dUEvRldLekFNcklGZ3ZSbU1XaHJ0ZGxsLzhYTHlNTW43T3BVN05kZXE3WUhQOVVKbVA3Rm5WaSs5eG5QQ1VIRVBzeDFNTnNpZ0xCM1FKbzFZTEJISzhaNzFmVGYzME0waDFURVpCYm5TQlJFRmRFclYzNUZhR3VuN29PMmlkVHBrRi8wb3AwZWgvWmxObkFOYnpkeHR1YWpWZ3lnN0Y4ZW9xSk9LNVlQd0U4MmFsbWtLZUI5VzkzRkM4YXBFWXBWLS15L00xME1nVFp2ZTlmUWcxZVlpelpnPT0=--7efe7919a5210cfd1ac4c6228e3ff82c0600d841",
-    "https://localhost/_fragment?_path=_controller%3Dsystem%26command%3Did%26return_value%3Dnull&_hash=Xnsvx/yLVQaimEd1CfepgH0rEXr422JnRSn/uaCE3gs="
+    "https://localhost/_fragment?_path=_controller%3Dsystem%26command%3Did%26return_value%3Dnull&_hash=Xnsvx/yLVQaimEd1CfepgH0rEXr422JnRSn/uaCE3gs=",
+    "s%3A8FnPwdeM9kdGTZlWvdaVtQ0S1BCOhY5G.qys7H2oGSLLdRsEq7sqh7btOohHsaRKqyjV4LiVnBvc"
 ]
 
 for test in tests:
@@ -313,6 +325,6 @@ Requests for modules are always very welcome as well!
 ### Planned Modules
 
 - Laravel
-- Express
+-  ~~Express
 
 
