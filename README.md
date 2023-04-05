@@ -29,7 +29,7 @@ Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a de
 | Generic_JWT | Checks JWTs for known HMAC secrets or RSA private keys |
 | Jsf_viewstate | Checks Both Mojarra and Myfaces implimentations of Java Server Faces (JSF) for use of known or weak secret keys | 
 | Symfony_SignedURL | Checks symfony "_fragment" urls for known HMAC key. Operates on Full URL, including hash |
-| Express_SignedCookies | Checks express signed cookies and session cookies for session secret |
+| Express_SignedCookies | Checks express.js signed cookies and session cookies for session secret |
 
 ## Installation
 
