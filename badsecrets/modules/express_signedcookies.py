@@ -40,7 +40,7 @@ class ExpressSignedCookies(BadsecretsBase):
             return False
         for l in set(
             list(self.load_resource("express_session_secrets.txt"))
-            # + list(self.load_resource("top_10000_passwords.txt"))
+            + list(self.load_resource("top_10000_passwords.txt"))
         ):
             session_secret = l.rstrip()
 
