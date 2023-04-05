@@ -15,6 +15,7 @@ tests = [
     "8H61sylBH/Ad3thZCGDVLyaso2g499GnjAuqpNapesoJgoo5Zk3nxDqXoWfRDwzmKk6eDLTyWViTRTdnr8Su7+XzW6MMAcZo+Fa7UwdfE4pKJ2+z6OYK58l+/93LHZmgVUF5dqI3G8mLr3uI",
     "H4sIAAAAAAAAAAG4BEf7SqmRq5Y9DfCIR9QLZ9wfMXuwWMtbz4CYqd0%2FCCMNXbRgEOJmkCbpKBJXQ%2BAz78OO%2FufCpa1k1nqcEgNxRzRnKKNVBBPMov%2FE%2BXFqh%2Bb5KZLhJvXicwGSIuVshN1XYpSRzKrosUB0ykN8j9hA90IA5AulHsXIofHj07FlFC%2BTbQqVZ7jKeHDurUkVhf8WQ1up%2BVO9KZwQU6WZzsF5y6AkidThF411avCLTxGAtIC7uZBnzMLL4duUf7YtdIDHt4UWGsXCI7ItciWv4Dzk9w5bKeWRRLp1W1pbniEQY01lTulTZBYPuLtna6pB0I3EJ5bV4c3Gktdd1YAVQcBQ2Yy5TW92YEclM99vW9mwu6xD8ZRYJNIb622TjjFMvmR4u4sNh%2BdgL5MlagVpvQjIxUmP7TzelScfku0PrKnKve2zzG6m8czF2WgbQcSLk%2B6TJAijmezo0byTzBsc0FbiI16jm7OBn%2Bi4xCBJQ0AHtu%2Bj2kUE3SUp3wnwgvCR9EnQIw%2F8p2PIp1h6FG6QOIKamihDeY9r5RCW7yLds5vwmUgT9mPTfN%2B%2Fjpzp4U4axfZv5yrVyMSpsuDEhj0H0CjYQMssn%2BsXMYOJGLqv%2FF0SrGrtcAGYv12%2B17PybzbqrXGe8xYR%2B9wHaKX3CD5Ak3IE0CiILhEIZrDICPTifm8%2FygUDztVZmHwpM6HBpF2inkGbaX6Fa8BOrMJaEqZWAualYYBth37jWyqCKV01TWFfHtS7y7kvkWOPwYYORzx9IKO5yyFrftg4hCH7f5vtHsMoyP8CcWPh9c82O70CIlscfLURWeoAyXv1FYtgC6pBLVlgdHEjMzjKvK7DRtJliNPl0VGazg5jTAYHtuwdc23jIjwBfG0MXpPjkw%2BVR179clfwK4t1VfJTJF8F02EXZXaZzCA7cH%2B%2B3bQaXOpvZBTFGdD9JnwRp2vEhy8%2BWMXhd7C%2BcmliOvraOoK%2Fksa9PNarTZJTTJuZupvYwBWhx%2F2vVDEdCM81Z7bFgb0wGd9ViHIOz0MH8v%2FIgn6qd2ojjnkJ29MfSfhtRi%2BXAvmgFXoIhlIBXBwapozxsKcDXOc5JRWpK%2F7y4naW7Fuogp1oU1fHXOXnQh8FAsjgyqn3J0acyY7FDKtkAjxDTMThh1GrA4dLvvLjPx%2FKUMeCQSZ1Y01X%2BNVRbxXBLGLkDbcBHNmkTTaxbsctSBBMSyOYQfG5W9%2Bhw9D2AFSWwFAuz%2BCDvsPSze0CYDoG9lbuYnW2wseNiKYItaSQhUbnq3SGVcjy1JouogVK63TDGTwE8Cy3UoNrAz%2FzV7AaoVjytyuMBqOTYBS%2BSLif1R2qqeut0ID%2BCudcjrKJvcP1J8rHV%2F5h2lRNj7tW0wVQS4XtqpnPy90BhF%2BgcfCy7FtRJbH8i5HAl5FY1OpZQ68ig12imShpNI%2FgHuO2q3n5%2FVUFia7fwHqkkuZBRZHreEvEyPlUpgwJhpCBS3F8b1ViO2G5zsTNF9TR%2BzW8UJVG2lhMdcvZw92dg%2F74tndJ8LzhVrQrG5au9yu6fUExO5MNz6izVMFzOxG6FqxUcm8otgf6qqSBi23jrMceNzAT8LcREGoVvjmj8uINrJbJt9ZfXb%2BaIYsMGsc2uAQAAA%3D%3D",
     "https://localhost/_fragment?_path=_controller%3Dsystem%26command%3Did%26return_value%3Dnull&_hash=Xnsvx/yLVQaimEd1CfepgH0rEXr422JnRSn/uaCE3gs=",
+    "s%3A8FnPwdeM9kdGTZlWvdaVtQ0S1BCOhY5G.qys7H2oGSLLdRsEq7sqh7btOohHsaRKqyjV4LiVnBvc"
 ]
 
 negative_tests = [
@@ -109,6 +110,7 @@ def test_carve_all_cookies():
         "django_session": ".eJxVjLsOAiEURP-F2hAuL8HSfr-BAPciq4ZNlt3K-O9KsoU2U8w5My8W4r7VsHdaw4zswoCdfrsU84PaAHiP7bbwvLRtnRMfCj9o59OC9Lwe7t9Bjb2OtbMkAEGQtQjekykmJy9JZIW-6CgUaCGsA6eSyV65s1Qya_xGKZrY-wPVYjdw:1ojOrE:bfOktjgLlUykwCIRIpvaTZRQMM3-UypscEN57ECtXis",
         "PS_TOKEN": "qAAAAAQDAgEBAAAAvAIAAAAAAAAsAAAABABTaGRyAk4AdQg4AC4AMQAwABT5mYioG/i325GsBHHNyDIM+9yf1GgAAAAFAFNkYXRhXHicHYfJDUBQAESfJY5O2iDWgwIsJxHcxdaApTvFGX8mefPmAVzHtizta2MSrCzsXBxsnOIt9yo6GvyekZqJmZaBPCUmVUMS2c9MjCmJKLSR/u+laUGuzwdaGw3o",
         "random-cookie2": "useless_data2",
+        "connect.sid": "s%3A8FnPwdeM9kdGTZlWvdaVtQ0S1BCOhY5G.qys7H2oGSLLdRsEq7sqh7btOohHsaRKqyjV4LiVnBvc"
     }
 
     with requests_mock.Mocker() as m:
@@ -121,4 +123,4 @@ def test_carve_all_cookies():
 
         res = requests.get(f"http://cookies.carve-all.badsecrets.com/")
         r_list = carve_all_modules(requests_response=res)
-        assert len(r_list) == 6
+        assert len(r_list) == 7
