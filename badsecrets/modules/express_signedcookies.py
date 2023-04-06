@@ -1,7 +1,9 @@
 import re
 import hmac
 import base64
+import binascii
 import urllib.parse
+from contextlib import suppress
 from badsecrets.base import BadsecretsBase
 
 
@@ -25,14 +27,17 @@ class ExpressSignedCookies(BadsecretsBase):
 
     def expressVerify(self, value, secret):
         payload, signature = value.split(".")[0][4:], urllib.parse.unquote(value.split(".")[1])
-        for hash_algorithm_str in self.search_dict(self.hash_sizes, len(no_padding_urlsafe_base64_decode(signature))):
-            hash_algorithm = self.hash_algs[hash_algorithm_str]
 
-            generated_hash = self.expressHMAC(payload, secret, hash_algorithm)
-            if generated_hash == signature:
-                return {
-                    "hash algorithm": hash_algorithm.__name__.split("openssl_")[1],
-                }
+        with suppress(binascii.Error):
+            for hash_algorithm_str in self.search_dict(
+                self.hash_sizes, len(no_padding_urlsafe_base64_decode(signature))
+            ):
+                hash_algorithm = self.hash_algs[hash_algorithm_str]
+                generated_hash = self.expressHMAC(payload, secret, hash_algorithm)
+                if generated_hash == signature:
+                    return {
+                        "hash algorithm": hash_algorithm.__name__.split("openssl_")[1],
+                    }
         return False
 
     def check_secret(self, express_signed_cookie):
