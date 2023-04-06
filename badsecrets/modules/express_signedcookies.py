@@ -16,11 +16,11 @@ def no_padding_urlsafe_base64_encode(enc):
 
 
 class ExpressSignedCookies(BadsecretsBase):
-    identify_regex = re.compile(r"^s%3[Aa][^\.]+\..+$")
-    description = {"Product": "Express Signed Cookie", "Secret": "Express SESSION_SECRET"}
+    identify_regex = re.compile(r"^s%3[Aa][^\.]+\.[a-zA-Z0-9%]{20,90}$")
+    description = {"Product": "Express.js Signed Cookie", "Secret": "Express SESSION_SECRET"}
 
     def carve_regex(self):
-        return re.compile(r"(s%3[Aa][^\.]+\.[a-zA-Z0-9%]+)")
+        return re.compile(r"(s%3[Aa][^\.]+\.[a-zA-Z0-9%]{20,90})")
 
     def expressHMAC(self, payload, secret, hash_algorithm):
         return no_padding_urlsafe_base64_encode(hmac.HMAC(secret.encode(), payload.encode(), hash_algorithm).digest())
