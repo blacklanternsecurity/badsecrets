@@ -7,7 +7,6 @@ import binascii
 import urllib.parse
 from Crypto.Cipher import AES
 from badsecrets.helpers import unpad
-
 from badsecrets.base import BadsecretsBase
 
 

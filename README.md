@@ -29,7 +29,8 @@ Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a de
 | Generic_JWT | Checks JWTs for known HMAC secrets or RSA private keys |
 | Jsf_viewstate | Checks Both Mojarra and Myfaces implimentations of Java Server Faces (JSF) for use of known or weak secret keys | 
 | Symfony_SignedURL | Checks symfony "_fragment" urls for known HMAC key. Operates on Full URL, including hash |
-| Express_SignedCookies | Checks express.js signed cookies and session cookies for session secret |
+| Express_SignedCookies | Checks express.js signed cookies and session cookies for known 'session secret' |
+| Laravel_SignedCookies | Checks 'laravel_session' cookies for known laravel 'APP_KEY' |
 
 ## Installation
 
@@ -141,6 +142,7 @@ Generic_JWT = modules_loaded["generic_jwt"]
 Jsf_viewstate = modules_loaded["jsf_viewstate"]
 Symfony_SignedURL = modules_loaded["symfony_signedurl"]
 Express_SignedCookies = modules_loaded["express_signedcookies"]
+Laravel_SignedCookies = modules_loaded["laravel_signedcookies"]
 
 x = ASPNET_Viewstate()
 print(f"###{str(x.__class__.__name__)}###")
@@ -228,6 +230,15 @@ else:
 x = Express_SignedCookies()
 print(f"###{str(x.__class__.__name__)}###")
 r = x.check_secret("s%3A8FnPwdeM9kdGTZlWvdaVtQ0S1BCOhY5G.qys7H2oGSLLdRsEq7sqh7btOohHsaRKqyjV4LiVnBvc")
+if r:
+    print(r)
+else:
+    print("KEY NOT FOUND :(")
+
+
+x = Laravel_SignedCookies()
+print(f"###{str(x.__class__.__name__)}###")
+r = x.check_secret("eyJpdiI6IlhlNTZ2UjZUQWZKVHdIcG9nZFkwcGc9PSIsInZhbHVlIjoiRlUvY2grU1F1b01lSXdveXJ0T3N1WGJqeVVmZlNRQjNVOWxiSzljL1Z3RDhqYUdDbjZxMU9oSThWRzExT0YvUmthVzVKRE9kL0RvTEw1cFRhQkphOGw4S2loV1ZrMkkwTHd4am9sZkJQd2VCZ3R0VlFSeFo3ay9wTlBMb3lLSG8iLCJtYWMiOiJkMmU3M2ExNDc2NTc5YjAwMGMwMTdkYTQ1NThkMjRkNTY2YTE4OTg2MzY5MzE5NGZmOTM4YWVjOGZmMWU4NTk2IiwidGFnIjoiIn0%3D")
 if r:
     print(r)
 else:
