@@ -1,4 +1,3 @@
-import pytest
 from badsecrets import modules_loaded
 
 LaravelSignedCookies = modules_loaded["laravel_signedcookies"]
