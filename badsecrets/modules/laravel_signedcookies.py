@@ -38,7 +38,10 @@ class LaravelSignedCookies(BadsecretsBase):
 
         # in the future, support may be added for older, non-base64 keys
         if secret.startswith("base64:"):
-            raw_secret = base64.b64decode(secret.split(":")[1])
+            try:
+                raw_secret = base64.b64decode(secret.split(":")[1])
+            except binascii.Error:
+                return False
 
             decryptedData = self.laravelDecrypt(json_value, raw_secret)
             if decryptedData:
