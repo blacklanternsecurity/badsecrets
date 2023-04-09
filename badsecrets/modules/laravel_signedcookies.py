@@ -6,6 +6,7 @@ import base64
 import binascii
 import urllib.parse
 from Crypto.Cipher import AES
+from contextlib import suppress
 from badsecrets.helpers import unpad
 from badsecrets.base import BadsecretsBase
 
@@ -38,14 +39,11 @@ class LaravelSignedCookies(BadsecretsBase):
 
         # in the future, support may be added for older, non-base64 keys
         if secret.startswith("base64:"):
-            try:
+            with suppress(binascii.Error):
                 raw_secret = base64.b64decode(secret.split(":")[1])
-            except binascii.Error:
-                return False
-
-            decryptedData = self.laravelDecrypt(json_value, raw_secret)
-            if decryptedData:
-                return {"decryptedData": decryptedData.decode()}
+                decryptedData = self.laravelDecrypt(json_value, raw_secret)
+                if decryptedData:
+                    return {"decryptedData": decryptedData.decode()}
         return False
 
     def check_secret(self, laravel_signed_cookie):
