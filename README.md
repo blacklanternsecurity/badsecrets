@@ -335,7 +335,7 @@ Requests for modules are always very welcome as well!
 
 ### Planned Modules
 
-- Laravel
+- ~~Laravel~~
 -  ~~Express~~
 
 
