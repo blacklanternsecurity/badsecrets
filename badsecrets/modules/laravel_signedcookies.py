@@ -33,7 +33,7 @@ class LaravelSignedCookies(BadsecretsBase):
             if not all(key in json_value.keys() for key in ["mac", "value", "iv"]):
                 return False
 
-        except (binascii.Error, json.decoder.JSONDecodeError):
+        except (binascii.Error, json.decoder.JSONDecodeError, UnicodeDecodeError):
             return False
 
         # in the future, support may be added for older, non-base64 keys
