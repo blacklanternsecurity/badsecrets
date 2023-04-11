@@ -23,6 +23,8 @@ Django = "^4.1.2"
 pyjwt = {extras = ["crypto"], version = "^2.6.0"}
 requests = "^2.28.1"
 
+[tool.poetry.scripts]
+badsecrets = 'examples.cli:main'
 
 [tool.black]
 line-length = 119
