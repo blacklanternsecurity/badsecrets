@@ -72,6 +72,8 @@ def main():
 
     args = parser.parse_args()
 
+    print("badsecrets - example command line interface\n")
+
     if not args.url and not args.secret:
         parser.error(
             "Either supply the secret as a positional argument (supply all secrets for multi-secret modules), or use --url mode with a valid URL"
@@ -116,5 +118,4 @@ def main():
 
 
 if __name__ == "__main__":
-    print("badsecrets - example command line interface\n")
     main()
