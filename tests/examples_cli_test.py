@@ -5,7 +5,7 @@ from mock import patch
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(f"{os.path.dirname(SCRIPT_DIR)}/examples")
-from examples import cli
+from badsecrets.examples import cli
 
 base_vulnerable_page = """
 <html>
