@@ -36,6 +36,19 @@ Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a de
 
 We have a [pypi](https://pypi.org/project/badsecrets/) package, so you can just do `pip install badsecrets` to make use of the library.
 
+## Simple Usage
+
+The absolute easiest way to use Badsecrets is by simply running `badsecrets` after doing a pip install:
+
+```
+pip install badsecrets
+badsecrets eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo
+```
+
+This is doing the same thing as the `cli.py` example shown below.
+
+## Examples
+
 To use the examples, after doing the pip install just `git clone` the repo and `cd` into the `badsecrets` directory:
 
 ```
@@ -47,11 +60,10 @@ The commands in the example section below assume you are in this directory.
 
 If you are using the Badsecrets [BBOT](https://github.com/blacklanternsecurity/bbot) module, you don't need to do anything else - BBOT will install the package for you.
 
-## Examples
 
 ### cli.py
 
-Bad secrets includes an [example CLI](https://github.com/blacklanternsecurity/badsecrets/blob/dev/examples/blacklist3r.py) for convenience when manually checking secrets. It also has a URL mode, which will connect to a target and attempt to carve for cryptographic products and check any it finds against all modules. 
+Bad secrets includes an [example CLI](https://github.com/blacklanternsecurity/badsecrets/blob/dev/examples/cli.py) for convenience when manually checking secrets. It also has a URL mode, which will connect to a target and attempt to carve for cryptographic products and check any it finds against all modules. 
 
 * Basic usage - checking a crytographic product for a known secret (against all modules):
 ```bash
