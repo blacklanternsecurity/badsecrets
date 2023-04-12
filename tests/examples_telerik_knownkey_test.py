@@ -7,7 +7,7 @@ from mock import patch
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(f"{os.path.dirname(SCRIPT_DIR)}/examples")
-from examples import telerik_knownkey
+from badsecrets.examples import telerik_knownkey
 
 from badsecrets import modules_loaded
 
