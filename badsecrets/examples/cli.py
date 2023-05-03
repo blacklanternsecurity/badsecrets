@@ -19,21 +19,33 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
 
-def report_finding(x):
-    print("***********************")
-    print("Known Secret Found!\n")
-    print(f"Detecting Module: {x['detecting_module']}\n")
-    print(f"Secret: {x['secret']}")
-    if x["details"] != None:
-        print(f"Details: {x['details']}")
+class BaseReport:
+    def __init__(self, x):
+        self.x = x
+
+    def print_report(self, report_message):
+        print("***********************")
+        print(report_message)
+        print(f"Detecting Module: {self.x['detecting_module']}\n")
+        print(f"Product Type: {self.x['description']['Product']}")
+        print(f"Product: {self.x['source']}")
+        print(f"Secret Type: {self.x['description']['Secret']}")
+        print(f"Location: {self.x['location']}")
 
 
-def report_identify(x):
-    print("***********************")
-    print("Cryptographic Product Identified (no vulnerability)\n")
-    print(f"Detecting Module: {x['detecting_module']}\n")
-    print(f"Product: {x['description']['Product']}")
-    print(f"Secret: {x['description']['Secret']}")
+class ReportSecret(BaseReport):
+    def report(self):
+        self.print_report("Known Secret Found!\n")
+        print(f"Secret: {self.x['secret']}")
+        print(f"Details: {self.x['details']}")
+
+
+class ReportIdentify(BaseReport):
+    def report(self):
+        self.print_report("Cryptographic Product Identified (no vulnerability)\n")
+
+        if self.x["hashcat"] is not None:
+            print(f"Hashcat Command: {self.x['hashcat']}")
 
 
 def validate_url(
@@ -102,17 +114,18 @@ def main():
         r_list = carve_all_modules(requests_response=res)
         if r_list:
             for r in r_list:
-                if r["type"] == "IdentifyOnly":
-                    report_identify(r)
+                if r["type"] == "SecretFound":
+                    report = ReportSecret(r)
                 else:
-                    report_finding(r)
+                    report = ReportIdentify(r)
+                report.report()
         else:
             print("No secrets found :(")
 
     else:
         x = check_all_modules(*args.secret)
         if x:
-            report_finding(x)
+            ReportSecret(x)
         else:
             print("No secrets found :(")
 

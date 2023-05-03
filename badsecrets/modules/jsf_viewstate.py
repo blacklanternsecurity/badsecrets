@@ -174,7 +174,13 @@ class Jsf_viewstate(BadsecretsBase):
         else:
             return (None, None, None, None, None)
 
+    def get_hashcat_command(self, s):
+        return "N/A"
+
     def check_secret(self, jsf_viewstate_value):
+        if not self.identify(jsf_viewstate_value):
+            return None
+
         jsf_viewstate_value = urllib.parse.unquote(jsf_viewstate_value)
 
         if jsf_viewstate_value.startswith("rO0"):

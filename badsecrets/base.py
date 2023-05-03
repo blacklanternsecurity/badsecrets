@@ -44,6 +44,9 @@ class BadsecretsBase:
     def get_description(self):
         return self.description
 
+    def get_hashcat_command(self, s):
+        return None
+
     def load_resource(self, resource):
         if self.custom_resource:
             filepath = self.custom_resource
@@ -63,19 +66,20 @@ class BadsecretsBase:
     def carve_regex(self):
         return None
 
-    def carve(self, body=None, cookies=None, requests_response=None):
+    def carve(self, body=None, cookies=None, headers=None, requests_response=None):
         results = []
 
-        if not body and not cookies and requests_response == None:
-            raise badsecrets.errors.CarveException("Either body/cookies or requests_response required")
+        if not body and not cookies and not headers and requests_response == None:
+            raise badsecrets.errors.CarveException("Either body/headers/cookies or requests_response required")
 
         if requests_response != None:
-            if body or cookies:
-                raise badsecrets.errors.CarveException("Body/cookies and requests_response cannot both be set")
+            if body or cookies or headers:
+                raise badsecrets.errors.CarveException("Body/cookies/headers and requests_response cannot both be set")
 
             if type(requests_response) == requests.models.Response:
                 body = requests_response.text
                 cookies = dict(requests_response.cookies)
+                headers = requests_response.headers
             else:
                 raise badsecrets.errors.CarveException("requests_response must be a requests.models.Response object")
 
@@ -87,7 +91,26 @@ class BadsecretsBase:
                 if r:
                     r["type"] = "SecretFound"
                     r["source"] = v
+                    r["location"] = "cookies"
                     results.append(r)
+
+        if headers:
+            for header_value in headers.values():
+                r = self.check_secret(header_value)
+                if r:
+                    r["type"] = "SecretFound"
+                    r["source"] = header_value
+                    r["location"] = "headers"
+                    results.append(r)
+                elif self.carve_regex():
+                    s = re.search(self.carve_regex(), header_value)
+                    if s:
+                        r = {"type": "IdentifyOnly"}
+                        r["hashcat"] = self.get_hashcat_command(s)
+                        r["source"] = s.groups()[0]
+                        r["location"] = "headers"
+                        results.append(r)
+
         if body:
             if type(body) != str:
                 raise badsecrets.errors.CarveException("Body argument must be type str")
@@ -99,12 +122,17 @@ class BadsecretsBase:
                         r["type"] = "SecretFound"
                     else:
                         r = {"type": "IdentifyOnly"}
+                        r["hashcat"] = self.get_hashcat_command(s)
                     r["source"] = s.groups()[0]
+                    r["location"] = "body"
                     results.append(r)
 
         for r in results:
             r["description"] = self.get_description()
-        return results
+
+        # Don't report an IdentifyOnly result if we have a SecretFound result for the same 'source'
+        secret_found_results = set(d["source"] for d in results if d["type"] == "SecretFound")
+        return [d for d in results if not (d["type"] == "IdentifyOnly" and d["source"] in secret_found_results)]
 
     @classmethod
     def identify(self, secret):
