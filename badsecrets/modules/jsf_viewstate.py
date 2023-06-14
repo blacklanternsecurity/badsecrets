@@ -14,7 +14,7 @@ from badsecrets.base import BadsecretsBase, generic_base64_regex
 class Jsf_viewstate(BadsecretsBase):
     myfaces_candidate_decryption_algorithms = [DES3, AES, DES]
 
-    identify_regex = generic_base64_regex
+    identify_regex = re.compile(r"^(?:[%A-Za-z0-9+\/]{4}){8,}(?:[%A-Za-z0-9+\/]{4}|[%A-Za-z0-9+\/]{3}=|[%A-Za-z0-9+\/]{2}={2})$")
     description = {"product": "Java Server Faces Viewstate", "secret": "com.sun.faces.ClientStateSavingPassword"}
 
     hashcat_hashalg_table = {"MD5": "50", "SHA1": "150", "SHA256": "1450", "SHA384": "10800", "SHA512": "1750"}
@@ -213,6 +213,7 @@ class Jsf_viewstate(BadsecretsBase):
             return None
 
         jsf_viewstate_value = urllib.parse.unquote(jsf_viewstate_value)
+
 
         if jsf_viewstate_value.startswith("rO0"):
             return {
