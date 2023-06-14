@@ -53,10 +53,7 @@ def test_examples_cli_url_invalid(monkeypatch, capsys):
         cli.main()
         assert exit_mock.called
         captured = capsys.readouterr()
-        assert (
-            "URL is not formatted correctly"
-            in captured.err
-        )
+        assert "URL is not formatted correctly" in captured.err
 
 
 def test_examples_cli_url_both_set(monkeypatch, capsys):
