@@ -54,7 +54,7 @@ def test_examples_cli_url_invalid(monkeypatch, capsys):
         assert exit_mock.called
         captured = capsys.readouterr()
         assert (
-            "Either supply the secret as a positional argument (supply all secrets for multi-secret modules), or use --url mode with a valid URL"
+            "URL is not formatted correctly"
             in captured.err
         )
 

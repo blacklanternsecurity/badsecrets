@@ -17,7 +17,7 @@ def no_padding_urlsafe_base64_encode(enc):
 
 class ExpressSignedCookies(BadsecretsBase):
     identify_regex = re.compile(r"^s%3[Aa][^\.]+\.[a-zA-Z0-9%]{20,90}$")
-    description = {"Product": "Express.js Signed Cookie", "Secret": "Express.js SESSION_SECRET"}
+    description = {"product": "Express.js Signed Cookie", "secret": "Express.js SESSION_SECRET"}
 
     def carve_regex(self):
         return re.compile(r"(s%3[Aa][^\.]+\.[a-zA-Z0-9%]{20,90})")

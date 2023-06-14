@@ -7,7 +7,7 @@ from badsecrets.base import BadsecretsBase
 
 class Flask_SignedCookies(BadsecretsBase):
     identify_regex = re.compile(r"eyJ(?:[\w-]*\.)(?:[\w-]*\.)[\w-]*")
-    description = {"Product": "Flask Signed Cookie", "Secret": "Flask Password"}
+    description = {"product": "Flask Signed Cookie", "secret": "Flask Password"}
 
     def check_secret(self, flask_cookie):
         if not self.identify(flask_cookie):
@@ -20,3 +20,11 @@ class Flask_SignedCookies(BadsecretsBase):
             if r:
                 return {"secret": password, "details": r}
         return None
+
+    def get_hashcat_commands(self, flask_cookie):
+        return [
+            {
+                "command": f"hashcat -m 29100 -a 0 {flask_cookie} <dictionary_file>",
+                "description": f"Flask Signed Cookie",
+            }
+        ]

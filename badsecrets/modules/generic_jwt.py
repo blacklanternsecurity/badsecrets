@@ -24,7 +24,7 @@ XMLDSIG_table = {
 
 class Generic_JWT(BadsecretsBase):
     identify_regex = re.compile(r"eyJ(?:[\w-]*\.)(?:[\w-]*\.)[\w-]*")
-    description = {"Product": "JSON Web Token (JWT)", "Secret": "HMAC/RSA Key"}
+    description = {"product": "JSON Web Token (JWT)", "secret": "HMAC/RSA Key"}
 
     @staticmethod
     def swap_algorithm(jwt, algorithm):
@@ -47,27 +47,49 @@ class Generic_JWT(BadsecretsBase):
         except j.exceptions.InvalidSignatureError:
             return None
 
-    def check_secret(self, JWT):
-        if not self.identify(JWT):
-            return None
-
+    def jwtLoad(self, JWT):
         try:
             jwt_headers = j.get_unverified_header(JWT)
-
         # if the JWT is not well formed, stop here
         except j.exceptions.DecodeError:
-            return None
-
+            return (None, None, None)
         try:
             algorithm = jwt_headers["alg"]
 
         # It could be a JWT-like token that is actually a different format, for example a flask cookie
         except KeyError:
-            return None
+            return (None, None, None)
 
         if algorithm in XMLDSIG_table.keys():
             algorithm = XMLDSIG_table[algorithm]
             JWT = self.swap_algorithm(JWT, algorithm)
+
+        return jwt_headers, algorithm, JWT
+
+    def get_hashcat_commands(self, JWT):
+        jwt_headers, algorithm, JWT = self.jwtLoad(JWT)
+        if not jwt_headers or not algorithm or not JWT:
+            return None
+
+        if algorithm[0].lower() != "h":
+            return None
+
+        signature = JWT.split(".")[2]
+
+        return [
+            {
+                "command": f"hashcat -m 16500 -a 0 {JWT}  <dictionary_file>",
+                "description": f"JSON Web Token (JWT) Algorithm: {algorithm}",
+            }
+        ]
+
+    def check_secret(self, JWT):
+        if not self.identify(JWT):
+            return None
+
+        jwt_headers, algorithm, JWT = self.jwtLoad(JWT)
+        if not jwt_headers or not algorithm or not JWT:
+            return None
 
         if algorithm[0].lower() == "h":
             for l in self.load_resource("jwt_secrets.txt"):

@@ -3,7 +3,7 @@
 # Black Lantern Security - https://www.blacklanternsecurity.com
 # @paulmmueller
 
-from badsecrets.base import check_all_modules, carve_all_modules
+from badsecrets.base import check_all_modules, carve_all_modules, hashcat_all_modules
 import requests
 import argparse
 import sys
@@ -27,9 +27,9 @@ class BaseReport:
         print("***********************")
         print(report_message)
         print(f"Detecting Module: {self.x['detecting_module']}\n")
-        print(f"Product Type: {self.x['description']['Product']}")
-        print(f"Product: {self.x['source']}")
-        print(f"Secret Type: {self.x['description']['Secret']}")
+        print(f"Product Type: {self.x['description']['product']}")
+        print(f"Product: {self.x['product']}")
+        print(f"Secret Type: {self.x['description']['secret']}")
         print(f"Location: {self.x['location']}")
 
 
@@ -68,7 +68,15 @@ def main():
         type=validate_url,
         help="Use URL Mode. Specified the URL of the page to access and attempt to check for secrets",
     )
-    parser.add_argument("secret", nargs="*", type=str)
+
+    parser.add_argument(
+        "-hc",
+        "--hashcat",
+        action="store_true",
+        help="Get the hashcat command for the provided crytopgrahic product and exit. This option is mutually exclusive with the --url option.",
+    )
+
+    parser.add_argument("product", nargs="*", type=str, help="Cryptographic product to check for known secrets")
 
     parser.add_argument(
         "-p",
@@ -86,13 +94,17 @@ def main():
 
     print("badsecrets - example command line interface\n")
 
-    if not args.url and not args.secret:
+    if args.hashcat and args.url:
+        parser.error("The --hashcat option is mutually exclusive with the --url option.")
+        return
+
+    if not args.url and not args.product and not args.hashcat:
         parser.error(
-            "Either supply the secret as a positional argument (supply all secrets for multi-secret modules), or use --url mode with a valid URL"
+            "Either supply the product as a positional argument (supply all products for multi-product modules), use --hashcat followed by the product as a positional argument, or use --url mode with a valid URL"
         )
         return
 
-    if args.url and args.secret:
+    if args.url and args.product:
         parser.error("In --url mode, no positional arguments should be used")
         return
 
@@ -122,10 +134,25 @@ def main():
         else:
             print("No secrets found :(")
 
+    elif args.hashcat:
+        print(*args.product)
+
+        hashcat_candidates = hashcat_all_modules(*args.product)
+
+        print("Potential matching hashcat commands:\n")
+        if hashcat_candidates:
+            for hc in hashcat_candidates:
+                print(
+                    f"Module: [{hc['detecting_module']}] {hc['hashcat_description']} Command: [{hc['hashcat_command']}]"
+                )
+        else:
+            print("No matching hashcat commands found :/")
+
     else:
-        x = check_all_modules(*args.secret)
+        x = check_all_modules(*args.product)
         if x:
-            ReportSecret(x)
+            report = ReportSecret(x)
+            report.report()
         else:
             print("No secrets found :(")
 
