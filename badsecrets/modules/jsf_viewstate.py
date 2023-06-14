@@ -8,7 +8,7 @@ import urllib.parse
 from Crypto.Cipher import DES3, AES, DES
 from Crypto.Util.Padding import unpad
 from badsecrets.helpers import Java_sha1prng
-from badsecrets.base import BadsecretsBase, generic_base64_regex
+from badsecrets.base import BadsecretsBase
 
 
 class Jsf_viewstate(BadsecretsBase):
@@ -67,12 +67,6 @@ class Jsf_viewstate(BadsecretsBase):
             cipher = AES.new(password_bytes, AES.MODE_CBC, iv)
             pt_b64 = unpad(cipher.decrypt(data), AES.block_size)
             return pt_b64
-
-    def myfaces_mac_identify(self, decoded_viewstate):
-        candidate_hash_algs = list(self.hash_sizes.keys())
-        for hash_alg in candidate_hash_algs:
-            data = ct_bytes[: -self.hash_sizes[hash_alg]]
-            sig = ct_bytes[-self.hash_sizes[hash_alg] :]
 
     def myfaces_mac(self, ct_bytes, password_bytes):
         candidate_hash_algs = list(self.hash_sizes.keys())

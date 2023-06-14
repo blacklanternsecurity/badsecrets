@@ -74,8 +74,6 @@ class Generic_JWT(BadsecretsBase):
         if algorithm[0].lower() != "h":
             return None
 
-        signature = JWT.split(".")[2]
-
         return [
             {
                 "command": f"hashcat -m 16500 -a 0 {JWT}  <dictionary_file>",
