@@ -4,13 +4,6 @@ from django.core.signing import loads as djangoLoads, BadSignature
 from badsecrets.base import BadsecretsBase
 
 
-def _base64_decode(s):
-    # Django strips the base64 padding (if any)
-    # So, we need to add it back to be able to decode
-    padding = "=" * (4 - (len(s) % 4))
-    return base64.urlsafe_b64decode(s + padding)
-
-
 class DjangoSignedCookies(BadsecretsBase):
     identify_regex = re.compile(r"^[\.a-zA-z-0-9]+:[\.a-zA-z-0-9:]+$")
     description = {"product": "Djangno Signed Cookie", "secret": "Django secret_key"}
