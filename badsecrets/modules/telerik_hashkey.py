@@ -48,9 +48,16 @@ class Telerik_HashKey(BadsecretsBase):
         dp_enc, dp_hash = self.telerik_hashkey_load(dialogParameters_raw)
         if not dp_enc or not dp_hash:
             return None
+
+        try:
+            dp_enc_decoded = base64.b64decode(dp_hash)
+            dp_hash_decoded = base64.b64decode(dp_enc)
+        except binascii.Error:
+            return None
+
         return [
             {
-                "command": f"hashcat -m 1450 -a 0 {base64.b64decode(dp_hash).hex()}:{base64.b64decode(dp_enc).hex()} --hex-salt <dictionary_file>",
+                "command": f"hashcat -m 1450 -a 0 {dp_enc_decoded.hex()}:{dp_hash_decoded.hex()} --hex-salt <dictionary_file>",
                 "description": f"Telerik Hash Key Signature",
             }
         ]

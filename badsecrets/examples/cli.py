@@ -45,7 +45,7 @@ class ReportIdentify(BaseReport):
         self.print_report("Cryptographic Product Identified (no vulnerability)\n")
 
         if self.x["hashcat"] is not None:
-            print(f"Hashcat Command: {self.x['hashcat']}")
+            print_hashcat_results(self.x["hashcat"])
 
 
 def validate_url(
@@ -58,6 +58,12 @@ def validate_url(
     if not pattern.match(arg_value):
         raise argparse.ArgumentTypeError("URL is not formatted correctly")
     return arg_value
+
+
+def print_hashcat_results(hashcat_candidates):
+    print("\nPotential matching hashcat commands:\n")
+    for hc in hashcat_candidates:
+        print(f"Module: [{hc['detecting_module']}] {hc['hashcat_description']} Command: [{hc['hashcat_command']}]")
 
 
 def main():
@@ -129,22 +135,19 @@ def main():
                 if r["type"] == "SecretFound":
                     report = ReportSecret(r)
                 else:
+                    hashcat_candidates = hashcat_all_modules(r["product"])
+                    if hashcat_candidates:
+                        r["hashcat"] = hashcat_candidates
                     report = ReportIdentify(r)
                 report.report()
         else:
             print("No secrets found :(")
 
     elif args.hashcat:
-        print(*args.product)
-
         hashcat_candidates = hashcat_all_modules(*args.product)
 
-        print("Potential matching hashcat commands:\n")
         if hashcat_candidates:
-            for hc in hashcat_candidates:
-                print(
-                    f"Module: [{hc['detecting_module']}] {hc['hashcat_description']} Command: [{hc['hashcat_command']}]"
-                )
+            print_hashcat_results(hashcat_candidates)
         else:
             print("No matching hashcat commands found :/")
 
@@ -155,6 +158,10 @@ def main():
             report.report()
         else:
             print("No secrets found :(")
+
+            hashcat_candidates = hashcat_all_modules(*args.product)
+            if hashcat_candidates:
+                print_hashcat_results(hashcat_candidates)
 
 
 if __name__ == "__main__":
