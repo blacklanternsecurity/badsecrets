@@ -1,5 +1,4 @@
 import re
-import base64
 from django.core.signing import loads as djangoLoads, BadSignature
 from badsecrets.base import BadsecretsBase
 
