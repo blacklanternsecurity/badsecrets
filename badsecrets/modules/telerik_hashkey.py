@@ -46,6 +46,8 @@ class Telerik_HashKey(BadsecretsBase):
 
     def get_hashcat_commands(self, dialogParameters_raw):
         dp_enc, dp_hash = self.telerik_hashkey_load(dialogParameters_raw)
+        if not dp_enc or not dp_hash:
+            return None
         return [
             {
                 "command": f"hashcat -m 1450 -a 0 {base64.b64decode(dp_hash).hex()}:{base64.b64decode(dp_enc).hex()} --hex-salt <dictionary_file>",
