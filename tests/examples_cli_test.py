@@ -146,3 +146,18 @@ def test_example_cli_hashcat_noresult(monkeypatch, capsys):
     captured = capsys.readouterr()
     assert "No matching hashcat commands found :/" in captured.out
     print(captured.out)
+
+
+def test_example_cli_hashcat_matchnomodule(monkeypatch, capsys):
+    # Check Vulnerable JWT
+    monkeypatch.setattr(
+        "sys.argv",
+        # this example will satisfy the tests now, since it matches an identify regex but no modules with hashcat functions
+        # If we make a hashcat function for express, we will probably have to make a dummy module instead
+        ["python", "s%3ABh8oG0qgMyJc4qq8A47I0MTwcNiu7ue8.hXhPs8q9AN4ATeh2KrjuzvSbJA7cqbkP5cUUT34bZKB", "--hashcat"],
+    )
+
+    cli.main()
+    captured = capsys.readouterr()
+    assert "No matching hashcat commands found :/" in captured.out
+    print(captured.out)

@@ -45,6 +45,9 @@ class Peoplesoft_PSToken(BadsecretsBase):
 
     def get_hashcat_commands(self, PS_TOKEN_B64):
         PS_TOKEN_DATA, SHA1_mac = self.peoplesoft_load(PS_TOKEN_B64)
+
+        if not PS_TOKEN_DATA or not SHA1_mac:
+            return None
         return [
             {
                 "command": f"hashcat -m 13500 -a 0 {SHA1_mac.hex()}:{PS_TOKEN_DATA.hex()}  <dictionary_file>",
