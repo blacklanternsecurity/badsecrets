@@ -94,6 +94,23 @@ Details: {'Issuer': 'Issuer', 'Username': 'BadSecrets', 'exp': 1593133483, 'iat'
 ***********************
 ```
 
+* Hashcat Mode
+
+You can append --hashcat to your command to get a pre-populated hashcat command suitible for cracking a given cryptographic product, if available. This can let you get those keys that may not be known, but are weak and still crackable. This output will also be automatically added to any CLI command where a secret was not identified (and a hashcat command is available). Not all modules are capable of producing hashcat output.
+
+```
+python ./badsecrets/examples/cli.py eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.qvkcSLMQPAQdEuRFv0h3aQIRpTfaI57GjXLOWI_6NaE --hashcat
+```
+
+Example output:
+
+```
+Potential matching hashcat commands:
+
+Module: [Flask_SignedCookies] Flask Signed Cookie Command: [hashcat -m 29100 -a 0 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.qvkcSLMQPAQdEuRFv0h3aQIRpTfaI57GjXLOWI_6NaE <dictionary_file>]
+Module: [Generic_JWT] JSON Web Token (JWT) Algorithm: HS256 Command: [hashcat -m 16500 -a 0 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.qvkcSLMQPAQdEuRFv0h3aQIRpTfaI57GjXLOWI_6NaE  <dictionary_file>]
+```
+
 ### Blacklist3r.py
 
 Bad secrets includes a [fully functional CLI example](https://github.com/blacklanternsecurity/badsecrets/blob/dev/badsecrets/examples/blacklist3r.py) which replicates the functionality of [blacklist3r](https://github.com/NotSoSecure/Blacklist3r) in python badsecrets/examples/blacklist3r. 
