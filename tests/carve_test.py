@@ -76,6 +76,46 @@ def test_carve_telerik():
     assert r[0]["secret"] == "d2a312d9-7af4-43de-be5a-ae717b46cea6"
 
 
+def test_carve_headers():
+    with requests_mock.Mocker() as m:
+        x = Generic_JWT()
+
+        test_headers_vuln = {
+            "auth_jwt": "eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo"
+        }
+        m.get(
+            f"http://vuln.headerscarve.badsecrets.com/",
+            status_code=200,
+            headers=test_headers_vuln,
+            text="<html><p>Some HTML Content</p></html>",
+        )
+
+        res = requests.get("http://vuln.headerscarve.badsecrets.com/")
+        r = x.carve(requests_response=res)
+
+        print(r)
+        assert len(r) > 0
+        assert r[0]["type"] == "SecretFound"
+        assert r[0]["secret"] == "1234"
+
+        test_headers_notvuln = {
+            "auth_jwt": "eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCA"
+        }
+        m.get(
+            f"http://notvuln.headerscarve.badsecrets.com/",
+            status_code=200,
+            headers=test_headers_notvuln,
+            text="<html><p>Some HTML Content</p></html>",
+        )
+
+        res = requests.get("http://notvuln.headerscarve.badsecrets.com/")
+        r = x.carve(requests_response=res)
+
+        print(r)
+        assert len(r) > 0
+        assert r[0]["type"] == "IdentifyOnly"
+
+
 def test_carve_cookies():
     with requests_mock.Mocker() as m:
         # peoplesoft_pstoken

@@ -114,3 +114,35 @@ def test_example_cli_identifyonly_url(monkeypatch, capsys):
         cli.main()
         captured = capsys.readouterr()
         assert "Cryptographic Product Identified (no vulnerability)" in captured.out
+
+
+def test_example_cli_hashcat_result(monkeypatch, capsys):
+    # Check Vulnerable JWT
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "python",
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+            "--hashcat",
+        ],
+    )
+
+    cli.main()
+    captured = capsys.readouterr()
+    assert "Potential matching hashcat commands:" in captured.out
+    assert "Module: [Generic_JWT] JSON Web Token (JWT) Algorithm: HS256 Command" in captured.out
+
+    print(captured.out)
+
+
+def test_example_cli_hashcat_noresult(monkeypatch, capsys):
+    # Check Vulnerable JWT
+    monkeypatch.setattr(
+        "sys.argv",
+        ["python", "nonsense!", "--hashcat"],
+    )
+
+    cli.main()
+    captured = capsys.readouterr()
+    assert "No matching hashcat commands found :/" in captured.out
+    print(captured.out)
