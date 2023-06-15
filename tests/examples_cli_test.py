@@ -187,7 +187,6 @@ def test_example_cli_hashcat_matchnomodule(monkeypatch, capsys):
 
 # this is to ensure hashcat output will only show for compatable JWT algorithms
 def test_example_cli_hashcat_jwtnomatchingalgo(monkeypatch, capsys):
-
     monkeypatch.setattr(
         "sys.argv",
         [
