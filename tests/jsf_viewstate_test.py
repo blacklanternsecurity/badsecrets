@@ -138,6 +138,14 @@ def test_myfaces_aes_ecb_sha1():
     assert "JSF Viewstate (Myfaces)" in r["details"]["info"]
 
 
+# AES/InvalidBase64
+def test_myfaces_aes_invalidb64():
+    s = "pBZgkQwn04iTzlwq/D0QMkpyddzl3ZykcI0Z60tu51sS1PGvDaWuG8nIqcH6m+xIupBoUYKfQ29HU4Aj2oQVTsakM34wklFTxBDGibP5G0gGHsYPfBcj66uGNnHY+5pgR%IuSA=="
+    x = Jsf_viewstate()
+    r = x.check_secret(s)
+    assert not r
+
+
 # 3DES/CBC/SHA1/NoCompression
 def test_myfaces_3des_cbc_sha1():
     s = "ryvk9O4nTbphFjFZNbgb9HZy0f+YFDJZdngV8i+fwGof0LYom4hQfw7kV1kyYI8FMlC/vU0d0oYptIFJKmQ/0A+dGyGMAgCHpsqXdbu8dHZLzVvvTYVyCwSQeZ8="
