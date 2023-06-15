@@ -229,3 +229,57 @@ def test_example_cli_hashcat_telerikhashkey(monkeypatch, capsys):
     captured = capsys.readouterr()
 
     assert "Module: [Telerik_HashKey] Telerik Hash Key Signature Command: [hashcat -m 1450 -a 0 d63e" in captured.out
+
+
+def test_example_cli_hashcat_telerikhashkey_invalid(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "python",
+            "y1MPLyncErmvCfYRJDU72NLpEurHW6DfW=",
+            "--hashcat",
+        ],
+    )
+
+    cli.main()
+    captured = capsys.readouterr()
+
+    assert not "Module: [Telerik_HashKey] Telerik Hash Key Signature Command" in captured.out
+
+
+def test_example_cli_hashcat_symfony_sha1(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "python",
+            "https://localhost/_fragment?_path=_controller%3Dsystem%26command%3Did%26return_value%3Dnull&_hash=x3nyAneZB74G5S9L66d5ftJVNnk=",
+            "--hashcat",
+        ],
+    )
+
+    cli.main()
+    captured = capsys.readouterr()
+
+    assert (
+        "[Symfony_SignedURL] Symfony Signed URL Algorithm: [sha1] Command: [hashcat -m 150 -a 0 c779f202779907be06e52f4beba7797ed2553679:68747470733a2f2f6c6f63616c686f73742f5f667261676d656e743f5f706174683d5f636f6e74726f6c6c657225334473797374656d253236636f6d6d616e64253344696425323672657475726e5f76616c75652533446e756c6c --hex-salt  <dictionary_file>]"
+        in captured.out
+    )
+
+
+def test_example_cli_hashcat_symfony_sha256(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "python",
+            "https://localhost/_fragment?_path=_controller%3Dsystem%26command%3Did%26return_value%3Dnull&_hash=Xnsvx/yLVQaimEd1CfepgH0rEXr422JnRSn/uaCE3gs=",
+            "--hashcat",
+        ],
+    )
+
+    cli.main()
+    captured = capsys.readouterr()
+
+    assert (
+        "[Symfony_SignedURL] Symfony Signed URL Algorithm: [sha256] Command: [hashcat -m 1450 -a 0 5e7b2fc7fc8b5506a298477509f7a9807d2b117af8db62674529ffb9a084de0b:68747470733a2f2f6c6f63616c686f73742f5f667261676d656e743f5f706174683d5f636f6e74726f6c6c657225334473797374656d253236636f6d6d616e64253344696425323672657475726e5f76616c75652533446e756c6c --hex-salt  <dictionary_file>]"
+        in captured.out
+    )
