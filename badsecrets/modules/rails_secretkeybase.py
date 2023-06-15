@@ -12,7 +12,7 @@ from badsecrets.base import BadsecretsBase
 
 class Rails_SecretKeyBase(BadsecretsBase):
     identify_regex = re.compile(r"^[\.a-zA-z-0-9\%=]{32,}--[\.a-zA-z-0-9%=]{16,}$")
-    description = {"Product": "Rails Signed Cookie", "Secret": "Rails secret_key_base"}
+    description = {"product": "Rails Signed Cookie", "secret": "Rails secret_key_base"}
 
     def rails(self, rails_cookie, secret_key_base):
         split_rails_cookie = urllib.parse.unquote(rails_cookie).split("--")
