@@ -187,11 +187,9 @@ def test_example_cli_hashcat_matchnomodule(monkeypatch, capsys):
 
 # this is to ensure hashcat output will only show for compatable JWT algorithms
 def test_example_cli_hashcat_jwtnomatchingalgo(monkeypatch, capsys):
-    # Check Vulnerable JWT
+
     monkeypatch.setattr(
         "sys.argv",
-        # this example will satisfy the tests now, since it matches an identify regex but no modules with hashcat functions
-        # If we make a hashcat function for express, we will probably have to make a dummy module instead
         [
             "python",
             "eyJhbGciOiJGQUtFIiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
