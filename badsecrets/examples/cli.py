@@ -5,7 +5,6 @@
 
 from badsecrets.base import check_all_modules, carve_all_modules, hashcat_all_modules
 import pkg_resources
-import colorama
 import requests
 import argparse
 import sys
@@ -32,8 +31,6 @@ ____/  \__,_| \__,_| ____/ \___| \___| _|    \___| \__| ____/
 
 
 def print_version():
-    import badsecrets
-
     version = pkg_resources.get_distribution("badsecrets").version
     if version == "0.0.0":
         print("Version Unknown (Running w/poetry?)")
@@ -94,20 +91,18 @@ def validate_url(
     ),
 ):
     if not pattern.match(arg_value):
-        raise argparse.ArgumentTypeError(print_error("URL is not formatted correctly", color=Fore.RED, passthru=True))
+        raise argparse.ArgumentTypeError(print_status("URL is not formatted correctly", color=Fore.RED))
     return arg_value
 
 
 def validate_file(file):
     if not os.path.exists(file):
-        raise argparse.ArgumentTypeError(
-            print_error(f"The file {file} does not exist!", color=Fore.RED, passthru=True)
-        )
+        raise argparse.ArgumentTypeError(print_status(f"The file {file} does not exist!", color=Fore.RED))
     if not os.path.isfile(file):
-        raise argparse.ArgumentTypeError(print_error(f"{file} is not a valid file!", color=Fore.RED, passthru=True))
+        raise argparse.ArgumentTypeError(print_status(f"{file} is not a valid file!", color=Fore.RED))
     if os.path.getsize(file) > 100 * 1024:  # size in bytes
         raise argparse.ArgumentTypeError(
-            print_error(f"The file {file} exceeds the maximum limit of 100KB!", color=Fore.RED, passthru=True)
+            print_status(f"The file {file} exceeds the maximum limit of 100KB!", color=Fore.RED)
         )
     return file
 
@@ -184,15 +179,12 @@ def main():
             print_status(
                 "Either supply the product as a positional argument (supply all products for multi-product modules), use --hashcat followed by the product as a positional argument, or use --url mode with a valid URL",
                 color=Fore.RED,
-                passthru=True,
             )
         )
         return
 
     if args.url and args.product:
-        parser.error(
-            print_error("In --url mode, no positional arguments should be used", color=Fore.RED, passthru=True)
-        )
+        parser.error(print_status("In --url mode, no positional arguments should be used", color=Fore.RED))
         return
 
     proxies = None
@@ -207,7 +199,7 @@ def main():
         try:
             res = requests.get(args.url, proxies=proxies, headers=headers, verify=False)
         except (requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout):
-            print_error(f"Error connecting to URL: [{args.url}]", color=Fore.RED)
+            print_status(f"Error connecting to URL: [{args.url}]", color=Fore.RED)
             return
 
         r_list = carve_all_modules(requests_response=res)
