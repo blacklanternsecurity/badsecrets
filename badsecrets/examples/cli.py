@@ -33,9 +33,8 @@ ____/  \__,_| \__,_| ____/ \___| \___| _|    \___| \__| ____/
 def print_version():
     version = pkg_resources.get_distribution("badsecrets").version
     if version == "0.0.0":
-        print("Version Unknown (Running w/poetry?)")
-    else:
-        print(f"v{version}\n")
+        version = "Version Unknown (Running w/poetry?)"
+    print(f"v{version}\n")
 
 
 class CustomArgumentParser(argparse.ArgumentParser):

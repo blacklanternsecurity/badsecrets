@@ -368,6 +368,43 @@ def test_example_cli_customsecrets_bad(monkeypatch, capsys):
         assert "The file notexist.txt does not exist!" in captured.out
 
 
+def test_example_cli_customsecrets_directory(monkeypatch, capsys):
+    with patch("sys.exit") as exit_mock:
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "python",
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.vKxsE0u-TrpoMQ5zmBv1_I-NXSgouq6iZJWMHbHSmgY",
+                "-c",
+                "/",
+            ],
+        )
+        cli.main()
+        assert exit_mock.called
+        captured = capsys.readouterr()
+        assert "is not a valid file!" in captured.out
+
+
+def test_example_cli_customsecrets_toolarge(monkeypatch, capsys):
+    with patch("sys.exit") as exit_mock:
+        with tempfile.NamedTemporaryFile("w+t", delete=False) as f:
+            f.write("x" * 1024 * 101)
+            f.flush()
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "python",
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.vKxsE0u-TrpoMQ5zmBv1_I-NXSgouq6iZJWMHbHSmgY",
+                "-c",
+                f.name,
+            ],
+        )
+        cli.main()
+        assert exit_mock.called
+        captured = capsys.readouterr()
+        assert "exceeds the maximum limit of 100KB!" in captured.out
+
+
 def test_example_cli_color(monkeypatch, capsys):
     monkeypatch.setattr(
         "sys.argv",
