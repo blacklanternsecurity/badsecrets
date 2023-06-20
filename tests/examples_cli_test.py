@@ -363,6 +363,7 @@ def test_example_cli_customsecrets_bad(monkeypatch, capsys):
             ],
         )
         cli.main()
+        assert exit_mock.called
         captured = capsys.readouterr()
         assert "The file notexist.txt does not exist!" in captured.out
 
