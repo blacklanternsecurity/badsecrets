@@ -90,7 +90,7 @@ class Generic_JWT(BadsecretsBase):
             return None
 
         if algorithm[0].lower() == "h":
-            for l in self.load_resource("jwt_secrets.txt"):
+            for l in self.load_resources(["jwt_secrets.txt"]):
                 key = l.strip()
 
                 r = self.jwtVerify(JWT, key, algorithm)
@@ -100,7 +100,7 @@ class Generic_JWT(BadsecretsBase):
                     return {"secret": key, "details": r}
 
         elif algorithm[0].lower() == "r":
-            for l in self.load_resource("jwt_rsakeys_public.txt"):
+            for l in self.load_resources(["jwt_rsakeys_public.txt"]):
                 private_key_name = l.split(":")[0]
                 public_key = f"{l.split(':')[1]}".rstrip().encode().replace(b"\\n", b"\n")
                 r = self.jwtVerify(JWT, public_key, algorithm)

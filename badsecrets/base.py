@@ -27,8 +27,8 @@ class BadsecretsBase:
 
     check_secret_args = 1
 
-    def __init__(self, **kwargs):
-        setattr(self, "custom_resource", kwargs.get("custom_resource", None))
+    def __init__(self, custom_resource=None, **kwargs):
+        self.custom_resource = custom_resource
 
         if self.custom_resource:
             if not os.path.exists(self.custom_resource):
@@ -47,15 +47,17 @@ class BadsecretsBase:
     def get_hashcat_commands(self, s):
         return None
 
-    def load_resource(self, resource):
+    def load_resources(self, resource_list):
+        filepaths = []
         if self.custom_resource:
-            filepath = self.custom_resource
-        else:
-            filepath = f"{os.path.dirname(os.path.abspath(__file__))}/resources/{resource}"
-        with open(filepath) as r:
-            for l in r.readlines():
-                if len(l) > 0:
-                    yield l
+            filepaths.append(self.custom_resource)
+        for r in resource_list:
+            filepaths.append(f"{os.path.dirname(os.path.abspath(__file__))}/resources/{r}")
+        for filepath in filepaths:
+            with open(filepath) as r:
+                for l in r.readlines():
+                    if len(l) > 0:
+                        yield l
 
     def carve_to_check_secret(self, s):
         if s.groups():
@@ -106,7 +108,7 @@ class BadsecretsBase:
                     s = re.search(self.carve_regex(), header_value)
                     if s:
                         r = {"type": "IdentifyOnly"}
-                        r["hashcat"] = self.get_hashcat_commands(s)
+                        r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
                         r["product"] = s.groups()[0]
                         r["location"] = "headers"
                         results.append(r)
@@ -122,7 +124,7 @@ class BadsecretsBase:
                         r["type"] = "SecretFound"
                     else:
                         r = {"type": "IdentifyOnly"}
-                        r["hashcat"] = self.get_hashcat_commands(s)
+                        r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
                     r["product"] = s.groups()[0]
                     r["location"] = "body"
                     results.append(r)
@@ -164,9 +166,9 @@ def hashcat_all_modules(product):
     return hashcat_candidates
 
 
-def check_all_modules(*args):
+def check_all_modules(*args, **kwargs):
     for m in BadsecretsBase.__subclasses__():
-        x = m()
+        x = m(custom_resource=kwargs.get("custom_resource", None))
         r = x.check_secret(*args[0 : x.check_secret_args])
         if r:
             r["detecting_module"] = m.__name__

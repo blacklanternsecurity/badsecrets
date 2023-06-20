@@ -12,9 +12,7 @@ class Flask_SignedCookies(BadsecretsBase):
     def check_secret(self, flask_cookie):
         if not self.identify(flask_cookie):
             return None
-        for l in set(
-            list(self.load_resource("flask_secret_keys.txt")) + list(self.load_resource("top_10000_passwords.txt"))
-        ):
+        for l in set(list(self.load_resources(["flask_secret_keys.txt", "top_10000_passwords.txt"]))):
             password = l.rstrip()
             r = flaskVerify(value=flask_cookie, secret=password)
             if r:

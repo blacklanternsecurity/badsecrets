@@ -65,7 +65,7 @@ class Symfony_SignedURL(BadsecretsBase):
     def check_secret(self, signed_url):
         if not self.identify(signed_url):
             return None
-        for l in self.load_resource("symfony_appsecret.txt"):
+        for l in self.load_resources(["symfony_appsecret.txt"]):
             password = l.rstrip()
             r = self.symfonyVerify(value=signed_url, secret=password)
             if r:

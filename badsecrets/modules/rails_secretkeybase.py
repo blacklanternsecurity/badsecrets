@@ -65,7 +65,7 @@ class Rails_SecretKeyBase(BadsecretsBase):
     def check_secret(self, rails_cookie):
         if not self.identify(rails_cookie):
             return None
-        for l in self.load_resource("rails_secret_key_base.txt"):
+        for l in self.load_resources(["rails_secret_key_base.txt"]):
             secret_key_base = l.rstrip()
             r = self.rails(rails_cookie, secret_key_base)
             if r:

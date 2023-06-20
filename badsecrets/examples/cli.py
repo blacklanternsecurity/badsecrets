@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-# badsecrets - example command line interface
+# badsecrets - command line interface
 # Black Lantern Security - https://www.blacklanternsecurity.com
 # @paulmmueller
 
 from badsecrets.base import check_all_modules, carve_all_modules, hashcat_all_modules
+import pkg_resources
 import requests
 import argparse
 import sys
 import os
 import re
+from colorama import Fore, Style, init
+
+init(autoreset=True)  # Automatically reset the color to default after each print statement
 
 from urllib3.exceptions import InsecureRequestWarning
 
@@ -18,13 +22,32 @@ requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
+ascii_art_banner = """
+ __ )              |                                |         
+ __ \    _` |   _` |   __|   _ \   __|   __|   _ \  __|   __| 
+ |   |  (   |  (   | \__ \   __/  (     |      __/  |   \__ \ 
+____/  \__,_| \__,_| ____/ \___| \___| _|    \___| \__| ____/ 
+"""
+
+
+def print_version():
+    version = pkg_resources.get_distribution("badsecrets").version
+    if version == "0.0.0":
+        version = "Version Unknown (Running w/poetry?)"
+    print(f"v{version}\n")
+
+
+class CustomArgumentParser(argparse.ArgumentParser):
+    def error(self, message):
+        self.print_usage()
+        self.exit(1)
+
 
 class BaseReport:
     def __init__(self, x):
         self.x = x
 
     def print_report(self, report_message):
-        print("***********************")
         print(report_message)
         print(f"Detecting Module: {self.x['detecting_module']}\n")
         print(f"Product Type: {self.x['description']['product']}")
@@ -35,17 +58,28 @@ class BaseReport:
 
 class ReportSecret(BaseReport):
     def report(self):
-        self.print_report("Known Secret Found!\n")
-        print(f"Secret: {self.x['secret']}")
+        self.print_report(print_status("Known Secret Found!\n", color=Fore.GREEN, passthru=True))
+        print_status(f"Secret: {self.x['secret']}", color=Fore.GREEN)
         print(f"Details: {self.x['details']}")
 
 
 class ReportIdentify(BaseReport):
     def report(self):
-        self.print_report("Cryptographic Product Identified (no vulnerability)\n")
-
+        self.print_report(
+            print_status("Cryptographic Product Identified (no vulnerability)\n", color=Fore.YELLOW, passthru=True)
+        )
         if self.x["hashcat"] is not None:
             print_hashcat_results(self.x["hashcat"])
+
+
+def print_status(msg, passthru=False, color=Fore.WHITE):
+    if msg:
+        if colorenabled:
+            msg = f"{color}{msg}{Style.RESET_ALL}"
+        if passthru:
+            return msg
+        else:
+            print(msg)
 
 
 def validate_url(
@@ -56,18 +90,52 @@ def validate_url(
     ),
 ):
     if not pattern.match(arg_value):
-        raise argparse.ArgumentTypeError("URL is not formatted correctly")
+        raise argparse.ArgumentTypeError(print_status("URL is not formatted correctly", color=Fore.RED))
     return arg_value
 
 
+def validate_file(file):
+    if not os.path.exists(file):
+        raise argparse.ArgumentTypeError(print_status(f"The file {file} does not exist!", color=Fore.RED))
+    if not os.path.isfile(file):
+        raise argparse.ArgumentTypeError(print_status(f"{file} is not a valid file!", color=Fore.RED))
+    if os.path.getsize(file) > 100 * 1024:  # size in bytes
+        raise argparse.ArgumentTypeError(
+            print_status(f"The file {file} exceeds the maximum limit of 100KB!", color=Fore.RED)
+        )
+    return file
+
+
 def print_hashcat_results(hashcat_candidates):
-    print("\nPotential matching hashcat commands:\n")
+    print_status("\nPotential matching hashcat commands:\n", color=Fore.YELLOW)
     for hc in hashcat_candidates:
         print(f"Module: [{hc['detecting_module']}] {hc['hashcat_description']} Command: [{hc['hashcat_command']}]")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Check cryptographic tokens against badsecrets library")
+    global colorenabled
+    colorenabled = False
+
+    parser = CustomArgumentParser(description="Check cryptographic products against badsecrets library")
+
+    parser.add_argument(
+        "-nc",
+        "--no-color",
+        action="store_true",
+        help="Disable color message in the console",
+    )
+
+    args, unknown_args = parser.parse_known_args()
+    if not args.no_color:
+        colorenabled = True
+
+    if colorenabled:
+        print_status(ascii_art_banner, color=Fore.GREEN)
+
+    else:
+        print(ascii_art_banner)
+    print_version()
+
     parser.add_argument(
         "-u",
         "--url",
@@ -76,10 +144,17 @@ def main():
     )
 
     parser.add_argument(
-        "-hc",
-        "--hashcat",
+        "-nh",
+        "--no-hashcat",
         action="store_true",
-        help="Get the hashcat command for the provided crytopgrahic product and exit. This option is mutually exclusive with the --url option.",
+        help="Skip the check for compatable hashcat commands when secret isn't found",
+    )
+
+    parser.add_argument(
+        "-c",
+        "--custom-secrets",
+        type=validate_file,
+        help="include a custom secrets file to load along with the default secrets",
     )
 
     parser.add_argument("product", nargs="*", type=str, help="Cryptographic product to check for known secrets")
@@ -98,20 +173,17 @@ def main():
 
     args = parser.parse_args()
 
-    print("badsecrets - example command line interface\n")
-
-    if args.hashcat and args.url:
-        parser.error("The --hashcat option is mutually exclusive with the --url option.")
-        return
-
-    if not args.url and not args.product and not args.hashcat:
+    if not args.url and not args.product:
         parser.error(
-            "Either supply the product as a positional argument (supply all products for multi-product modules), use --hashcat followed by the product as a positional argument, or use --url mode with a valid URL"
+            print_status(
+                "Either supply the product as a positional argument (supply all products for multi-product modules), use --hashcat followed by the product as a positional argument, or use --url mode with a valid URL",
+                color=Fore.RED,
+            )
         )
         return
 
     if args.url and args.product:
-        parser.error("In --url mode, no positional arguments should be used")
+        parser.error(print_status("In --url mode, no positional arguments should be used", color=Fore.RED))
         return
 
     proxies = None
@@ -126,7 +198,7 @@ def main():
         try:
             res = requests.get(args.url, proxies=proxies, headers=headers, verify=False)
         except (requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout):
-            print(f"Error connecting to URL: [{args.url}]")
+            print_status(f"Error connecting to URL: [{args.url}]", color=Fore.RED)
             return
 
         r_list = carve_all_modules(requests_response=res)
@@ -135,33 +207,30 @@ def main():
                 if r["type"] == "SecretFound":
                     report = ReportSecret(r)
                 else:
-                    hashcat_candidates = hashcat_all_modules(r["product"])
-                    if hashcat_candidates:
-                        r["hashcat"] = hashcat_candidates
+                    if not args.no_hashcat:
+                        hashcat_candidates = hashcat_all_modules(r["product"])
+                        if hashcat_candidates:
+                            r["hashcat"] = hashcat_candidates
                     report = ReportIdentify(r)
                 report.report()
         else:
-            print("No secrets found :(")
-
-    elif args.hashcat:
-        hashcat_candidates = hashcat_all_modules(*args.product)
-
-        if hashcat_candidates:
-            print_hashcat_results(hashcat_candidates)
-        else:
-            print("No matching hashcat commands found :/")
+            print_status("No secrets found :(", color=Fore.RED)
 
     else:
-        x = check_all_modules(*args.product)
+        custom_resource = None
+        if args.custom_secrets:
+            custom_resource = args.custom_secrets
+            print_status(f"Including custom secrets list [{custom_resource}]\n", color=Fore.YELLOW)
+        x = check_all_modules(*args.product, custom_resource=custom_resource)
         if x:
             report = ReportSecret(x)
             report.report()
         else:
-            print("No secrets found :(")
-
-            hashcat_candidates = hashcat_all_modules(*args.product)
-            if hashcat_candidates:
-                print_hashcat_results(hashcat_candidates)
+            print_status("No secrets found :(", color=Fore.RED)
+            if not args.no_hashcat:
+                hashcat_candidates = hashcat_all_modules(*args.product)
+                if hashcat_candidates:
+                    print_hashcat_results(hashcat_candidates)
 
 
 if __name__ == "__main__":

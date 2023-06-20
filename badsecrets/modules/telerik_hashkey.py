@@ -16,13 +16,13 @@ class Telerik_HashKey(BadsecretsBase):
 
     def prepare_keylist(self, include_machinekeys=True):
         if include_machinekeys:
-            for l in self.load_resource("aspnet_machinekeys.txt"):
+            for l in self.load_resources(["aspnet_machinekeys.txt"]):
                 try:
                     vkey, ekey = l.rstrip().split(",")
                     yield vkey
                 except ValueError:
                     continue
-        for l in self.load_resource("telerik_hash_keys.txt"):
+        for l in self.load_resources(["telerik_hash_keys.txt"]):
             vkey = l.strip()
             yield vkey
 
