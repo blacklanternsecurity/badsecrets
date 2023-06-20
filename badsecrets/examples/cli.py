@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# badsecrets - example command line interface
+# badsecrets - command line interface
 # Black Lantern Security - https://www.blacklanternsecurity.com
 # @paulmmueller
 
@@ -60,6 +60,16 @@ def validate_url(
     return arg_value
 
 
+def validate_file(file):
+    if not os.path.exists(file):
+        raise argparse.ArgumentTypeError(f"The file {file} does not exist!")
+    if not os.path.isfile(file):
+        raise argparse.ArgumentTypeError(f"{file} is not a valid file!")
+    if os.path.getsize(file) > 100 * 1024:  # size in bytes
+        raise argparse.ArgumentTypeError(f"The file {file} exceeds the maximum limit of 100KB!")
+    return file
+
+
 def print_hashcat_results(hashcat_candidates):
     print("\nPotential matching hashcat commands:\n")
     for hc in hashcat_candidates:
@@ -76,10 +86,17 @@ def main():
     )
 
     parser.add_argument(
-        "-hc",
-        "--hashcat",
+        "-nh",
+        "--no-hashcat",
         action="store_true",
-        help="Get the hashcat command for the provided crytopgrahic product and exit. This option is mutually exclusive with the --url option.",
+        help="Skip the check for compatable hashcat commands when secret isn't found",
+    )
+
+    parser.add_argument(
+        "-c",
+        "--custom-secrets",
+        type=validate_file,
+        help="include a custom secrets file to load along with the default secrets",
     )
 
     parser.add_argument("product", nargs="*", type=str, help="Cryptographic product to check for known secrets")
@@ -98,13 +115,9 @@ def main():
 
     args = parser.parse_args()
 
-    print("badsecrets - example command line interface\n")
+    print("badsecrets - command line interface\n")
 
-    if args.hashcat and args.url:
-        parser.error("The --hashcat option is mutually exclusive with the --url option.")
-        return
-
-    if not args.url and not args.product and not args.hashcat:
+    if not args.url and not args.product:
         parser.error(
             "Either supply the product as a positional argument (supply all products for multi-product modules), use --hashcat followed by the product as a positional argument, or use --url mode with a valid URL"
         )
@@ -135,33 +148,29 @@ def main():
                 if r["type"] == "SecretFound":
                     report = ReportSecret(r)
                 else:
-                    hashcat_candidates = hashcat_all_modules(r["product"])
-                    if hashcat_candidates:
-                        r["hashcat"] = hashcat_candidates
+                    if not args.no_hashcat:
+                        hashcat_candidates = hashcat_all_modules(r["product"])
+                        if hashcat_candidates:
+                            r["hashcat"] = hashcat_candidates
                     report = ReportIdentify(r)
                 report.report()
         else:
             print("No secrets found :(")
 
-    elif args.hashcat:
-        hashcat_candidates = hashcat_all_modules(*args.product)
-
-        if hashcat_candidates:
-            print_hashcat_results(hashcat_candidates)
-        else:
-            print("No matching hashcat commands found :/")
-
     else:
-        x = check_all_modules(*args.product)
+        custom_resource = None
+        if args.custom_secrets:
+            custom_resource = args.custom_secrets
+        x = check_all_modules(*args.product, custom_resource=custom_resource)
         if x:
             report = ReportSecret(x)
             report.report()
         else:
             print("No secrets found :(")
-
-            hashcat_candidates = hashcat_all_modules(*args.product)
-            if hashcat_candidates:
-                print_hashcat_results(hashcat_candidates)
+            if not args.no_hashcat:
+                hashcat_candidates = hashcat_all_modules(*args.product)
+                if hashcat_candidates:
+                    print_hashcat_results(hashcat_candidates)
 
 
 if __name__ == "__main__":

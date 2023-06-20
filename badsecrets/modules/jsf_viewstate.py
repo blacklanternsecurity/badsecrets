@@ -234,9 +234,7 @@ class Jsf_viewstate(BadsecretsBase):
             else:
                 jsf_viewstate_value = base64.b64encode(uncompressed)
 
-        for l in list(self.load_resource("jsf_viewstate_passwords.txt")) + list(
-            self.load_resource("top_10000_passwords.txt")
-        ):
+        for l in set(list(self.load_resources(["jsf_viewstate_passwords.txt", "top_10000_passwords.txt"]))):
             password = l.rstrip()
             if self.DES3_decrypt(jsf_viewstate_value, password):
                 return {
@@ -249,7 +247,7 @@ class Jsf_viewstate(BadsecretsBase):
                 }
 
         # Mojarra decryption
-        for l in self.load_resource("jsf_viewstate_passwords_b64.txt"):
+        for l in self.load_resources(["jsf_viewstate_passwords_b64.txt"]):
             password_bytes = base64.b64decode(l.rstrip())
             decrypted = self.AES_decrypt(jsf_viewstate_value, password_bytes)
 
@@ -285,7 +283,7 @@ class Jsf_viewstate(BadsecretsBase):
             return False
 
         # Attempt to solve mac_key
-        for l in self.load_resource("jsf_viewstate_passwords_b64.txt"):
+        for l in self.load_resources(["jsf_viewstate_passwords_b64.txt"]):
             password_bytes = base64.b64decode(l.rstrip())
             myfaces_solved_mac_key, myfaces_solved_mac_algo = self.myfaces_mac(ct_bytes, password_bytes)
             if myfaces_solved_mac_key:
@@ -303,7 +301,7 @@ class Jsf_viewstate(BadsecretsBase):
             dec_algos = set(self.myfaces_candidate_decryption_algorithms)
             hash_sizes = self.hash_sizes.values()
 
-        for l in self.load_resource("jsf_viewstate_passwords_b64.txt"):
+        for l in self.load_resources(["jsf_viewstate_passwords_b64.txt"]):
             password_bytes = base64.b64decode(l.rstrip())
             (
                 myfaces_solved_decryption_key,

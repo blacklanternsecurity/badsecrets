@@ -137,7 +137,7 @@ class ASPNET_Viewstate(BadsecretsBase):
         else:
             encrypted = True
 
-        for l in self.load_resource("aspnet_machinekeys.txt"):
+        for l in self.load_resources(["aspnet_machinekeys.txt"]):
             try:
                 vkey, ekey = l.rstrip().split(",")
             except ValueError:
