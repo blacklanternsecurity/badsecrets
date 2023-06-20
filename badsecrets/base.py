@@ -108,7 +108,7 @@ class BadsecretsBase:
                     s = re.search(self.carve_regex(), header_value)
                     if s:
                         r = {"type": "IdentifyOnly"}
-                        r["hashcat"] = self.get_hashcat_commands(s)
+                        r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
                         r["product"] = s.groups()[0]
                         r["location"] = "headers"
                         results.append(r)
@@ -124,7 +124,7 @@ class BadsecretsBase:
                         r["type"] = "SecretFound"
                     else:
                         r = {"type": "IdentifyOnly"}
-                        r["hashcat"] = self.get_hashcat_commands(s)
+                        r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
                     r["product"] = s.groups()[0]
                     r["location"] = "body"
                     results.append(r)

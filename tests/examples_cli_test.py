@@ -54,7 +54,7 @@ def test_examples_cli_url_invalid(monkeypatch, capsys):
         cli.main()
         assert exit_mock.called
         captured = capsys.readouterr()
-        assert "URL is not formatted correctly" in captured.err
+        assert "URL is not formatted correctly" in captured.out
 
 
 def test_examples_cli_url_both_set(monkeypatch, capsys):
@@ -72,7 +72,7 @@ def test_examples_cli_url_both_set(monkeypatch, capsys):
         cli.main()
         assert exit_mock.called
         captured = capsys.readouterr()
-        assert "In --url mode, no positional arguments should be used" in captured.err
+        assert "In --url mode, no positional arguments should be used" in captured.out
 
 
 def test_example_cli_vulnerable_url(monkeypatch, capsys):
@@ -366,3 +366,13 @@ def test_example_cli_customsecrets_bad(monkeypatch, capsys):
         assert exit_mock.called
         captured = capsys.readouterr()
         print()
+
+
+def test_example_cli_color(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "sys.argv",
+        ["python", "junk"],
+    )
+    cli.main()
+    captured = capsys.readouterr()
+    assert "\x1b[32m\n" in captured.out
