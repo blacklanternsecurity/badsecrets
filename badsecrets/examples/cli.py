@@ -52,7 +52,6 @@ class BaseReport:
         self.x = x
 
     def print_report(self, report_message):
-        print("***********************")
         print(report_message)
         print(f"Detecting Module: {self.x['detecting_module']}\n")
         print(f"Product Type: {self.x['description']['product']}")
@@ -63,39 +62,26 @@ class BaseReport:
 
 class ReportSecret(BaseReport):
     def report(self):
-        self.print_report(print_success("Known Secret Found!\n"))
-        print_success(f"Secret: {self.x['secret']}")
+        self.print_report(print_status("Known Secret Found!\n", color=Fore.GREEN, passthru=True))
+        print_status(f"Secret: {self.x['secret']}", color=Fore.GREEN)
         print(f"Details: {self.x['details']}")
 
 
 class ReportIdentify(BaseReport):
     def report(self):
-        self.print_report(print_status("Cryptographic Product Identified (no vulnerability)\n"))
-
+        self.print_report(
+            print_status("Cryptographic Product Identified (no vulnerability)\n", color=Fore.YELLOW, passthru=True)
+        )
         if self.x["hashcat"] is not None:
             print_hashcat_results(self.x["hashcat"])
 
 
-def print_error(msg):
+def print_status(msg, passthru=False, color=Fore.WHITE):
     if msg:
         if colorenabled:
-            print(Fore.RED + msg + Style.RESET_ALL)
-        else:
-            print(msg)
-
-
-def print_success(msg):
-    if msg:
-        if colorenabled:
-            print(Fore.GREEN + msg + Style.RESET_ALL)
-        else:
-            print(msg)
-
-
-def print_status(msg):
-    if msg:
-        if colorenabled:
-            print(Fore.YELLOW + msg + Style.RESET_ALL)
+            msg = f"{color}{msg}{Style.RESET_ALL}"
+        if passthru:
+            return msg
         else:
             print(msg)
 
@@ -108,22 +94,26 @@ def validate_url(
     ),
 ):
     if not pattern.match(arg_value):
-        raise argparse.ArgumentTypeError(print_error("URL is not formatted correctly"))
+        raise argparse.ArgumentTypeError(print_error("URL is not formatted correctly", color=Fore.RED, passthru=True))
     return arg_value
 
 
 def validate_file(file):
     if not os.path.exists(file):
-        raise argparse.ArgumentTypeError(print_error(f"The file {file} does not exist!"))
+        raise argparse.ArgumentTypeError(
+            print_error(f"The file {file} does not exist!", color=Fore.RED, passthru=True)
+        )
     if not os.path.isfile(file):
-        raise argparse.ArgumentTypeError(print_error(f"{file} is not a valid file!"))
+        raise argparse.ArgumentTypeError(print_error(f"{file} is not a valid file!", color=Fore.RED, passthru=True))
     if os.path.getsize(file) > 100 * 1024:  # size in bytes
-        raise argparse.ArgumentTypeError(print_error(f"The file {file} exceeds the maximum limit of 100KB!"))
+        raise argparse.ArgumentTypeError(
+            print_error(f"The file {file} exceeds the maximum limit of 100KB!", color=Fore.RED, passthru=True)
+        )
     return file
 
 
 def print_hashcat_results(hashcat_candidates):
-    print_status("\nPotential matching hashcat commands:\n")
+    print_status("\nPotential matching hashcat commands:\n", color=Fore.YELLOW)
     for hc in hashcat_candidates:
         print(f"Module: [{hc['detecting_module']}] {hc['hashcat_description']} Command: [{hc['hashcat_command']}]")
 
@@ -146,7 +136,7 @@ def main():
         colorenabled = True
 
     if colorenabled:
-        print_success(ascii_art_banner)
+        print_status(ascii_art_banner, color=Fore.GREEN)
 
     else:
         print(ascii_art_banner)
@@ -191,14 +181,18 @@ def main():
 
     if not args.url and not args.product:
         parser.error(
-            print_error(
-                "Either supply the product as a positional argument (supply all products for multi-product modules), use --hashcat followed by the product as a positional argument, or use --url mode with a valid URL"
+            print_status(
+                "Either supply the product as a positional argument (supply all products for multi-product modules), use --hashcat followed by the product as a positional argument, or use --url mode with a valid URL",
+                color=Fore.RED,
+                passthru=True,
             )
         )
         return
 
     if args.url and args.product:
-        parser.error(print_error("In --url mode, no positional arguments should be used"))
+        parser.error(
+            print_error("In --url mode, no positional arguments should be used", color=Fore.RED, passthru=True)
+        )
         return
 
     proxies = None
@@ -213,7 +207,7 @@ def main():
         try:
             res = requests.get(args.url, proxies=proxies, headers=headers, verify=False)
         except (requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout):
-            print_error(f"Error connecting to URL: [{args.url}]")
+            print_error(f"Error connecting to URL: [{args.url}]", color=Fore.RED)
             return
 
         r_list = carve_all_modules(requests_response=res)
@@ -229,18 +223,19 @@ def main():
                     report = ReportIdentify(r)
                 report.report()
         else:
-            print_error("No secrets found :(")
+            print_status("No secrets found :(", color=Fore.RED)
 
     else:
         custom_resource = None
         if args.custom_secrets:
             custom_resource = args.custom_secrets
+            print_status(f"Including custom secrets list [{custom_resource}]\n", color=Fore.YELLOW)
         x = check_all_modules(*args.product, custom_resource=custom_resource)
         if x:
             report = ReportSecret(x)
             report.report()
         else:
-            print_error("No secrets found :(")
+            print_status("No secrets found :(", color=Fore.RED)
             if not args.no_hashcat:
                 hashcat_candidates = hashcat_all_modules(*args.product)
                 if hashcat_candidates:
