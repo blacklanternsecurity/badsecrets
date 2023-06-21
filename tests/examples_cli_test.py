@@ -405,6 +405,68 @@ def test_example_cli_customsecrets_toolarge(monkeypatch, capsys):
         assert "exceeds the maximum limit of 100KB!" in captured.out
 
 
+def test_example_cli_customsecrets_urlmode(monkeypatch, capsys):
+    base_vulnerable_page_aspnet_custom = """  
+    <form method="post" action="./form.aspx" id="ctl00">
+<div class="aspNetHidden">
+<input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="" />
+<input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value="" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="TKwYYxGacVENJs9TmowhpXAlUIZFv+VssG/Q4XEwiH0BMFcwk9XhuUXiks0yXI5CKhrVAyWyhKRxTFiuH0BXuMys6b+LIEaHlImgxwypQvLu6SbX" />
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+var theForm = document.forms['ctl00'];
+if (!theForm) {
+    theForm = document.ctl00;
+}
+function __doPostBack(eventTarget, eventArgument) {
+    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+        theForm.__EVENTTARGET.value = eventTarget;
+        theForm.__EVENTARGUMENT.value = eventArgument;
+        theForm.submit();
+    }
+}
+//]]>
+</script>
+
+
+<div class="aspNetHidden">
+
+    <input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="DB68D79A" />
+    <input type="hidden" name="__VIEWSTATEENCRYPTED" id="__VIEWSTATEENCRYPTED" value="" />
+    <input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="X7iYTRnjyg5vH2cOQyBB0vKkTxDJ1/pZeXaadptYUR+jUbHHBJmetJAFrMeOQ1KEihcEnZdVsBQ/+aBTNZCx9c4+mm+BXPDX0np2CicTTDlacfpDMObK2AeZnNkBRKZ1gZk8yfuFV2mzlBPdExFtd7UfyFE=" />
+</div>
+    """
+
+    with tempfile.NamedTemporaryFile("w+t", delete=False) as f:
+        f.write(
+            "0007EDC7D387A1C86422F769DDF45DE4C2FEEDBE21460EACD2F64D2B749A4159A497B6EF0B08252CB24C09DA993DA6F3524CE73B945BA531EB3C7DD4FFC0DFAA,4FCA412AF185EBF793CF3E79E1AF7098E1C3CEACD6B4C43B10252B69174A32AA"
+        )
+        f.flush()
+
+        with requests_mock.Mocker() as m:
+            m.get(
+                f"http://example.com/vulnerableaspnet.html",
+                status_code=200,
+                text=base_vulnerable_page_aspnet_custom,
+            )
+
+            monkeypatch.setattr(
+                "sys.argv",
+                [
+                    "python",
+                    "--url",
+                    "http://example.com/vulnerableaspnet.html",
+                    "-c",
+                    f.name,
+                ],
+            )
+            cli.main()
+            captured = capsys.readouterr()
+            assert ("Known Secret Found!") in captured.out
+
+
 def test_example_cli_color(monkeypatch, capsys):
     monkeypatch.setattr(
         "sys.argv",
