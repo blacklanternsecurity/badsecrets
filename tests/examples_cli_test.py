@@ -422,6 +422,7 @@ def test_example_cli_help(monkeypatch, capsys):
             ["python", "-h"],
         )
         cli.main()
+        assert exit_mock.called
         captured = capsys.readouterr()
         assert "-h, --help            show this help message and exit" in captured.out
         assert "-nc, --no-color       Disable color message in the console" in captured.out
