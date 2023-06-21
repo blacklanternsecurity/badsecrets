@@ -68,7 +68,7 @@ class BadsecretsBase:
     def carve_regex(self):
         return None
 
-    def carve(self, body=None, cookies=None, headers=None, requests_response=None):
+    def carve(self, body=None, cookies=None, headers=None, requests_response=None, **kwargs):
         results = []
 
         if not body and not cookies and not headers and requests_response == None:
@@ -182,7 +182,7 @@ def check_all_modules(*args, **kwargs):
 def carve_all_modules(**kwargs):
     results = []
     for m in BadsecretsBase.__subclasses__():
-        x = m()
+        x = m(custom_resource=kwargs.get("custom_resource", None))
         r_list = x.carve(**kwargs)
         if len(r_list) > 0:
             for r in r_list:

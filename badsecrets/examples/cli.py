@@ -192,6 +192,11 @@ def main():
     if args.proxy:
         proxies = {"http": args.proxy, "https": args.proxy}
 
+    custom_resource = None
+    if args.custom_secrets:
+        custom_resource = args.custom_secrets
+        print_status(f"Including custom secrets list [{custom_resource}]\n", color=Fore.YELLOW)
+
     if args.url:
         headers = {}
         if args.user_agent:
@@ -203,7 +208,7 @@ def main():
             print_status(f"Error connecting to URL: [{args.url}]", color=Fore.RED)
             return
 
-        r_list = carve_all_modules(requests_response=res)
+        r_list = carve_all_modules(requests_response=res, custom_resource=custom_resource)
         if r_list:
             for r in r_list:
                 if r["type"] == "SecretFound":
@@ -219,10 +224,6 @@ def main():
             print_status("No secrets found :(", color=Fore.RED)
 
     else:
-        custom_resource = None
-        if args.custom_secrets:
-            custom_resource = args.custom_secrets
-            print_status(f"Including custom secrets list [{custom_resource}]\n", color=Fore.YELLOW)
         x = check_all_modules(*args.product, custom_resource=custom_resource)
         if x:
             report = ReportSecret(x)
