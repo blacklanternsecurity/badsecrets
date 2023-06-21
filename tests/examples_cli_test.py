@@ -413,3 +413,26 @@ def test_example_cli_color(monkeypatch, capsys):
     cli.main()
     captured = capsys.readouterr()
     assert "\x1b[32m\n" in captured.out
+
+
+def test_example_cli_help(monkeypatch, capsys):
+    with patch("sys.exit") as exit_mock:
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "-h"],
+        )
+        cli.main()
+        captured = capsys.readouterr()
+        assert "-h, --help            show this help message and exit" in captured.out
+        assert "-nc, --no-color       Disable color message in the console" in captured.out
+        assert (
+            "-u URL, --url URL     Use URL Mode. Specified the URL of the page to access and attempt to check for secrets"
+            in captured.out
+        )
+        assert (
+            "-nh, --no-hashcat     Skip the check for compatable hashcat commands when secret isn't found"
+            in captured.out
+        )
+        assert "-c CUSTOM_SECRETS, --custom-secrets CUSTOM_SECRETS" in captured.out
+        assert "-p PROXY, --proxy PROXY" in captured.out
+        assert "-a USER_AGENT, --user-agent USER_AGENT" in captured.out
