@@ -138,8 +138,6 @@ Secret Type: HMAC/RSA Key
 Location: manual
 Secret: 1234
 Details: {'Issuer': 'Issuer', 'Username': 'BadSecrets', 'exp': 1593133483, 'iat': 1466903083, 'jwt_headers': {'alg': 'HS256'}}
-[liquid@liquidbls badsecrets]$ 
-
 ```
 
 * Hashcat
