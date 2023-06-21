@@ -115,19 +115,21 @@ def print_hashcat_results(hashcat_candidates):
 def main():
     global colorenabled
     colorenabled = False
+    color_parser = argparse.ArgumentParser(add_help=False)
 
-    parser = CustomArgumentParser(description="Check cryptographic products against badsecrets library")
-
-    parser.add_argument(
+    color_parser.add_argument(
         "-nc",
         "--no-color",
         action="store_true",
         help="Disable color message in the console",
     )
 
-    args, unknown_args = parser.parse_known_args()
-    if not args.no_color:
-        colorenabled = True
+    args, unknown_args = color_parser.parse_known_args()
+    colorenabled = not args.no_color
+
+    parser = CustomArgumentParser(
+        description="Check cryptographic products against badsecrets library", parents=[color_parser]
+    )
 
     if colorenabled:
         print_status(ascii_art_banner, color=Fore.GREEN)
@@ -171,7 +173,7 @@ def main():
         help="In URL mode, Optionally set a custom user-agent",
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(unknown_args)
 
     if not args.url and not args.product:
         parser.error(
