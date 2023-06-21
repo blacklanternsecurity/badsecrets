@@ -68,18 +68,16 @@ class Generic_JWT(BadsecretsBase):
 
     def get_hashcat_commands(self, JWT):
         jwt_headers, algorithm, JWT = self.jwtLoad(JWT)
-        if not jwt_headers or not algorithm or not JWT:
-            return None
+        if jwt_headers and algorithm and JWT:
+            if algorithm[0].lower() != "h":
+                return None
 
-        if algorithm[0].lower() != "h":
-            return None
-
-        return [
-            {
-                "command": f"hashcat -m 16500 -a 0 {JWT}  <dictionary_file>",
-                "description": f"JSON Web Token (JWT) Algorithm: {algorithm}",
-            }
-        ]
+            return [
+                {
+                    "command": f"hashcat -m 16500 -a 0 {JWT}  <dictionary_file>",
+                    "description": f"JSON Web Token (JWT) Algorithm: {algorithm}",
+                }
+            ]
 
     def check_secret(self, JWT):
         if not self.identify(JWT):
