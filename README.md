@@ -38,14 +38,26 @@ We have a [pypi](https://pypi.org/project/badsecrets/) package, so you can just 
 
 ## Simple Usage
 
-The absolute easiest way to use Badsecrets is by simply running `badsecrets` after doing a pip install:
+The best way to use Badsecrets is by simply running `badsecrets` after doing a pip install:
 
 ```
 pip install badsecrets
 badsecrets eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo
 ```
 
-This is doing the same thing as the `cli.py` example shown below.
+Under the hood, it's using the  `cli.py` example. The CLI can also be accessed manually without a pip installation:
+
+
+#### Without pip installation:
+```bash
+git clone https://github.com/blacklanternsecurity/badsecrets.git
+cd badsecrets
+python ./badsecrets/examples/cli.py eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo
+```
+
+
+
+
 
 ## Examples
 
@@ -63,17 +75,43 @@ If you are using the Badsecrets [BBOT](https://github.com/blacklanternsecurity/b
 
 ### cli.py
 
-Bad secrets includes an [example CLI](https://github.com/blacklanternsecurity/badsecrets/blob/dev/examples/cli.py) for convenience when manually checking secrets. It also has a URL mode, which will connect to a target and attempt to carve for cryptographic products and check any it finds against all modules. 
+Bad secrets includes an [example CLI](https://github.com/blacklanternsecurity/badsecrets/blob/dev/examples/cli.py) for convenience when manually checking secrets. As mentioned above, it is also accessible by just executing `badsecrets`, after a successful pip install.
 
-* Basic usage - checking a crytographic product for a known secret (against all modules):
-```bash
-python ./badsecrets/examples/cli.py eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo
+#### Usage
+
+```
+usage: badsecrets [-h] [-nc] [-u URL] [-nh] [-c CUSTOM_SECRETS] [-p PROXY] [-a USER_AGENT] [product ...]
+
+Check cryptographic products against badsecrets library
+
+positional arguments:
+  product               Cryptographic product to check for known secrets
+
+options:
+  -h, --help            show this help message and exit
+  -nc, --no-color       Disable color message in the console
+  -u URL, --url URL     Use URL Mode. Specified the URL of the page to access and attempt to check for secrets
+  -nh, --no-hashcat     Skip the check for compatable hashcat commands when secret isn't found
+  -c CUSTOM_SECRETS, --custom-secrets CUSTOM_SECRETS
+                        include a custom secrets file to load along with the default secrets
+  -p PROXY, --proxy PROXY
+                        In URL mode, Optionally specify an HTTP proxy
+  -a USER_AGENT, --user-agent USER_AGENT
+                        In URL mode, Optionally set a custom user-agent
+
 ```
 
-* URL Mode - Connecting to a target and carving for a cryptographic product, and if found checking it for known secrets (against all modules):
+* Basic usage - checking a crytographic product for a known secret (against all modules):
 
 ```bash
-python ./badsecrets/examples/cli.py --url http://example.com/contains_bad_secret.html
+badsecrets eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo
+```
+It has a URL mode, which will connect to a target and attempt to carve for cryptographic products and check any it finds against all modules. 
+
+* URL Mode
+
+```bash
+badsecrets --url http://example.com/contains_bad_secret.html
 ```
 
 You can also set a custom user-agent with `--user-agent "user-agent string"` or a proxy with `--proxy http://127.0.0.1` in this mode.
@@ -81,45 +119,98 @@ You can also set a custom user-agent with `--user-agent "user-agent string"` or 
 Example output:
 
 ```bash
-$ python ./badsecrets/examples/cli.py eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo
-badsecrets - example command line interface
+$ badsecrets eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo
 
-***********************
+ __ )              |                                |         
+ __ \    _` |   _` |   __|   _ \   __|   __|   _ \  __|   __| 
+ |   |  (   |  (   | \__ \   __/  (     |      __/  |   \__ \ 
+____/  \__,_| \__,_| ____/ \___| \___| _|    \___| \__| ____/ 
+
+v0.3.337
+
 Known Secret Found!
 
 Detecting Module: Generic_JWT
 
+Product Type: JSON Web Token (JWT)
+Product: eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo
+Secret Type: HMAC/RSA Key
+Location: manual
 Secret: 1234
 Details: {'Issuer': 'Issuer', 'Username': 'BadSecrets', 'exp': 1593133483, 'iat': 1466903083, 'jwt_headers': {'alg': 'HS256'}}
-***********************
-```
-
-* Hashcat Mode
-
-You can append --hashcat to your command to get a pre-populated hashcat command suitible for cracking a given cryptographic product, if available. This can let you get those keys that may not be known, but are weak and still crackable. This output will also be automatically added to any CLI command where a secret was not identified (and a hashcat command is available). Not all modules are capable of producing hashcat output.
+[liquid@liquidbls badsecrets]$ 
 
 ```
-python ./badsecrets/examples/cli.py eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.qvkcSLMQPAQdEuRFv0h3aQIRpTfaI57GjXLOWI_6NaE --hashcat
+
+* Hashcat
+
+By default, when a secret is NOT found, the provided product will be checked for potential hashcat matches. If there is a match, a nearly complete hashcat command will be produced (potentially) suitable for cracking the product via hashcat. This can let you get those keys that may not be known, but are weak and still crackable. Not all modules are capable of producing hashcat output. This behavior can be disabled with the `--no-hashcat` option.
+
+```
+badsecrets eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.qvkcSLMQPAQdEuRFv0h3aQIRpTfaI57GjXLOWI_6NaE
 ```
 
 Example output:
 
 ```
+ __ )              |                                |         
+ __ \    _` |   _` |   __|   _ \   __|   __|   _ \  __|   __| 
+ |   |  (   |  (   | \__ \   __/  (     |      __/  |   \__ \ 
+____/  \__,_| \__,_| ____/ \___| \___| _|    \___| \__| ____/ 
+
+v0.3.337
+
+No secrets found :(
+
 Potential matching hashcat commands:
 
 Module: [Flask_SignedCookies] Flask Signed Cookie Command: [hashcat -m 29100 -a 0 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.qvkcSLMQPAQdEuRFv0h3aQIRpTfaI57GjXLOWI_6NaE <dictionary_file>]
 Module: [Generic_JWT] JSON Web Token (JWT) Algorithm: HS256 Command: [hashcat -m 16500 -a 0 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.qvkcSLMQPAQdEuRFv0h3aQIRpTfaI57GjXLOWI_6NaE  <dictionary_file>]
 ```
+* Custom Secret Lists
+
+It is possible to specify a file containing additional secrets. These will be added to the default lists when the check is performed. This is accomplished with the `-c` / `--custom-secrets` flag. The provided value must be a valid file. There is a 100k size limit on the provided file.
+
+```
+badsecrets eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.vKxsE0u-TrpoMQ5zmBv1_I-NXSgouq6iZJWMHbHSmgY -c test.txt
+```
+
+Example output:
+
+```
+ __ )              |                                |         
+ __ \    _` |   _` |   __|   _ \   __|   __|   _ \  __|   __| 
+ |   |  (   |  (   | \__ \   __/  (     |      __/  |   \__ \ 
+____/  \__,_| \__,_| ____/ \___| \___| _|    \___| \__| ____/ 
+
+v0.3.337
+
+Including custom secrets list [test.txt]
+
+Known Secret Found!
+
+Detecting Module: Generic_JWT
+
+Product Type: JSON Web Token (JWT)
+Product: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.vKxsE0u-TrpoMQ5zmBv1_I-NXSgouq6iZJWMHbHSmgY
+Secret Type: HMAC/RSA Key
+Location: manual
+Secret: fake123
+Details: {'sub': '1234567890', 'name': 'John Doe', 'iat': 1516239022, 'jwt_headers': {'alg': 'HS256', 'typ': 'JWT'}}
+```
 
 ### Blacklist3r.py
 
+*Note: This is now obsolete, since `cli.py` is now capable of handling machinekeys/generator values. It will remain included for reference.*
+*Example: `badsecrets KLox5XeGYfb7Lo8zFzr1YepUagXuixcxX55lpFht+rrW6VGheZi831vdusH6DCMfxIhsLG1EPU3OuPvqN2XBc/fj0ew15TQ1zBmmKWJVns4= AAAAAAAA`*
+
 Bad secrets includes a [fully functional CLI example](https://github.com/blacklanternsecurity/badsecrets/blob/dev/badsecrets/examples/blacklist3r.py) which replicates the functionality of [blacklist3r](https://github.com/NotSoSecure/Blacklist3r) in python badsecrets/examples/blacklist3r. 
+
 
 ```bash
 python ./badsecrets/examples/blacklist3r.py --url http://vulnerablesite/vulnerablepage.aspx
 python ./badsecrets/examples/blacklist3r.py --viewstate /wEPDwUJODExMDE5NzY5ZGQMKS6jehX5HkJgXxrPh09vumNTKQ== --generator EDD8C9AE
 ```
-
 
 ### Telerik_knownkey.py
 
@@ -362,9 +453,9 @@ Nothing would make us happier than getting a pull request with a new module! But
 
 Requests for modules are always very welcome as well!
 
-### Planned Modules
+### Planned Modules and Future Development
 
 - ~~Laravel~~
 -  ~~Express~~
-
+- Research into network devices with default keys that are detectable via a cryptographic product (For example, Palo Alto Global Protect default masterkeys)
 
