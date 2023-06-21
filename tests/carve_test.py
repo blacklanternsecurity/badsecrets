@@ -13,6 +13,7 @@ Telerik_HashKey = modules_loaded["telerik_hashkey"]
 Telerik_EncryptionKey = modules_loaded["telerik_encryptionkey"]
 Rails_SecretKeyBase = modules_loaded["rails_secretkeybase"]
 Generic_JWT = modules_loaded["generic_jwt"]
+Jsf_viewstate = modules_loaded["jsf_viewstate"]
 
 aspnet_viewstate_sample = """
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -74,6 +75,46 @@ def test_carve_telerik():
     print(r)
     assert r
     assert r[0]["secret"] == "d2a312d9-7af4-43de-be5a-ae717b46cea6"
+
+
+def test_carve_headers():
+    with requests_mock.Mocker() as m:
+        x = Generic_JWT()
+
+        test_headers_vuln = {
+            "auth_jwt": "eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo"
+        }
+        m.get(
+            f"http://vuln.headerscarve.badsecrets.com/",
+            status_code=200,
+            headers=test_headers_vuln,
+            text="<html><p>Some HTML Content</p></html>",
+        )
+
+        res = requests.get("http://vuln.headerscarve.badsecrets.com/")
+        r = x.carve(requests_response=res)
+
+        print(r)
+        assert len(r) > 0
+        assert r[0]["type"] == "SecretFound"
+        assert r[0]["secret"] == "1234"
+
+        test_headers_notvuln = {
+            "auth_jwt": "eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCA"
+        }
+        m.get(
+            f"http://notvuln.headerscarve.badsecrets.com/",
+            status_code=200,
+            headers=test_headers_notvuln,
+            text="<html><p>Some HTML Content</p></html>",
+        )
+
+        res = requests.get("http://notvuln.headerscarve.badsecrets.com/")
+        r = x.carve(requests_response=res)
+
+        print(r)
+        assert len(r) > 0
+        assert r[0]["type"] == "IdentifyOnly"
 
 
 def test_carve_cookies():
@@ -271,6 +312,30 @@ def test_generic_jwt_body_carve():
         assert r
         assert r[0]["secret"] == "1234"
         assert r[0]["type"] == "SecretFound"
+
+
+def test_carve_negativeidentify_body():
+    x = Jsf_viewstate()
+    identify_html = """
+    <html>
+    <head>
+    </head>
+    <body>
+    <p><input type="hidden" name="javax.faces.ViewState" id="j_id__v_0:javax.faces.ViewState:1" value="Ly8gp+FZKt9XsaxT5gZu41DDxO74k029z88gNBOru2jXW0g1Og+RUPdf2d8hGNTiofkD1VvmQTZAfeV+5qijOoD+SPzw6K72Y1H0sxfx5mFcfFtmqX7iN6Gq0fwLM+9PKQz88f+e7KImJqG1cz5KYhcrgT87c5Ayl03wEHvWwktTq9TcBJc4f1VnNHXVZgALGqQuETU8hYwZ1VilDmQ7J4pZbv+pvPUvzk+/e2oNeybso6TXqUrbT2Mz3k7yfe92q3pRjdxRlGxmkO9bPqNOtETlLPE5dDiZYo1U9gr8BBD=" autocomplete="off" />
+    </body>
+    <html>
+    """
+
+    with requests_mock.Mocker() as m:
+        m.get(
+            f"http://negativeidentify.jsf_viewstate.badsecrets.com/",
+            status_code=200,
+            text=identify_html,
+        )
+        res = requests.get("http://negativeidentify.jsf_viewstate.badsecrets.com/")
+        r = x.carve(requests_response=res)
+        assert r
+        assert r[0]["type"] == "IdentifyOnly"
 
 
 def test_carve_negative():

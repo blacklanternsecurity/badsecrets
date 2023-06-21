@@ -17,19 +17,19 @@ telerik_hardcoded_salt = [58, 84, 91, 25, 10, 34, 29, 68, 60, 88, 44, 51, 1]
 
 class Telerik_EncryptionKey(BadsecretsBase):
     identify_regex = re.compile(r"^(?:[A-Za-z0-9+\/=%]{32,})$")
-    description = {"Product": "Telerik DialogParameters", "Secret": "Telerik.Web.UI.DialogParametersEncryptionKey"}
+    description = {"product": "Telerik DialogParameters", "secret": "Telerik.Web.UI.DialogParametersEncryptionKey"}
 
     def carve_regex(self):
         return re.compile(r"{\"SerializedParameters\":\"([^\"]*)\"")
 
     def prepare_keylist(self, include_machinekeys=False):
         if include_machinekeys:
-            for l in self.load_resource("aspnet_machinekeys.txt"):
+            for l in self.load_resources(["aspnet_machinekeys.txt"]):
                 with suppress(ValueError):
                     vkey, ekey = l.rstrip().split(",")
                     if ekey:
                         yield ekey
-        for l in self.load_resource("telerik_encryption_keys.txt"):
+        for l in self.load_resources(["telerik_encryption_keys.txt"]):
             ekey = l.strip()
             yield ekey
 

@@ -89,7 +89,7 @@ def main():
 
     phpinfo_test_url = f"{args.url.rstrip('/')}/_fragment?_path=_controller%3Dphpcredits"
 
-    for l in x.load_resource("symfony_appsecret.txt"):
+    for l in x.load_resources(["symfony_appsecret.txt"]):
         with suppress(ValueError):
             secret = l.rstrip()
             for hash_algorithm in [hashlib.sha256, hashlib.sha1]:

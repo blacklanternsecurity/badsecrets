@@ -10,7 +10,7 @@ from badsecrets.base import BadsecretsBase
 
 class Symfony_SignedURL(BadsecretsBase):
     identify_regex = re.compile(r"http(?:s)?:\/\/[^\/]+\/_fragment[^\s]+_hash=[\/a-zA-z-0-9\+=%]{24,132}")
-    description = {"Product": "Symfony Signed URL", "Secret": "Symfony APP_SECRET"}
+    description = {"product": "Symfony Signed URL", "secret": "Symfony APP_SECRET"}
 
     def carve_regex(self):
         return re.compile(r"(http(?:s)?:\/\/[^\/]+\/_fragment[^\s]+_hash=[\/a-zA-z-0-9\+=%]{24,132})")
@@ -27,21 +27,45 @@ class Symfony_SignedURL(BadsecretsBase):
         return poc_url
 
     def symfonyVerify(self, value, secret):
+        url, url_hash, hash_algorithm = self.symfonyLoad(value)
+
+        generated_hash = self.symfonyHMAC(url, secret, hash_algorithm)
+        if generated_hash == url_hash.encode():
+            return {
+                "hash algorithm": hash_algorithm.__name__.split("openssl_")[1],
+                "PoC URL (executes 'id')": self.symfonyPoC(secret, url, hash_algorithm),
+            }
+        return False
+
+    def symfonyLoad(self, value):
         url, url_hash = value.split("&_hash=")
         for hash_algorithm_str in self.search_dict(self.hash_sizes, len(base64.b64decode(url_hash))):
             hash_algorithm = self.hash_algs[hash_algorithm_str]
-            generated_hash = self.symfonyHMAC(url, secret, hash_algorithm)
-            if generated_hash == url_hash.encode():
-                return {
-                    "hash algorithm": hash_algorithm.__name__.split("openssl_")[1],
-                    "PoC URL (executes 'id')": self.symfonyPoC(secret, url, hash_algorithm),
+        return url, url_hash, hash_algorithm
+
+    def get_hashcat_commands(self, signed_url):
+        url, url_hash, hash_algorithm = self.symfonyLoad(signed_url)
+        hash_algorithm_str = hash_algorithm.__name__.split("_")[1]
+        hashcat_mode = None
+
+        if hash_algorithm_str == "sha1":
+            hashcat_mode = "150"
+
+        elif hash_algorithm_str == "sha256":
+            hashcat_mode = "1450"
+
+        if hashcat_mode:
+            return [
+                {
+                    "command": f"hashcat -m {hashcat_mode} -a 0 {base64.b64decode(url_hash).hex()}:{url.encode().hex()} --hex-salt  <dictionary_file>",
+                    "description": f"Symfony Signed URL Algorithm: [{hash_algorithm_str }]",
                 }
-        return False
+            ]
 
     def check_secret(self, signed_url):
         if not self.identify(signed_url):
             return None
-        for l in self.load_resource("symfony_appsecret.txt"):
+        for l in self.load_resources(["symfony_appsecret.txt"]):
             password = l.rstrip()
             r = self.symfonyVerify(value=signed_url, secret=password)
             if r:

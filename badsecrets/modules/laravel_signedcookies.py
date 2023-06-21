@@ -24,7 +24,7 @@ class LaravelSignedCookies(BadsecretsBase):
         return None
 
     identify_regex = re.compile(r"eyJ(?:[\w-])*")
-    description = {"Product": "Laravel Signed Cookie", "Secret": "Laravel APP_KEY"}
+    description = {"product": "Laravel Signed Cookie", "secret": "Laravel APP_KEY"}
 
     def laravelVerify(self, value, secret):
         # attempt to decode laravel cookie and load contents into JSON object
@@ -50,7 +50,7 @@ class LaravelSignedCookies(BadsecretsBase):
         if not self.identify(laravel_signed_cookie):
             return None
 
-        for l in self.load_resource("laravel_app_keys.txt"):
+        for l in self.load_resources(["laravel_app_keys.txt"]):
             app_key = l.rstrip()
             r = self.laravelVerify(value=laravel_signed_cookie, secret=app_key)
             if r:
