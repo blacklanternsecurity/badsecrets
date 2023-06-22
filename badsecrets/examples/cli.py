@@ -215,7 +215,7 @@ def main():
                     report = ReportSecret(r)
                 else:
                     if not args.no_hashcat:
-                        hashcat_candidates = hashcat_all_modules(r["product"],detecting_module=r["detecting_module"])
+                        hashcat_candidates = hashcat_all_modules(r["product"], detecting_module=r["detecting_module"])
                         if hashcat_candidates:
                             r["hashcat"] = hashcat_candidates
                     report = ReportIdentify(r)
