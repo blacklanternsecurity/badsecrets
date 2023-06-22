@@ -149,20 +149,21 @@ class BadsecretsBase:
             return items
 
 
-def hashcat_all_modules(product):
+def hashcat_all_modules(product,detecting_module=None):
     hashcat_candidates = []
     for m in BadsecretsBase.__subclasses__():
-        x = m()
-        if x.identify(product):
-            hashcat_commands = x.get_hashcat_commands(product)
-            if hashcat_commands:
-                for hcc in hashcat_commands:
-                    z = {
-                        "detecting_module": m.__name__,
-                        "hashcat_command": hcc["command"],
-                        "hashcat_description": hcc["description"],
-                    }
-                    hashcat_candidates.append(z)
+        if detecting_module == m.__name__ or detecting_module == None:
+            x = m()
+            if x.identify(product):
+                hashcat_commands = x.get_hashcat_commands(product)
+                if hashcat_commands:
+                    for hcc in hashcat_commands:
+                        z = {
+                            "detecting_module": m.__name__,
+                            "hashcat_command": hcc["command"],
+                            "hashcat_description": hcc["description"],
+                        }
+                        hashcat_candidates.append(z)
     return hashcat_candidates
 
 
