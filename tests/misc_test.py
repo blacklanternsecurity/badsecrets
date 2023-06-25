@@ -1,4 +1,3 @@
-import pytest
 from badsecrets.helpers import write_vlq_string
 
 

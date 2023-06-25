@@ -53,7 +53,7 @@ class ASPNET_Viewstate(BadsecretsBase):
                 if dec_algo == "AES":
                     block_size = AES.block_size
                     iv = viewstate_bytes[0:block_size]
-                    if mode == "DOTNET45":
+                    if mode == "DOTNET45" and url:
                         s = Simulate_dotnet45_kdf_context_parameters(url)
                         label, context = sp800_108_get_key_derivation_parameters(
                             "WebForms.HiddenFieldPageStatePersister.ClientState", s.get_specific_purposes()
@@ -121,7 +121,7 @@ class ASPNET_Viewstate(BadsecretsBase):
                     vs_data_bytes = viewstate_data
                     if not encrypted:
                         vs_data_bytes += generator
-                    if mode == "DOTNET45":
+                    if mode == "DOTNET45" and url:
                         s = Simulate_dotnet45_kdf_context_parameters(url)
                         label, context = sp800_108_get_key_derivation_parameters(
                             "WebForms.HiddenFieldPageStatePersister.ClientState", s.get_specific_purposes()
