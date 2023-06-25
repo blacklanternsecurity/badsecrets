@@ -117,23 +117,21 @@ class ASPNET_Viewstate(BadsecretsBase):
                     md5_bytes += b"\x00" * 4
                 h = hashlib.md5(md5_bytes)
             else:
-                try:
-                    vs_data_bytes = viewstate_data
-                    if not encrypted:
-                        vs_data_bytes += generator
-                    if mode == "DOTNET45" and url:
-                        s = Simulate_dotnet45_kdf_context_parameters(url)
-                        label, context = sp800_108_get_key_derivation_parameters(
-                            "WebForms.HiddenFieldPageStatePersister.ClientState", s.get_specific_purposes()
-                        )
-                        vkey_bytes = sp800_108_derivekey(vkey_bytes, label, context, (len(vkey_bytes) * 8))
-                    h = hmac.new(
-                        vkey_bytes,
-                        vs_data_bytes,
-                        self.hash_algs[hash_alg],
+                vs_data_bytes = viewstate_data
+                if not encrypted:
+                    vs_data_bytes += generator
+                if mode == "DOTNET45" and url:
+                    s = Simulate_dotnet45_kdf_context_parameters(url)
+                    label, context = sp800_108_get_key_derivation_parameters(
+                        "WebForms.HiddenFieldPageStatePersister.ClientState", s.get_specific_purposes()
                     )
-                except binascii.Error:
-                    continue
+                    vkey_bytes = sp800_108_derivekey(vkey_bytes, label, context, (len(vkey_bytes) * 8))
+                h = hmac.new(
+                    vkey_bytes,
+                    vs_data_bytes,
+                    self.hash_algs[hash_alg],
+                )
+
             if h.digest() == signature:
                 return hash_alg
 
