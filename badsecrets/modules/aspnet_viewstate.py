@@ -111,10 +111,10 @@ class ASPNET_Viewstate(BadsecretsBase):
             viewstate_data = viewstate_bytes[: -self.hash_sizes[hash_alg]]
             signature = viewstate_bytes[-self.hash_sizes[hash_alg] :]
             if hash_alg == "MD5":
-                    md5_bytes = viewstate_data + vkey_bytes
-                    if not encrypted:
-                        md5_bytes += b"\x00" * 4
-                    h = hashlib.md5(md5_bytes)
+                md5_bytes = viewstate_data + vkey_bytes
+                if not encrypted:
+                    md5_bytes += b"\x00" * 4
+                h = hashlib.md5(md5_bytes)
             else:
                 try:
                     vs_data_bytes = viewstate_data
