@@ -69,7 +69,7 @@ class Jsf_viewstate(BadsecretsBase):
             return pt_b64
 
     def myfaces_mac(self, ct_bytes, password_bytes):
-        candidate_hash_algs = [key for key in self.hash_sizes.keys() if not key.startswith("_")]
+        candidate_hash_algs = list(self.hash_sizes.keys())
         for hash_alg in candidate_hash_algs:
             data = ct_bytes[: -self.hash_sizes[hash_alg]]
             sig = ct_bytes[-self.hash_sizes[hash_alg] :]
@@ -184,7 +184,7 @@ class Jsf_viewstate(BadsecretsBase):
         sig = decoded_viewstate[:32]
         data = decoded_viewstate[32:]
 
-        candidate_hash_algs = [key for key in self.hash_sizes.keys() if not key.startswith("_")]
+        candidate_hash_algs = list(self.hash_sizes.keys())
         for hash_alg in candidate_hash_algs:
             data = decoded_viewstate[: -self.hash_sizes[hash_alg]]
             sig = decoded_viewstate[-self.hash_sizes[hash_alg] :]

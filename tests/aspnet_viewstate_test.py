@@ -225,7 +225,7 @@ def test_viewstate_handledecodeerror():
     assert found_key == None
 
 
-def test_viewstate_dotnet45():
+def test_viewstate_dotnet45_HMACSHA512():
     x = ASPNETViewstate()
 
     found_key = x.check_secret(
@@ -236,5 +236,38 @@ def test_viewstate_dotnet45():
     assert found_key
     assert (
         found_key["secret"]
-        == "validationKey: F5144F1A581A57BA3B60311AF7562A855998F7DD203CD8A71405599B980D8694B5C986C888BE4FC0E6571C2CE600D58CE82B8FA13106B17D77EA4CECDDBBEC1B validationAlgo: _SHA512DOTNET45 encryptionKey: B47D3CD1E780CF30C739A080995B9B10B64354AA135A2D78 encryptionAlgo: AES"
+        == "validationKey: F5144F1A581A57BA3B60311AF7562A855998F7DD203CD8A71405599B980D8694B5C986C888BE4FC0E6571C2CE600D58CE82B8FA13106B17D77EA4CECDDBBEC1B validationAlgo: SHA512 encryptionKey: B47D3CD1E780CF30C739A080995B9B10B64354AA135A2D78 encryptionAlgo: AES"
     )
+    assert found_key["details"] == "Mode [DOTNET45]"
+
+
+def test_viewstate_dotnet45_HMACSHA384():
+    x = ASPNETViewstate()
+
+    found_key = x.check_secret(
+        "4UzPhFpZZHLdlrT7oAv6gk6lNhI/f2n/4NkAGaaPUqQKk1wgM0XQndONaHukRvNo2hon4C0JTQLnGUEE6vg8nHYJqBgXiknpIqUcaQtFLf6Z2dAaBhIhRdWPz4PIF3wQ",
+        "http://172.16.25.128/form.aspx",
+    )
+
+    assert found_key
+    assert (
+        found_key["secret"]
+        == "validationKey: 00AE7601E6DB424DDFBA77DFCB0F550DB1C92FDBC2DEFFFF1279629381612304A14F1D2546CEFE6B79062DA670A7F0859D5F5EF17E30D909FA831110CAF0E169 validationAlgo: SHA384 encryptionKey: D62333B4C640430F5CFB7FA9DF856FFB212B16AFAA7CCA3972B85D18856FB00C encryptionAlgo: AES"
+    )
+    assert found_key["details"] == "Mode [DOTNET45]"
+
+
+def test_viewstate_dotnet45_HMACSHA256():
+    x = ASPNETViewstate()
+
+    found_key = x.check_secret(
+        "008e+LWomJ5U8KyJHzT4yvCC9JKWEISWWF1jK8/j5MFlX9ybF/OnmDCCqGGMDv5555lMFcRLM3bmkIS9c9tQL3BYOtAskLFayVHhmkSi4vc=",
+        "http://172.16.25.128/form.aspx",
+    )
+
+    assert found_key
+    assert (
+        found_key["secret"]
+        == "validationKey: F5144F1A581A57BA3B60311AF7562A855998F7DD203CD8A71405599B980D8694B5C986C888BE4FC0E6571C2CE600D58CE82B8FA13106B17D77EA4CECDDBBEC1B validationAlgo: SHA256 encryptionKey: B47D3CD1E780CF30C739A080995B9B10B64354AA135A2D78 encryptionAlgo: AES"
+    )
+    assert found_key["details"] == "Mode [DOTNET45]"

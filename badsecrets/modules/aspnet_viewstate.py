@@ -36,7 +36,7 @@ class ASPNET_Viewstate(BadsecretsBase):
             return True
         return False
 
-    def viewstate_decrypt(self, ekey_bytes, hash_alg, viewstate_B64, url):
+    def viewstate_decrypt(self, ekey_bytes, hash_alg, viewstate_B64, url, mode):
         viewstate_bytes = base64.b64decode(viewstate_B64)
 
         vs_size = len(viewstate_bytes)
@@ -49,55 +49,55 @@ class ASPNET_Viewstate(BadsecretsBase):
             dec_algos.add("DES")
             dec_algos.add("3DES")
         for dec_algo in list(dec_algos):
-            #       with suppress(ValueError):
-            if dec_algo == "AES":
-                block_size = AES.block_size
-                iv = viewstate_bytes[0:block_size]
-                if hash_alg == "_SHA512DOTNET45":
-                    s = Simulate_dotnet45_kdf_context_parameters(url)
-                    label, context = sp800_108_get_key_derivation_parameters(
-                        "WebForms.HiddenFieldPageStatePersister.ClientState", s.get_specific_purposes()
-                    )
-                    ekey_bytes = sp800_108_derivekey(ekey_bytes, label, context, (len(ekey_bytes) * 8))
-                cipher = AES.new(ekey_bytes, AES.MODE_CBC, iv)
-                blockpadlen_raw = len(ekey_bytes) % AES.block_size
-                if blockpadlen_raw == 0:
-                    blockpadlen = block_size
-                else:
-                    blockpadlen = blockpadlen_raw
+            with suppress(ValueError):
+                if dec_algo == "AES":
+                    block_size = AES.block_size
+                    iv = viewstate_bytes[0:block_size]
+                    if mode == "DOTNET45":
+                        s = Simulate_dotnet45_kdf_context_parameters(url)
+                        label, context = sp800_108_get_key_derivation_parameters(
+                            "WebForms.HiddenFieldPageStatePersister.ClientState", s.get_specific_purposes()
+                        )
+                        ekey_bytes = sp800_108_derivekey(ekey_bytes, label, context, (len(ekey_bytes) * 8))
+                    cipher = AES.new(ekey_bytes, AES.MODE_CBC, iv)
+                    blockpadlen_raw = len(ekey_bytes) % AES.block_size
+                    if blockpadlen_raw == 0:
+                        blockpadlen = block_size
+                    else:
+                        blockpadlen = blockpadlen_raw
 
-            elif dec_algo == "3DES":
-                block_size = DES3.block_size
-                iv = viewstate_bytes[0:block_size]
-                cipher = DES3.new(ekey_bytes[:24], DES3.MODE_CBC, iv)
-                blockpadlen = 16
+                elif dec_algo == "3DES":
+                    block_size = DES3.block_size
+                    iv = viewstate_bytes[0:block_size]
+                    cipher = DES3.new(ekey_bytes[:24], DES3.MODE_CBC, iv)
+                    blockpadlen = 16
 
-            elif dec_algo == "DES":
-                block_size = DES.block_size
-                iv = viewstate_bytes[0:block_size]
-                cipher = DES.new(ekey_bytes[:8], DES.MODE_CBC, iv)
-                blockpadlen = 0
+                elif dec_algo == "DES":
+                    block_size = DES.block_size
+                    iv = viewstate_bytes[0:block_size]
+                    cipher = DES.new(ekey_bytes[:8], DES.MODE_CBC, iv)
+                    blockpadlen = 0
 
-            encrypted_raw = viewstate_bytes[block_size:-hash_size]
-            decrypted_raw = cipher.decrypt(encrypted_raw)
+                encrypted_raw = viewstate_bytes[block_size:-hash_size]
+                decrypted_raw = cipher.decrypt(encrypted_raw)
 
-            with suppress(TypeError):
-                if hash_alg == "_SHA512DOTNET45":
-                    decrypt = unpad(decrypted_raw)
-                else:
-                    decrypt = unpad(decrypted_raw[blockpadlen:])
+                with suppress(TypeError):
+                    if mode == "DOTNET45":
+                        decrypt = unpad(decrypted_raw)
+                    else:
+                        decrypt = unpad(decrypted_raw[blockpadlen:])
 
-                if self.valid_preamble(decrypt):
-                    return dec_algo
-                else:
-                    continue
+                    if self.valid_preamble(decrypt):
+                        return dec_algo
+                    else:
+                        continue
 
-    def viewstate_validate(self, vkey_bytes, encrypted, viewstate_B64, generator, url):
+    def viewstate_validate(self, vkey_bytes, encrypted, viewstate_B64, generator, url, mode):
+        original_vkey_bytes = vkey_bytes
         viewstate_bytes = base64.b64decode(viewstate_B64)
 
         if encrypted:
             candidate_hash_algs = list(self.hash_sizes.keys())
-
         else:
             vs = ViewState(viewstate_B64)
             try:
@@ -108,6 +108,7 @@ class ASPNET_Viewstate(BadsecretsBase):
             candidate_hash_algs = self.search_dict(self.hash_sizes, signature_len)
 
         for hash_alg in candidate_hash_algs:
+            vkey_bytes = original_vkey_bytes
             viewstate_data = viewstate_bytes[: -self.hash_sizes[hash_alg]]
             signature = viewstate_bytes[-self.hash_sizes[hash_alg] :]
             if hash_alg == "MD5":
@@ -120,14 +121,12 @@ class ASPNET_Viewstate(BadsecretsBase):
                     vs_data_bytes = viewstate_data
                     if not encrypted:
                         vs_data_bytes += generator
-
-                    if hash_alg == "_SHA512DOTNET45" and url:
+                    if mode == "DOTNET45":
                         s = Simulate_dotnet45_kdf_context_parameters(url)
                         label, context = sp800_108_get_key_derivation_parameters(
                             "WebForms.HiddenFieldPageStatePersister.ClientState", s.get_specific_purposes()
                         )
-                        vkey_bytes = sp800_108_derivekey(vkey_bytes, label, context, 512)
-
+                        vkey_bytes = sp800_108_derivekey(vkey_bytes, label, context, (len(vkey_bytes) * 8))
                     h = hmac.new(
                         vkey_bytes,
                         vs_data_bytes,
@@ -177,23 +176,27 @@ class ASPNET_Viewstate(BadsecretsBase):
             except ValueError:
                 continue
             with suppress(ValueError):
-                validationAlgo = self.viewstate_validate(
-                    binascii.unhexlify(vkey), encrypted, viewstate_B64, generator, url
-                )
-                if validationAlgo:
-                    confirmed_ekey = None
-                    decryptionAlgo = None
-                    if encrypted:
-                        with suppress(binascii.Error):
-                            ekey_bytes = binascii.unhexlify(ekey)
-                            decryptionAlgo = self.viewstate_decrypt(ekey_bytes, validationAlgo, viewstate_B64, url)
-                            if decryptionAlgo:
-                                confirmed_ekey = ekey
+                confirmed_ekey = None
+                decryptionAlgo = None
 
-                    result = f"validationKey: {vkey} validationAlgo: {validationAlgo}"
-                    if confirmed_ekey:
-                        result += f" encryptionKey: {confirmed_ekey} encryptionAlgo: {decryptionAlgo}"
-                    return {"secret": result, "details": None}
+                for mode in ["DOTNET40", "DOTNET45"]:
+                    validationAlgo = self.viewstate_validate(
+                        binascii.unhexlify(vkey), encrypted, viewstate_B64, generator, url, mode
+                    )
+                    if validationAlgo:
+                        if encrypted:
+                            with suppress(binascii.Error):
+                                ekey_bytes = binascii.unhexlify(ekey)
+                                decryptionAlgo = self.viewstate_decrypt(
+                                    ekey_bytes, validationAlgo, viewstate_B64, url, mode
+                                )
+                                if decryptionAlgo:
+                                    confirmed_ekey = ekey
+
+                        result = f"validationKey: {vkey} validationAlgo: {validationAlgo}"
+                        if confirmed_ekey:
+                            result += f" encryptionKey: {confirmed_ekey} encryptionAlgo: {decryptionAlgo}"
+                        return {"secret": result, "details": f"Mode [{mode}]"}
         return None
 
 
