@@ -215,7 +215,7 @@ def test_viewstate_alt_keys():
     assert "DES" in found_key["secret"]
 
 
-def test_viewstate_handle_decode_error():
+def test_viewstate_handledecodeerror():
     x = ASPNETViewstate()
 
     found_key = x.check_secret(
@@ -223,3 +223,18 @@ def test_viewstate_handle_decode_error():
         "4C69204D",
     )
     assert found_key == None
+
+
+def test_viewstate_dotnet45():
+    x = ASPNETViewstate()
+
+    found_key = x.check_secret(
+        "eljkFjgquXvKTwyz1wKBc7YUhgWuFCwrYNoNIoY/XudiY7i8/ejpHFaLMbHcXr8JRuwoFVHfWHlXo3LXIHLWazicVbeAxOb4l3utHSCjBzO920I2LOLJ/5fnBJkpdnT6nJTTfyx55aa1Dt//GpQeEA==",
+        "http://172.16.25.128/form.aspx",
+    )
+
+    assert found_key
+    assert (
+        found_key["secret"]
+        == "validationKey: F5144F1A581A57BA3B60311AF7562A855998F7DD203CD8A71405599B980D8694B5C986C888BE4FC0E6571C2CE600D58CE82B8FA13106B17D77EA4CECDDBBEC1B validationAlgo: _SHA512DOTNET45 encryptionKey: B47D3CD1E780CF30C739A080995B9B10B64354AA135A2D78 encryptionAlgo: AES"
+    )

@@ -14,7 +14,7 @@ class BadsecretsBase:
     identify_regex = re.compile(r".+")
     description = {"product": "Undefined", "secret": "Undefined"}
 
-    hash_sizes = {"SHA1": 20, "MD5": 16, "SHA256": 32, "SHA384": 48, "SHA512": 64}
+    hash_sizes = {"SHA1": 20, "MD5": 16, "SHA256": 32, "SHA384": 48, "SHA512": 64, "_SHA512DOTNET45": 64}
     hash_algs = {
         "SHA1": hashlib.sha1,
         "MD5": hashlib.md5,
@@ -23,6 +23,7 @@ class BadsecretsBase:
         "SHA512": hashlib.sha512,
         "AES": hashlib.sha1,
         "3DES": hashlib.sha1,
+        "_SHA512DOTNET45": hashlib.sha512,
     }
 
     check_secret_args = 1
@@ -59,7 +60,7 @@ class BadsecretsBase:
                     if len(l) > 0:
                         yield l
 
-    def carve_to_check_secret(self, s):
+    def carve_to_check_secret(self, s, **kwargs):
         if s.groups():
             r = self.check_secret(s.groups()[0])
             return r
@@ -119,7 +120,7 @@ class BadsecretsBase:
             if self.carve_regex():
                 s = re.search(self.carve_regex(), body)
                 if s:
-                    r = self.carve_to_check_secret(s)
+                    r = self.carve_to_check_secret(s, url=kwargs.get("url", None))
                     if r:
                         r["type"] = "SecretFound"
                     else:
@@ -149,7 +150,8 @@ class BadsecretsBase:
             return items
 
 
-def hashcat_all_modules(product, detecting_module=None):
+def hashcat_all_modules(*args, detecting_module=None):
+    product = args[0]
     hashcat_candidates = []
     for m in BadsecretsBase.__subclasses__():
         if detecting_module == m.__name__ or detecting_module == None:
