@@ -111,13 +111,10 @@ class ASPNET_Viewstate(BadsecretsBase):
             viewstate_data = viewstate_bytes[: -self.hash_sizes[hash_alg]]
             signature = viewstate_bytes[-self.hash_sizes[hash_alg] :]
             if hash_alg == "MD5":
-                try:
                     md5_bytes = viewstate_data + vkey_bytes
                     if not encrypted:
                         md5_bytes += b"\x00" * 4
                     h = hashlib.md5(md5_bytes)
-                except binascii.Error:
-                    continue
             else:
                 try:
                     vs_data_bytes = viewstate_data
@@ -152,7 +149,6 @@ class ASPNET_Viewstate(BadsecretsBase):
 
         for arg in args:
             if arg:
-                print(arg)
                 if generator_pattern.match(arg):
                     generator = arg
                 elif url_pattern.match(arg):
