@@ -36,7 +36,7 @@ class ASPNET_Viewstate(BadsecretsBase):
             return True
         return False
 
-    def viewstate_decrypt(self, ekey_bytes, hash_alg, viewstate_B64):
+    def viewstate_decrypt(self, ekey_bytes, hash_alg, viewstate_B64, url):
         viewstate_bytes = base64.b64decode(viewstate_B64)
 
         vs_size = len(viewstate_bytes)
@@ -54,9 +54,9 @@ class ASPNET_Viewstate(BadsecretsBase):
                 block_size = AES.block_size
                 iv = viewstate_bytes[0:block_size]
                 if hash_alg == "_SHA512DOTNET45":
+                    s = Simulate_dotnet45_kdf_context_parameters(url)
                     label, context = sp800_108_get_key_derivation_parameters(
-                        "WebForms.HiddenFieldPageStatePersister.ClientState",
-                        ["TemplateSourceDirectory: /", "Type: FORM_ASPX"],
+                        "WebForms.HiddenFieldPageStatePersister.ClientState", s.get_specific_purposes()
                     )
                     ekey_bytes = sp800_108_derivekey(ekey_bytes, label, context, (len(ekey_bytes) * 8))
                 cipher = AES.new(ekey_bytes, AES.MODE_CBC, iv)
@@ -125,7 +125,7 @@ class ASPNET_Viewstate(BadsecretsBase):
                         vs_data_bytes += generator
 
                     if hash_alg == "_SHA512DOTNET45" and url:
-                        s = Simulate_dotnet45_kdf_context_paremeters(url)
+                        s = Simulate_dotnet45_kdf_context_parameters(url)
                         label, context = sp800_108_get_key_derivation_parameters(
                             "WebForms.HiddenFieldPageStatePersister.ClientState", s.get_specific_purposes()
                         )
@@ -190,7 +190,7 @@ class ASPNET_Viewstate(BadsecretsBase):
                     if encrypted:
                         with suppress(binascii.Error):
                             ekey_bytes = binascii.unhexlify(ekey)
-                            decryptionAlgo = self.viewstate_decrypt(ekey_bytes, validationAlgo, viewstate_B64)
+                            decryptionAlgo = self.viewstate_decrypt(ekey_bytes, validationAlgo, viewstate_B64, url)
                             if decryptionAlgo:
                                 confirmed_ekey = ekey
 
@@ -202,7 +202,7 @@ class ASPNET_Viewstate(BadsecretsBase):
 
 
 # Based on https://github.com/pwntester/ysoserial.net/blob/master/ysoserial/Plugins/ViewStatePlugin.cs and translated to python. All credit to ysoserial.net.
-class Simulate_dotnet45_kdf_context_paremeters:
+class Simulate_dotnet45_kdf_context_parameters:
     def __init__(self, url):
         self.url = url
 
