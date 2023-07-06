@@ -59,7 +59,7 @@ class BadsecretsBase:
                     if len(l) > 0:
                         yield l
 
-    def carve_to_check_secret(self, s):
+    def carve_to_check_secret(self, s, **kwargs):
         if s.groups():
             r = self.check_secret(s.groups()[0])
             return r
@@ -119,7 +119,7 @@ class BadsecretsBase:
             if self.carve_regex():
                 s = re.search(self.carve_regex(), body)
                 if s:
-                    r = self.carve_to_check_secret(s)
+                    r = self.carve_to_check_secret(s, url=kwargs.get("url", None))
                     if r:
                         r["type"] = "SecretFound"
                     else:
@@ -148,7 +148,7 @@ class BadsecretsBase:
         if items:
             return items
 
-
+          
 def hashcat_all_modules(product, detecting_module=None, *args):
     hashcat_candidates = []
     for m in BadsecretsBase.__subclasses__():
