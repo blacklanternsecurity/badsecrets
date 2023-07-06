@@ -563,3 +563,19 @@ def test_example_cli_dotnet45_manual(monkeypatch, capsys):
     captured = capsys.readouterr()
     assert ("Known Secret Found!") in captured.out
     assert ("Details: Mode [DOTNET45]") in captured.out
+
+
+def test_example_cli_longinput(monkeypatch, capsys):
+    with patch("sys.exit") as exit_mock:
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "python",
+                "Ly8gp+FZKt9XsaxT5gZu41DDxO74k029z88gNBOru2jXW0g1Og+RUPdf2d8hGNTiofkD1VvmQTZAfeV+5qijOoD+SPzw6K72Y1H0sxfx5mFcfFtmqX7iN6Gq0fwLM+9PKQz88f+e7KImJqG1cz5KYhcrgT87c5Ayl03wEHvWwktTq9TcBJc4f1VnNHXVZgALGqQuETU8hYwZ1VilDmQ7J4pZbv+pvPUvzk+/e2oNeybso6TXqUrbT2Mz3k7yfe92q3pRjdxRlGxmkO9bPqNOtETlLPE5dDiZY11U9gr8BBD=",
+                "AAAAAAAA",
+                "BBBBBBBB",
+                "CCCCCC",
+            ],
+        )
+        cli.main()
+        assert not exit_mock.called

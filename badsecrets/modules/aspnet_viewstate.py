@@ -161,8 +161,11 @@ class ASPNET_Viewstate(BadsecretsBase):
 
         if not self.identify(viewstate_B64):
             return None
+        try:
+            generator = struct.pack("<I", int(generator, 16))
+        except ValueError:
+            return None
 
-        generator = struct.pack("<I", int(generator, 16))
         if self.valid_preamble(base64.b64decode(viewstate_B64)):
             encrypted = False
         else:
