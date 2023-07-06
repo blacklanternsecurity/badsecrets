@@ -204,36 +204,25 @@ class Simulate_dotnet45_kdf_context_parameters:
         self.url = url
 
     def simulate_template_source_directory(self, str_path):
-        if not str_path.startswith("/"):
-            str_path = "/" + str_path
-        if "." in str_path.split("/")[-1]:
-            # File name needs to be removed
-            str_path = str_path.rsplit("/", 1)[0] + "/"
+        str_path = str_path if str_path.startswith("/") else "/" + str_path
+        path_parts = str_path.split("/")
+        str_path = "/".join(path_parts[:-1]) if "." in path_parts[-1] else str_path
         str_path = self.remove_slash_from_path_if_needed(str_path)
-        if str_path == "":
-            return "/"
-        return str_path
+        return str_path if str_path else "/"
 
     @staticmethod
     def remove_slash_from_path_if_needed(path):
-        if path and path.endswith("/"):
-            path = path[:-1]
-        return path
+        return path[:-1] if path and path.endswith("/") else path
 
     def simulate_get_type_name(self, str_path, iis_app_in_path):
-        if not str_path.startswith("/"):
-            str_path = "/" + str_path
-        if not str_path.lower().endswith(".aspx"):
-            str_path += "/default.aspx"
-        iis_app_in_path = iis_app_in_path.lower()
-        if not iis_app_in_path.startswith("/"):
-            iis_app_in_path = "/" + iis_app_in_path
-        if not iis_app_in_path.endswith("/"):
-            iis_app_in_path += "/"
-        if iis_app_in_path in str_path.lower():
-            str_path = str_path.lower().split(iis_app_in_path, 1)[1]
-        if str_path.startswith("/"):
-            str_path = str_path[1:]
+        str_path = str_path if str_path.startswith("/") else "/" + str_path
+        iis_app_in_path = (
+            "/" + iis_app_in_path.lower() if not iis_app_in_path.lower().startswith("/") else iis_app_in_path.lower()
+        )
+        str_path = str_path + "/default.aspx" if not str_path.lower().endswith(".aspx") else str_path
+        iis_app_in_path = iis_app_in_path + "/" if not iis_app_in_path.endswith("/") else iis_app_in_path
+        str_path = str_path.lower().split(iis_app_in_path, 1)[1] if iis_app_in_path in str_path.lower() else str_path
+        str_path = str_path[1:] if str_path.startswith("/") else str_path
         str_path = str_path.replace(".", "_").replace("/", "_")
         str_path = self.remove_slash_from_path_if_needed(str_path)
         return str_path
