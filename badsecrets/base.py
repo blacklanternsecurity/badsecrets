@@ -148,7 +148,7 @@ class BadsecretsBase:
         if items:
             return items
 
-          
+
 def hashcat_all_modules(product, detecting_module=None, *args):
     hashcat_candidates = []
     for m in BadsecretsBase.__subclasses__():
