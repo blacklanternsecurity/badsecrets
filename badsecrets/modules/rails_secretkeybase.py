@@ -36,7 +36,7 @@ class Rails_SecretKeyBase(BadsecretsBase):
                 encrypted_data = base64.b64decode(data).decode()
                 iv = encrypted_data.split("--")[1]
                 data = encrypted_data.split("--")[0]
-            except (UnicodeDecodeError, IndexError):
+            except (UnicodeDecodeError, IndexError, binascii.Error):
                 return
 
             if len(base64.b64decode(iv)) == 16:
