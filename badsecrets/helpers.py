@@ -1,10 +1,56 @@
 import sys
+import hmac
+import struct
 import hashlib
 from badsecrets.errors import BadsecretsException
 
 
+def _writeuint(v):
+    return struct.pack(">I", v)
+
+
 def unpad(s):
     return s[: -ord(s[len(s) - 1 :])]
+
+
+def sp800_108_derivekey(key, label, context, keyLengthInBits):
+    lblcnt = 0 if label is None else len(label)
+    ctxcnt = 0 if context is None else len(context)
+    buffer = b"\x00" * (4 + lblcnt + 1 + ctxcnt + 4)
+    if lblcnt != 0:
+        buffer = buffer[:4] + label + buffer[4 + lblcnt :]
+    if ctxcnt != 0:
+        buffer = buffer[: 5 + lblcnt] + context + buffer[5 + lblcnt + ctxcnt :]
+    buffer = buffer[: 5 + lblcnt + ctxcnt] + _writeuint(keyLengthInBits) + buffer[5 + lblcnt + ctxcnt + 4 :]
+    v = int(keyLengthInBits / 8)
+    res = b"\x00" * v
+    num = 1
+    while v > 0:
+        buffer = _writeuint(num) + buffer[4:]
+        h = hmac.new(key, buffer, hashlib.sha512)
+        hash = h.digest()
+        cnt = min(v, len(hash))
+        res = hash[:cnt] + res[cnt:]
+        v -= cnt
+        num += 1
+    return res
+
+
+def write_vlq_string(string):
+    encoded_string = string.encode("utf-8")
+    length = len(encoded_string)
+    length_vlq = bytearray()
+    while length >= 0x80:
+        length_vlq.append((length | 0x80) & 0xFF)
+        length >>= 7
+    length_vlq.append(length)
+    return bytes(length_vlq) + encoded_string
+
+
+def sp800_108_get_key_derivation_parameters(primary_purpose, specific_purposes):
+    derived_key_label = primary_purpose.encode("utf-8")
+    derived_key_context = b"".join([write_vlq_string(purpose) for purpose in specific_purposes])
+    return derived_key_label, derived_key_context
 
 
 class Csharp_pbkdf1_exception(BadsecretsException):

@@ -59,7 +59,7 @@ class BadsecretsBase:
                     if len(l) > 0:
                         yield l
 
-    def carve_to_check_secret(self, s):
+    def carve_to_check_secret(self, s, **kwargs):
         if s.groups():
             r = self.check_secret(s.groups()[0])
             return r
@@ -119,7 +119,7 @@ class BadsecretsBase:
             if self.carve_regex():
                 s = re.search(self.carve_regex(), body)
                 if s:
-                    r = self.carve_to_check_secret(s)
+                    r = self.carve_to_check_secret(s, url=kwargs.get("url", None))
                     if r:
                         r["type"] = "SecretFound"
                     else:
@@ -149,20 +149,21 @@ class BadsecretsBase:
             return items
 
 
-def hashcat_all_modules(product):
+def hashcat_all_modules(product, detecting_module=None, *args):
     hashcat_candidates = []
     for m in BadsecretsBase.__subclasses__():
-        x = m()
-        if x.identify(product):
-            hashcat_commands = x.get_hashcat_commands(product)
-            if hashcat_commands:
-                for hcc in hashcat_commands:
-                    z = {
-                        "detecting_module": m.__name__,
-                        "hashcat_command": hcc["command"],
-                        "hashcat_description": hcc["description"],
-                    }
-                    hashcat_candidates.append(z)
+        if detecting_module == m.__name__ or detecting_module == None:
+            x = m()
+            if x.identify(product):
+                hashcat_commands = x.get_hashcat_commands(product)
+                if hashcat_commands:
+                    for hcc in hashcat_commands:
+                        z = {
+                            "detecting_module": m.__name__,
+                            "hashcat_command": hcc["command"],
+                            "hashcat_description": hcc["description"],
+                        }
+                        hashcat_candidates.append(z)
     return hashcat_candidates
 
 

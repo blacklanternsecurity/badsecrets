@@ -208,14 +208,14 @@ def main():
             print_status(f"Error connecting to URL: [{args.url}]", color=Fore.RED)
             return
 
-        r_list = carve_all_modules(requests_response=res, custom_resource=custom_resource)
+        r_list = carve_all_modules(requests_response=res, custom_resource=custom_resource, url=args.url)
         if r_list:
             for r in r_list:
                 if r["type"] == "SecretFound":
                     report = ReportSecret(r)
                 else:
                     if not args.no_hashcat:
-                        hashcat_candidates = hashcat_all_modules(r["product"])
+                        hashcat_candidates = hashcat_all_modules(r["product"], detecting_module=r["detecting_module"])
                         if hashcat_candidates:
                             r["hashcat"] = hashcat_candidates
                     report = ReportIdentify(r)

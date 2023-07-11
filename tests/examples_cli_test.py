@@ -493,3 +493,103 @@ def test_example_cli_help(monkeypatch, capsys):
         assert "-c CUSTOM_SECRETS, --custom-secrets CUSTOM_SECRETS" in captured.out
         assert "-p PROXY, --proxy PROXY" in captured.out
         assert "-a USER_AGENT, --user-agent USER_AGENT" in captured.out
+
+
+def test_example_cli_dotnet45_url(monkeypatch, capsys):
+    base_vulnerable_page_aspnet_dotnet45 = """
+         <form method="post" action="./form.aspx" id="ctl00">
+<div class="aspNetHidden">
+<input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="" />
+<input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value="" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="4UzPhFpZZHLdlrT7oAv6gk6lNhI/f2n/4NkAGaaPUqQKk1wgM0XQndONaHukRvNo2hon4C0JTQLnGUEE6vg8nHYJqBgXiknpIqUcaQtFLf6Z2dAaBhIhRdWPz4PIF3wQ" />
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+var theForm = document.forms['ctl00'];
+if (!theForm) {
+    theForm = document.ctl00;
+}
+function __doPostBack(eventTarget, eventArgument) {
+    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+        theForm.__EVENTTARGET.value = eventTarget;
+        theForm.__EVENTARGUMENT.value = eventArgument;
+        theForm.submit();
+    }
+}
+//]]>
+</script>
+
+
+<div class="aspNetHidden">
+
+    <input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="DB68D79A" />
+    <input type="hidden" name="__VIEWSTATEENCRYPTED" id="__VIEWSTATEENCRYPTED" value="" />
+    <input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="1E02dhhNh5Elng+wXjTw6opqE8R/OdZddtcAL82qdZyIIRVQ8s97YQsJqECjV/OJQAu5ZySO9StoIr1X0S6NUbt/h4tCjnSvkgol4hnPb0DshxRmrMTYr/s+zlBn09dZFQ40HKbQeaRIxkww99sDGqnXdTyIOjVxrVW2FmKJSm8=" />
+</div>
+    """
+    with requests_mock.Mocker() as m:
+        m.get(
+            f"http://172.16.25.128/form.aspx",
+            status_code=200,
+            text=base_vulnerable_page_aspnet_dotnet45,
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "python",
+                "--url",
+                "http://172.16.25.128/form.aspx",
+            ],
+        )
+        cli.main()
+        captured = capsys.readouterr()
+        assert ("Known Secret Found!") in captured.out
+        assert ("Details: Mode [DOTNET45]") in captured.out
+
+
+def test_example_cli_dotnet45_manual(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "python",
+            "4UzPhFpZZHLdlrT7oAv6gk6lNhI/f2n/4NkAGaaPUqQKk1wgM0XQndONaHukRvNo2hon4C0JTQLnGUEE6vg8nHYJqBgXiknpIqUcaQtFLf6Z2dAaBhIhRdWPz4PIF3wQ",
+            "http://172.16.25.128/form.aspx",
+        ],
+    )
+
+    cli.main()
+    captured = capsys.readouterr()
+    assert ("Known Secret Found!") in captured.out
+    assert ("Details: Mode [DOTNET45]") in captured.out
+
+
+def test_example_cli_longinput(monkeypatch, capsys):
+    with patch("sys.exit") as exit_mock:
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "python",
+                "Ly8gp+FZKt9XsaxT5gZu41DDxO74k029z88gNBOru2jXW0g1Og+RUPdf2d8hGNTiofkD1VvmQTZAfeV+5qijOoD+SPzw6K72Y1H0sxfx5mFcfFtmqX7iN6Gq0fwLM+9PKQz88f+e7KImJqG1cz5KYhcrgT87c5Ayl03wEHvWwktTq9TcBJc4f1VnNHXVZgALGqQuETU8hYwZ1VilDmQ7J4pZbv+pvPUvzk+/e2oNeybso6TXqUrbT2Mz3k7yfe92q3pRjdxRlGxmkO9bPqNOtETlLPE5dDiZY11U9gr8BBD=",
+                "AAAAAAAA",
+                "BBBBBBBB",
+                "CCCCCC",
+            ],
+        )
+        cli.main()
+        assert not exit_mock.called
+
+
+def test_example_cli_dotnetbadgenerator(monkeypatch, capsys):
+    with patch("sys.exit") as exit_mock:
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "python",
+                "Ly8gp+FZKt9XsaxT5gZu41DDxO74k029z88gNBOru2jXW0g1Og+RUPdf2d8hGNTiofkD1VvmQTZAfeV+5qijOoD+SPzw6K72Y1H0sxfx5mFcfFtmqX7iN6Gq0fwLM+9PKQz88f+e7KImJqG1cz5KYhcrgT87c5Ayl03wEHvWwktTq9TcBJc4f1VnNHXVZgALGqQuETU8hYwZ1VilDmQ7J4pZbv+pvPUvzk+/e2oNeybso6TXqUrbT2Mz3k7yfe92q3pRjdxRlGxmkO9bPqNOtETlLPE5dDiZY11U9gr8BBD=",
+                "!!!!!!!!",
+            ],
+        )
+        cli.main()
+        assert not exit_mock.called
