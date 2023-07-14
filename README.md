@@ -6,6 +6,8 @@
 ![License](https://img.shields.io/badge/license-GPLv3-f126ea.svg)
 ![Tests](https://github.com/blacklanternsecurity/badsecrets/actions/workflows/tests.yaml/badge.svg?branch=main)
 [![codecov](https://codecov.io/gh/blacklanternsecurity/badsecrets/branch/main/graph/badge.svg?token=2PAE7NUM07)](https://codecov.io/gh/blacklanternsecurity/badsecrets)
+[![Pypi Downloads](https://img.shields.io/pypi/dm/badsecrets)](https://pypi.org/project/badsecrets)
+
 
 A pure python library for identifying the use of known or very weak cryptographic secrets across a variety of platforms. The project is designed to be both a repository of various "known secrets" (for example, ASP.NET machine keys found in examples in tutorials), and to provide a language-agnostic abstraction layer for identifying their use.  
 
