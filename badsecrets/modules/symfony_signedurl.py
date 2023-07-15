@@ -43,7 +43,7 @@ class Symfony_SignedURL(BadsecretsBase):
             hash_algorithm = self.hash_algs[hash_algorithm_str]
         return url, url_hash, hash_algorithm
 
-    def get_hashcat_commands(self, signed_url):
+    def get_hashcat_commands(self, signed_url, *args):
         url, url_hash, hash_algorithm = self.symfonyLoad(signed_url)
         hash_algorithm_str = hash_algorithm.__name__.split("_")[1]
         hashcat_mode = None

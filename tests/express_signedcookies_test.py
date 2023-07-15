@@ -1,8 +1,9 @@
 from badsecrets import modules_loaded
 
-ExpressSignedCookies = modules_loaded["express_signedcookies"]
+ExpressSignedCookies_ES = modules_loaded["express_signedcookies_es"]
+ExpressSignedCookies_CS = modules_loaded["express_signedcookies_cs"]
 
-tests = [
+es_tests = [
     (
         "your-session-secret-key",
         "s%3A2eb4SvnuYufiFoKr0DLB-5gWD_YtlQhs.mGdwi%2F4pdFZkuraF%2FCit68TmBkpALzPSbCyDGEfpJjo",
@@ -11,9 +12,26 @@ tests = [
 ]
 
 
-def test_express():
-    x = ExpressSignedCookies()
-    for test in tests:
+cs_tests = [
+    (
+        "your-secret-key",
+        ("foo=eyJ1c2VybmFtZSI6IkJib3RJc0xpZmUifQ==", "zOQU7v7aTe_3zu7tnVuHi1MJ2DU"),
+    ),
+    ("your-secret-key", ("foo=eyJ1c2VybmFtZSI6IkJib3RJc0xpZmUifQ==", "zOQU7v7aTe_3zu7tnVuHi1MJ2DU")),
+]
+
+
+def test_express_es():
+    x = ExpressSignedCookies_ES()
+    for test in es_tests:
         found_key = x.check_secret(test[1])
+        assert found_key
+        assert found_key["secret"] == test[0]
+
+
+def test_express_cs():
+    x = ExpressSignedCookies_CS()
+    for test in cs_tests:
+        found_key = x.check_secret(test[1][0], test[1][1])
         assert found_key
         assert found_key["secret"] == test[0]

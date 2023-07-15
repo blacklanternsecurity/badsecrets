@@ -195,7 +195,11 @@ class ASPNET_Viewstate(BadsecretsBase):
                         result = f"validationKey: {vkey} validationAlgo: {validationAlgo}"
                         if confirmed_ekey:
                             result += f" encryptionKey: {confirmed_ekey} encryptionAlgo: {decryptionAlgo}"
-                        return {"secret": result, "details": f"Mode [{mode}]"}
+
+                        product_string = f"Viewstate: {viewstate_B64}"
+                        if generator != "0000":
+                            product_string += f" Generator: {generator}"
+                        return {"secret": result, "product": product_string, "details": f"Mode [{mode}]"}
         return None
 
 

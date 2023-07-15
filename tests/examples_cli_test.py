@@ -48,6 +48,24 @@ def test_examples_cli_manual(monkeypatch, capsys):
     assert "your-256-bit-secret" in captured.out
 
 
+def test_examples_cli_manualtwovalues(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "python",
+            "foo=eyJ1c2VybmFtZSI6IkJib3RJc0xpZmUifQ==",
+            "zOQU7v7aTe_3zu7tnVuHi1MJ2DU",
+        ],
+    )
+
+    cli.main()
+    captured = capsys.readouterr()
+    assert (
+        "Product: Data Cookie: [foo=eyJ1c2VybmFtZSI6IkJib3RJc0xpZmUifQ==] Signature Cookie: [zOQU7v7aTe_3zu7tnVuHi1MJ2DU]"
+        in captured.out
+    )
+
+
 def test_examples_cli_url_invalid(monkeypatch, capsys):
     with patch("sys.exit") as exit_mock:
         monkeypatch.setattr("sys.argv", ["python", "--url", "hxxp://notaurl"])
@@ -87,6 +105,32 @@ def test_example_cli_vulnerable_url(monkeypatch, capsys):
         cli.main()
         captured = capsys.readouterr()
         assert "your-256-bit-secret" in captured.out
+
+
+def test_example_cli_vulnerable_headers(monkeypatch, capsys):
+    with requests_mock.Mocker() as m:
+        m.get(
+            f"http://example.com/vulnerableexpress_cs.html",
+            status_code=200,
+            text="<html><body>content</body></html>",
+            headers={
+                "X-Powered-By": "Express",
+                "Content-Type": "text/html; charset=utf-8",
+                "Content-Length": "11",
+                "ETag": 'W/"b-LTx1jc/VQrBurpG4w6qnFsu3lHk"',
+                "Set-Cookie": "session=eyJ1c2VybmFtZSI6IkJib3RJc0xpZmUifQ==; path=/; expires=Sun, 16 Jul 2023 19:56:30 GMT; httponly, session.sig=8BrG9wzvqxuPCtKmfgdyXXGGqA8; path=/; expires=Sun, 16 Jul 2023 19:56:30 GMT; httponly",
+                "Date": "Sat, 15 Jul 2023 02:47:13 GMT",
+                "Connection": "close",
+            },
+        )
+
+        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerableexpress_cs.html"])
+        cli.main()
+        captured = capsys.readouterr()
+        assert (
+            "Product: Data Cookie: [session=eyJ1c2VybmFtZSI6IkJib3RJc0xpZmUifQ==] Signature Cookie: [8BrG9wzvqxuPCtKmfgdyXXGGqA8]"
+            in captured.out
+        )
 
 
 def test_example_cli_not_vulnerable_url(monkeypatch, capsys):

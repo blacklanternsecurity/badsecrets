@@ -19,7 +19,7 @@ class Flask_SignedCookies(BadsecretsBase):
                 return {"secret": password, "details": r}
         return None
 
-    def get_hashcat_commands(self, flask_cookie):
+    def get_hashcat_commands(self, flask_cookie, *args):
         return [
             {
                 "command": f"hashcat -m 29100 -a 0 {flask_cookie} <dictionary_file>",

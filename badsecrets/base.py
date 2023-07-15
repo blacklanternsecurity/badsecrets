@@ -98,18 +98,26 @@ class BadsecretsBase:
 
         if headers:
             for header_value in headers.values():
+                # Check if we have a match outright
                 r = self.check_secret(header_value)
                 if r:
                     r["type"] = "SecretFound"
                     r["product"] = header_value
                     r["location"] = "headers"
                     results.append(r)
+                # If we dont, we will only be able to add context if we have a match with carve_regex()
                 elif self.carve_regex():
                     s = re.search(self.carve_regex(), header_value)
                     if s:
-                        r = {"type": "IdentifyOnly"}
-                        r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
-                        r["product"] = s.groups()[0]
+                        r = self.carve_to_check_secret(s)
+                        if r:
+                            r["type"] = "SecretFound"
+                        # the carve regex hit but no secret was found
+                        else:
+                            r = {"type": "IdentifyOnly"}
+                            r["hashcat"] = self.get_hashcat_commands(s)
+                        if "product" not in r.keys():
+                            r["product"] = s.groups()[0]
                         r["location"] = "headers"
                         results.append(r)
 
@@ -125,7 +133,8 @@ class BadsecretsBase:
                     else:
                         r = {"type": "IdentifyOnly"}
                         r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
-                    r["product"] = s.groups()[0]
+                    if "product" not in r.keys():
+                        r["product"] = s.groups()[0]
                     r["location"] = "body"
                     results.append(r)
 
@@ -174,7 +183,10 @@ def check_all_modules(*args, **kwargs):
         if r:
             r["detecting_module"] = m.__name__
             r["description"] = x.get_description()
-            r["product"] = args[0]
+
+            # allow the module to provide an amended product, if needed
+            if "product" not in r.keys():
+                r["product"] = args[0]
             r["location"] = "manual"
             return r
     return None

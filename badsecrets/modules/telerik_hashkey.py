@@ -44,7 +44,7 @@ class Telerik_HashKey(BadsecretsBase):
                     return {"secret": vkey, "details": None}
         return None
 
-    def get_hashcat_commands(self, dialogParameters_raw):
+    def get_hashcat_commands(self, dialogParameters_raw, *args):
         dp_enc, dp_hash = self.telerik_hashkey_load(dialogParameters_raw)
         if not dp_enc or not dp_hash:
             return None

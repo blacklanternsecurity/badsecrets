@@ -66,7 +66,7 @@ class Generic_JWT(BadsecretsBase):
 
         return jwt_headers, algorithm, JWT
 
-    def get_hashcat_commands(self, JWT):
+    def get_hashcat_commands(self, JWT, *args):
         jwt_headers, algorithm, JWT = self.jwtLoad(JWT)
         if jwt_headers and algorithm and JWT:
             if algorithm[0].lower() != "h":
