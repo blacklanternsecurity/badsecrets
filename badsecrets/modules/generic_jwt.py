@@ -24,7 +24,7 @@ XMLDSIG_table = {
 
 class Generic_JWT(BadsecretsBase):
     identify_regex = re.compile(r"eyJ(?:[\w-]*\.)(?:[\w-]*\.)[\w-]*")
-    description = {"product": "JSON Web Token (JWT)", "secret": "HMAC/RSA Key"}
+    description = {"product": "JSON Web Token (JWT)", "secret": "HMAC/RSA Key", "severity": "HIGH"}
 
     @staticmethod
     def swap_algorithm(jwt, algorithm):

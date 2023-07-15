@@ -48,6 +48,20 @@ def test_examples_cli_manual(monkeypatch, capsys):
     assert "your-256-bit-secret" in captured.out
 
 
+def test_examples_cli_manual_severityprinted(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "python",
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+        ],
+    )
+
+    cli.main()
+    captured = capsys.readouterr()
+    assert "Severity: HIGH" in captured.out
+
+
 def test_examples_cli_manualtwovalues(monkeypatch, capsys):
     monkeypatch.setattr(
         "sys.argv",

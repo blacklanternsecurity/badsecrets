@@ -6,7 +6,7 @@ from badsecrets.base import BadsecretsBase, generic_base64_regex
 
 class Peoplesoft_PSToken(BadsecretsBase):
     identify_regex = generic_base64_regex
-    description = {"product": "Peoplesoft PS_TOKEN", "secret": "Peoplesoft Secret"}
+    description = {"product": "Peoplesoft PS_TOKEN", "secret": "Peoplesoft Secret", "severity": "HIGH"}
 
     def peoplesoft_load(self, PS_TOKEN_B64):
         PS_TOKEN = base64.b64decode(PS_TOKEN_B64)

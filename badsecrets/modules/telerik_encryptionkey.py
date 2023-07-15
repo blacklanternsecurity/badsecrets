@@ -17,7 +17,11 @@ telerik_hardcoded_salt = [58, 84, 91, 25, 10, 34, 29, 68, 60, 88, 44, 51, 1]
 
 class Telerik_EncryptionKey(BadsecretsBase):
     identify_regex = re.compile(r"^(?:[A-Za-z0-9+\/=%]{32,})$")
-    description = {"product": "Telerik DialogParameters", "secret": "Telerik.Web.UI.DialogParametersEncryptionKey"}
+    description = {
+        "product": "Telerik DialogParameters",
+        "secret": "Telerik.Web.UI.DialogParametersEncryptionKey",
+        "severity": "MEDIUM",
+    }
 
     def carve_regex(self):
         return re.compile(r"{\"SerializedParameters\":\"([^\"]*)\"")

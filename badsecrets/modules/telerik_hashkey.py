@@ -9,7 +9,11 @@ from badsecrets.base import BadsecretsBase
 
 class Telerik_HashKey(BadsecretsBase):
     identify_regex = re.compile(r"^(?:[A-Za-z0-9+\/=%]{32,})$")
-    description = {"product": "Telerik DialogParameters", "secret": "Telerik.Upload.ConfigurationHashKey"}
+    description = {
+        "product": "Telerik DialogParameters",
+        "secret": "Telerik.Upload.ConfigurationHashKey",
+        "severity": "HIGH",
+    }
 
     def carve_regex(self):
         return re.compile(r"{\"SerializedParameters\":\"([^\"]*)\"")

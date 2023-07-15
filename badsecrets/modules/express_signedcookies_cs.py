@@ -22,6 +22,7 @@ class ExpressSignedCookies_CS(BadsecretsBase):
     description = {
         "product": "Express.js Signed Cookie (cookie-session)",
         "secret": "Express.js Secret (cookie-session)",
+        "severity": "HIGH",
     }
 
     def carve_regex(self):

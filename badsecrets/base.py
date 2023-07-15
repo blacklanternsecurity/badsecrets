@@ -12,7 +12,7 @@ generic_base64_regex = re.compile(
 
 class BadsecretsBase:
     identify_regex = re.compile(r".+")
-    description = {"product": "Undefined", "secret": "Undefined"}
+    description = {"product": "Undefined", "secret": "Undefined", "severity": "Undefined"}
 
     hash_sizes = {"SHA1": 20, "MD5": 16, "SHA256": 32, "SHA384": 48, "SHA512": 64}
     hash_algs = {

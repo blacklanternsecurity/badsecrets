@@ -17,7 +17,11 @@ class Jsf_viewstate(BadsecretsBase):
     identify_regex = re.compile(
         r"^(?:[%A-Za-z0-9+\/]{4}){8,}(?:[%A-Za-z0-9+\/]{4}|[%A-Za-z0-9+\/]{3}=|[%A-Za-z0-9+\/]{2}={2})$"
     )
-    description = {"product": "Java Server Faces Viewstate", "secret": "com.sun.faces.ClientStateSavingPassword"}
+    description = {
+        "product": "Java Server Faces Viewstate",
+        "secret": "com.sun.faces.ClientStateSavingPassword",
+        "severity": "CRITICAL",
+    }
 
     hashcat_hashalg_table = {"MD5": "50", "SHA1": "150", "SHA256": "1450", "SHA384": "10800", "SHA512": "1750"}
 
