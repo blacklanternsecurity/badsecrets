@@ -53,6 +53,7 @@ class BaseReport:
         print(f"Product Type: {self.x['description']['product']}")
         print(f"Product: {self.x['product']}")
         print(f"Secret Type: {self.x['description']['secret']}")
+        print(f"Severity: {self.x['description']['severity']}")
         print(f"Location: {self.x['location']}")
 
 

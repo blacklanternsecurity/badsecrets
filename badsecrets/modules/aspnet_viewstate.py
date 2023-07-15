@@ -18,7 +18,7 @@ from badsecrets.base import BadsecretsBase, generic_base64_regex
 class ASPNET_Viewstate(BadsecretsBase):
     check_secret_args = 3
     identify_regex = generic_base64_regex
-    description = {"product": "ASP.NET Viewstate", "secret": "ASP.NET MachineKey"}
+    description = {"product": "ASP.NET Viewstate", "secret": "ASP.NET MachineKey", "severity": "CRITICAL"}
 
     def carve_regex(self):
         return re.compile(

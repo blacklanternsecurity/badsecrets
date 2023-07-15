@@ -6,3 +6,5 @@ def test_module_descriptions():
         assert m.get_description()
         assert m.get_description()["product"] != "Undefined"
         assert m.get_description()["secret"] != "Undefined"
+        assert m.get_description()["severity"] != "Undefined"
+        assert m.get_description()["severity"] in ["INFORMATIONAL", "LOW", "MEDIUM", "HIGH", "CRITICAL"]
