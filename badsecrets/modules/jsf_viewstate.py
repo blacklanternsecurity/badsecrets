@@ -178,7 +178,7 @@ class Jsf_viewstate(BadsecretsBase):
         else:
             return (None, None, None, None, None)
 
-    def get_hashcat_commands(self, jsf_viewstate_value):
+    def get_hashcat_commands(self, jsf_viewstate_value, *args):
         commands = []
         decoded_viewstate = base64.b64decode(urllib.parse.unquote(jsf_viewstate_value))
         sig = decoded_viewstate[:32]
