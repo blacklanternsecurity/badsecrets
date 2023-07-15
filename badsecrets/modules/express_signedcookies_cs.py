@@ -2,9 +2,8 @@ import re
 import hmac
 import base64
 import binascii
-import urllib.parse
 from contextlib import suppress
-from badsecrets.base import BadsecretsBase, generic_base64_regex
+from badsecrets.base import BadsecretsBase
 
 
 def no_padding_urlsafe_base64_decode(enc):
