@@ -44,6 +44,9 @@ class BadsecretsBase:
     def get_description(self):
         return self.description
 
+    def get_product_from_carve(self, regex_search):
+        return regex_search.groups()[0]
+
     def get_hashcat_commands(self, s):
         return None
 
@@ -117,7 +120,7 @@ class BadsecretsBase:
                             r = {"type": "IdentifyOnly"}
                             r["hashcat"] = self.get_hashcat_commands(s)
                         if "product" not in r.keys():
-                            r["product"] = s.groups()[0]
+                            r["product"] = self.get_product_from_carve(s)
                         r["location"] = "headers"
                         results.append(r)
 
@@ -134,7 +137,7 @@ class BadsecretsBase:
                         r = {"type": "IdentifyOnly"}
                         r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
                     if "product" not in r.keys():
-                        r["product"] = s.groups()[0]
+                        r["product"] = self.get_product_from_carve(s)
                     r["location"] = "body"
                     results.append(r)
 

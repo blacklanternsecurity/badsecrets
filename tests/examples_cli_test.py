@@ -80,6 +80,17 @@ def test_examples_cli_manualtwovalues(monkeypatch, capsys):
     )
 
 
+def test_examples_cli_manualtwovalues_identifyonly(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "sys.argv",
+        ["python", "/wEPDwUJODExMDE5NzY5ZGSglOSr1rG6xN5rzh/4C9UEuwa64w==", "EDD8C9AE"],
+    )
+
+    cli.main()
+    captured = capsys.readouterr()
+    assert "Viewstate: /wEPDwUJODExMDE5NzY5ZGSglOSr1rG6xN5rzh/4C9UEuwa64w== Generator: EDD8C9AE" in captured.out
+
+
 def test_examples_cli_url_invalid(monkeypatch, capsys):
     with patch("sys.exit") as exit_mock:
         monkeypatch.setattr("sys.argv", ["python", "--url", "hxxp://notaurl"])
@@ -145,6 +156,33 @@ def test_example_cli_vulnerable_headers(monkeypatch, capsys):
             "Product: Data Cookie: [session=eyJ1c2VybmFtZSI6IkJib3RJc0xpZmUifQ==] Signature Cookie: [8BrG9wzvqxuPCtKmfgdyXXGGqA8]"
             in captured.out
         )
+
+
+def test_example_cli_vulnerable_headersidentifyonly(monkeypatch, capsys):
+    with requests_mock.Mocker() as m:
+        m.get(
+            f"http://example.com/vulnerableexpress_cs.html",
+            status_code=200,
+            text="<html><body>content</body></html>",
+            headers={
+                "X-Powered-By": "Express",
+                "Content-Type": "text/html; charset=utf-8",
+                "Content-Length": "11",
+                "ETag": 'W/"b-LTx1jc/VQrBurpG4w6qnFsu3lHk"',
+                "Set-Cookie": "session=eyJ1c2VybmFtZSI6IkJib3RJc0xpZmUifQ==; path=/; expires=Sun, 16 Jul 2023 19:56:30 GMT; httponly, session.sig=8BrG9wzvqxuPCtKmfgdyXXGGqA7; path=/; expires=Sun, 16 Jul 2023 19:56:30 GMT; httponly",
+                "Date": "Sat, 15 Jul 2023 02:47:13 GMT",
+                "Connection": "close",
+            },
+        )
+
+        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerableexpress_cs.html"])
+        cli.main()
+        captured = capsys.readouterr()
+        assert (
+            "Data Cookie: [session=eyJ1c2VybmFtZSI6IkJib3RJc0xpZmUifQ==] Signature Cookie: [8BrG9wzvqxuPCtKmfgdyXXGGqA7]"
+            in captured.out
+        )
+        assert "Cryptographic Product Identified (no vulnerability)" in captured.out
 
 
 def test_example_cli_not_vulnerable_url(monkeypatch, capsys):

@@ -28,6 +28,9 @@ class ExpressSignedCookies_CS(BadsecretsBase):
     def carve_regex(self):
         return re.compile(r"(\w+=[^;]{4,512}).+\w+.sig=([^;]{27,86})")
 
+    def get_product_from_carve(self, regex_search):
+        return f"Data Cookie: [{regex_search.groups()[0]}] Signature Cookie: [{regex_search.groups()[1]}]"
+
     def carve_to_check_secret(self, s):
         if len(s.groups()) == 2:
             r = self.check_secret(s.groups()[0], s.groups()[1])
