@@ -198,7 +198,7 @@ class ASPNET_Viewstate(BadsecretsBase):
 
                         product_string = f"Viewstate: {viewstate_B64}"
                         if generator != "0000":
-                            product_string += f" Generator: {generator}"
+                            product_string += f" Generator: {generator[::-1].hex().upper()}"
                         return {"secret": result, "product": product_string, "details": f"Mode [{mode}]"}
         return None
 
