@@ -39,7 +39,7 @@ class ExpressSignedCookies_ES(BadsecretsBase):
             if not signature_candidates:
                 return False
             else:
-                for hash_algorithm_str in signature_candiatates:
+                for hash_algorithm_str in signature_candidates:
                     hash_algorithm = self.hash_algs[hash_algorithm_str]
                     generated_hash = self.expressHMAC(payload, secret, hash_algorithm)
                     if generated_hash == signature:
