@@ -11,21 +11,27 @@ def no_padding_urlsafe_base64_decode(enc):
     return base64.urlsafe_b64decode(enc + "=" * (-len(enc) % 4))
 
 
-def no_padding_urlsafe_base64_encode(enc):
+def no_padding_urlsafe_base64_encode_es(enc):
     return base64.urlsafe_b64encode(enc).decode().rstrip("=").replace("-", "+").replace("_", "/")
 
 
-class ExpressSignedCookies(BadsecretsBase):
+class ExpressSignedCookies_ES(BadsecretsBase):
     identify_regex = re.compile(r"^s%3[Aa][^\.]+\.[a-zA-Z0-9%]{20,90}$")
-    description = {"product": "Express.js Signed Cookie", "secret": "Express.js SESSION_SECRET"}
+    description = {
+        "product": "Express.js Signed Cookie (express-session)",
+        "secret": "Express.js SESSION_SECRET (express-session)",
+        "severity": "LOW",
+    }
 
     def carve_regex(self):
         return re.compile(r"(s%3[Aa][^\.]+\.[a-zA-Z0-9%]{20,90})")
 
     def expressHMAC(self, payload, secret, hash_algorithm):
-        return no_padding_urlsafe_base64_encode(hmac.HMAC(secret.encode(), payload.encode(), hash_algorithm).digest())
+        return no_padding_urlsafe_base64_encode_es(
+            hmac.HMAC(secret.encode(), payload.encode(), hash_algorithm).digest()
+        )
 
-    def expressVerify(self, value, secret):
+    def expressVerify_es(self, value, secret):
         payload, signature = value.split(".")[0][4:], urllib.parse.unquote(value.split(".")[1])
 
         with suppress(binascii.Error):
@@ -47,7 +53,7 @@ class ExpressSignedCookies(BadsecretsBase):
         for l in set(list(self.load_resources(["express_session_secrets.txt", "top_10000_passwords.txt"]))):
             session_secret = l.rstrip()
 
-            r = self.expressVerify(express_signed_cookie, session_secret)
+            r = self.expressVerify_es(express_signed_cookie, session_secret)
 
             if r:
                 return {"secret": session_secret, "details": r}

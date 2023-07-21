@@ -24,7 +24,7 @@ XMLDSIG_table = {
 
 class Generic_JWT(BadsecretsBase):
     identify_regex = re.compile(r"eyJ(?:[\w-]*\.)(?:[\w-]*\.)[\w-]*")
-    description = {"product": "JSON Web Token (JWT)", "secret": "HMAC/RSA Key"}
+    description = {"product": "JSON Web Token (JWT)", "secret": "HMAC/RSA Key", "severity": "HIGH"}
 
     @staticmethod
     def swap_algorithm(jwt, algorithm):
@@ -66,7 +66,7 @@ class Generic_JWT(BadsecretsBase):
 
         return jwt_headers, algorithm, JWT
 
-    def get_hashcat_commands(self, JWT):
+    def get_hashcat_commands(self, JWT, *args):
         jwt_headers, algorithm, JWT = self.jwtLoad(JWT)
         if jwt_headers and algorithm and JWT:
             if algorithm[0].lower() != "h":
@@ -94,7 +94,6 @@ class Generic_JWT(BadsecretsBase):
                 r = self.jwtVerify(JWT, key, algorithm)
                 if r:
                     r["jwt_headers"] = jwt_headers
-
                     return {"secret": key, "details": r}
 
         elif algorithm[0].lower() == "r":
@@ -102,8 +101,8 @@ class Generic_JWT(BadsecretsBase):
                 private_key_name = l.split(":")[0]
                 public_key = f"{l.split(':')[1]}".rstrip().encode().replace(b"\\n", b"\n")
                 r = self.jwtVerify(JWT, public_key, algorithm)
-                r["jwt_headers"] = jwt_headers
                 if r:
+                    r["jwt_headers"] = jwt_headers
                     return {"secret": f"Private key Name: {private_key_name}", "details": r}
 
         return None

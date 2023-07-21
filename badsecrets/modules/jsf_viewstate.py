@@ -17,7 +17,11 @@ class Jsf_viewstate(BadsecretsBase):
     identify_regex = re.compile(
         r"^(?:[%A-Za-z0-9+\/]{4}){8,}(?:[%A-Za-z0-9+\/]{4}|[%A-Za-z0-9+\/]{3}=|[%A-Za-z0-9+\/]{2}={2})$"
     )
-    description = {"product": "Java Server Faces Viewstate", "secret": "com.sun.faces.ClientStateSavingPassword"}
+    description = {
+        "product": "Java Server Faces Viewstate",
+        "secret": "com.sun.faces.ClientStateSavingPassword",
+        "severity": "CRITICAL",
+    }
 
     hashcat_hashalg_table = {"MD5": "50", "SHA1": "150", "SHA256": "1450", "SHA384": "10800", "SHA512": "1750"}
 
@@ -178,7 +182,7 @@ class Jsf_viewstate(BadsecretsBase):
         else:
             return (None, None, None, None, None)
 
-    def get_hashcat_commands(self, jsf_viewstate_value):
+    def get_hashcat_commands(self, jsf_viewstate_value, *args):
         commands = []
         decoded_viewstate = base64.b64decode(urllib.parse.unquote(jsf_viewstate_value))
         sig = decoded_viewstate[:32]
