@@ -29,6 +29,13 @@ def test_express_es():
         assert found_key["secret"] == test[0]
 
 
+def test_express_es_bad():
+    x = ExpressSignedCookies_ES()
+    for test in es_tests:
+        found_key = x.check_secret("s%3A%2F%2Fsomeorg.org%2Flocations%2Fnorth")
+        assert not found_key
+
+
 def test_express_cs():
     x = ExpressSignedCookies_CS()
     for test in cs_tests:
