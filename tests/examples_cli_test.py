@@ -4,6 +4,8 @@ import tempfile
 import requests_mock
 from mock import patch
 
+from badsecrets.modules.generic_jwt import Generic_JWT
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(f"{os.path.dirname(SCRIPT_DIR)}/examples")
 from badsecrets.examples import cli
@@ -645,6 +647,54 @@ function __doPostBack(eventTarget, eventArgument) {
         assert ("Details: Mode [DOTNET45]") in captured.out
 
 
+def test_example_cli_aspnetvstate_url(monkeypatch, capsys):
+    base_vulnerable_page_aspnet_vstate = """
+         <!doctype html>
+
+<!--[if IE 9]> <html class="no-js lt-ie10" lang="en" xmlns:fb="http://ogp.me/ns/fb#"> <![endif]-->
+<!--[if gt IE 9]><!--> <html class="no-js" lang="en" xmlns:fb="http://ogp.me/ns/fb#"> <!--<![endif]-->
+<head> 
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ 
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" /> 
+
+</head>
+<body id="_body">
+  <a id="page_top" name="page_top"></a>
+    <form method="post" action="./default.aspx" id="form1">
+<div class="aspNetHidden">
+<input type="hidden" name="__VSTATE" id="__VSTATE" value="H4sIAAAAAAAEAPvPyJ/Cz8ppZGpgaWpgZmmYAgAAmCJNEQAAAA==" />
+<input type="hidden" name="__VSTATELENGTH" id="__VSTATELENGTH" value="52" />
+<input type="hidden" name="__VSTATEHOST" id="__VSTATEHOST" value="02" />
+<input type="hidden" name="__VSTATETIMESTAMP" id="__VSTATETIMESTAMP" value="7/29/2016 11:19:46 AM" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="" />
+</div>   
+<p>content</p>
+</html>
+    """
+    with requests_mock.Mocker() as m:
+        m.get(
+            f"http://172.16.25.128/form.aspx",
+            status_code=200,
+            text=base_vulnerable_page_aspnet_vstate,
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "python",
+                "--url",
+                "http://172.16.25.128/form.aspx",
+            ],
+        )
+        cli.main()
+        captured = capsys.readouterr()
+        assert ("Known Secret Found!") in captured.out
+        assert ("Product: H4sIAAAAAAAEAPvPyJ/Cz8ppZGpgaWpgZmmYAgAAmCJNEQAAAA==") in captured.out
+        assert ("ASP.NET Compressed Vstate") in captured.out
+
+
 def test_example_cli_dotnet45_manual(monkeypatch, capsys):
     monkeypatch.setattr(
         "sys.argv",
@@ -689,3 +739,37 @@ def test_example_cli_dotnetbadgenerator(monkeypatch, capsys):
         )
         cli.main()
         assert not exit_mock.called
+
+
+def test_examples_cli_colors_medlow(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "python",
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+        ],
+    )
+    monkeypatch.setattr(
+        Generic_JWT, "description", {"product": "JSON Web Token (JWT)", "secret": "HMAC/RSA Key", "severity": "MEDIUM"}
+    )
+    cli.main()
+    captured = capsys.readouterr()
+    assert "your-256-bit-secret" in captured.out
+    print(captured.out)
+
+
+def test_examples_cli_colors_info(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "python",
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+        ],
+    )
+    monkeypatch.setattr(
+        Generic_JWT, "description", {"product": "JSON Web Token (JWT)", "secret": "HMAC/RSA Key", "severity": "INFO"}
+    )
+    cli.main()
+    captured = capsys.readouterr()
+    assert "your-256-bit-secret" in captured.out
+    print(captured.out)
