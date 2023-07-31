@@ -4,6 +4,8 @@ import tempfile
 import requests_mock
 from mock import patch
 
+from badsecrets.modules.generic_jwt import Generic_JWT
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(f"{os.path.dirname(SCRIPT_DIR)}/examples")
 from badsecrets.examples import cli
@@ -737,3 +739,37 @@ def test_example_cli_dotnetbadgenerator(monkeypatch, capsys):
         )
         cli.main()
         assert not exit_mock.called
+
+
+def test_examples_cli_colors_medlow(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "python",
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+        ],
+    )
+    monkeypatch.setattr(
+        Generic_JWT, "description", {"product": "JSON Web Token (JWT)", "secret": "HMAC/RSA Key", "severity": "MEDIUM"}
+    )
+    cli.main()
+    captured = capsys.readouterr()
+    assert "your-256-bit-secret" in captured.out
+    print(captured.out)
+
+
+def test_examples_cli_colors_info(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "python",
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+        ],
+    )
+    monkeypatch.setattr(
+        Generic_JWT, "description", {"product": "JSON Web Token (JWT)", "secret": "HMAC/RSA Key", "severity": "INFO"}
+    )
+    cli.main()
+    captured = capsys.readouterr()
+    assert "your-256-bit-secret" in captured.out
+    print(captured.out)

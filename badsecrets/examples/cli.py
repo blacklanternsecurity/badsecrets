@@ -60,7 +60,14 @@ class ReportSecret(BaseReport):
     def report(self):
         self.print_report(print_status("Known Secret Found!\n", color=Fore.GREEN, passthru=True))
         print_status(f"Secret: {self.x['secret']}", color=Fore.GREEN)
-        print(f"Severity: {self.x['description']['severity']}")
+        severity = self.x["description"]["severity"]
+        if severity in ["CRITICAL", "HIGH"]:
+            severity_color = Fore.RED
+        elif severity in ["LOW", "MEDIUM"]:
+            severity_color = Fore.YELLOW
+        elif severity == "INFO":
+            severity_color = Fore.BLUE
+        print_status(f"Severity: {self.x['description']['severity']}", color=severity_color)
         print(f"Details: {self.x['details']}")
 
 
