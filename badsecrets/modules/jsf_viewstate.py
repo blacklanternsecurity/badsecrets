@@ -1,5 +1,4 @@
 import re
-import gzip
 import hmac
 import base64
 import hashlib
@@ -24,14 +23,6 @@ class Jsf_viewstate(BadsecretsBase):
     }
 
     hashcat_hashalg_table = {"MD5": "50", "SHA1": "150", "SHA256": "1450", "SHA384": "10800", "SHA512": "1750"}
-
-    @staticmethod
-    def attempt_decompress(value):
-        try:
-            uncompressed = gzip.decompress(base64.b64decode(value))
-        except (gzip.BadGzipFile, binascii.Error, ValueError):
-            return False
-        return uncompressed
 
     def carve_regex(self):
         return re.compile(r"<input.+?name=\"javax\.faces\.ViewState\".+?value=\"([^\"]*)\"")

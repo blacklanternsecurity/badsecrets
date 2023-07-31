@@ -1,6 +1,9 @@
 import re
 import os
+import gzip
+import base64
 import hashlib
+import binascii
 import requests
 import badsecrets.errors
 from abc import abstractmethod
@@ -39,6 +42,14 @@ class BadsecretsBase:
     @abstractmethod
     def check_secret(self, secret):
         raise NotImplementedError
+
+    @staticmethod
+    def attempt_decompress(value):
+        try:
+            uncompressed = gzip.decompress(base64.b64decode(value))
+        except (gzip.BadGzipFile, binascii.Error, ValueError):
+            return False
+        return uncompressed
 
     @classmethod
     def get_description(self):
