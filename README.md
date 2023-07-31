@@ -34,6 +34,7 @@ Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a de
 | Express_SignedCookies_ES | Checks express.js express-session middleware for signed cookies and session cookies for known 'session secret' |
 | Express_SignedCookies_CS | Checks express.js cookie-session middleware for signed cookies and session cookies for known secret |
 | Laravel_SignedCookies | Checks 'laravel_session' cookies for known laravel 'APP_KEY' |
+| ASPNET_Vstate      | Checks for a once popular custom compressed Viewstate [code snippet](https://www.graa.nl/articles/2010.html) vulnerable to RCE|
 
 ## Installation
 
@@ -265,6 +266,7 @@ Symfony_SignedURL = modules_loaded["symfony_signedurl"]
 Express_SignedCookies_ES = modules_loaded["express_signedcookies_es"]
 Express_SignedCookies_CS = modules_loaded["express_signedcookies_cs"]
 Laravel_SignedCookies = modules_loaded["laravel_signedcookies"]
+ASPNET_Vstate = modules_loaded["aspnet_vstate"]
 
 x = ASPNET_Viewstate()
 print(f"###{str(x.__class__.__name__)}###")
@@ -369,6 +371,15 @@ else:
 x = Laravel_SignedCookies()
 print(f"###{str(x.__class__.__name__)}###")
 r = x.check_secret("eyJpdiI6IlhlNTZ2UjZUQWZKVHdIcG9nZFkwcGc9PSIsInZhbHVlIjoiRlUvY2grU1F1b01lSXdveXJ0T3N1WGJqeVVmZlNRQjNVOWxiSzljL1Z3RDhqYUdDbjZxMU9oSThWRzExT0YvUmthVzVKRE9kL0RvTEw1cFRhQkphOGw4S2loV1ZrMkkwTHd4am9sZkJQd2VCZ3R0VlFSeFo3ay9wTlBMb3lLSG8iLCJtYWMiOiJkMmU3M2ExNDc2NTc5YjAwMGMwMTdkYTQ1NThkMjRkNTY2YTE4OTg2MzY5MzE5NGZmOTM4YWVjOGZmMWU4NTk2IiwidGFnIjoiIn0%3D")
+if r:
+    print(r)
+else:
+    print("KEY NOT FOUND :(")
+
+
+x = ASPNET_Vstate()
+print(f"###{str(x.__class__.__name__)}###")
+r = x.check_secret("H4sIAAAAAAAEAPvPyJ/Cz8ppZGpgaWpgZmmYAgAAmCJNEQAAAA==")
 if r:
     print(r)
 else:
