@@ -239,7 +239,7 @@ class AsyncUpload:
         if int(version[:4]) <= 2017 or version == "2018.1.117":
             return ["PBKDF1_MS"]
 
-        elif (int(version[:4]) >= 2020) or (int(version[:4]) == 2019 and int(version[6] >= 2)):
+        elif (int(version[:4]) >= 2020) or (int(version[:4]) == 2019 and int(version[5]) >= 2):
             return ["PBKDF2"]
 
         else:  # We don't have solid intelligence on these version so we will try both
@@ -249,6 +249,7 @@ class AsyncUpload:
         reported_early_indicator = False
 
         for telerik_version in chain(telerik_versions, telerik_versions_patched):
+            print(telerik_version)
             hashkeys = (
                 ["dummyvalue"]
                 if int(telerik_version[:4]) < 2017
