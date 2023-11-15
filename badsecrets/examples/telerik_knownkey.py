@@ -499,6 +499,7 @@ def main():
     if "webresource.axd" in args.url.lower():
         print("Assuming target is a AsyncUpload Endpoint...")
         asyncupload_endpoint = args.url.split("?")[0] + "?type=RAU"
+        print(asyncupload_endpoint)
         try:
             res = requests.get(asyncupload_endpoint, proxies=proxies, headers=headers, verify=False)
         except (requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout):
@@ -526,7 +527,7 @@ def main():
 
     if mode == "RAU":
         rau = AsyncUpload(
-            args.url, proxies=proxies, headers=headers, include_machinekeys_bool=include_machinekeys_bool
+            asyncupload_endpoint, proxies=proxies, headers=headers, include_machinekeys_bool=include_machinekeys_bool
         )
         rau.solve_key()
         return
