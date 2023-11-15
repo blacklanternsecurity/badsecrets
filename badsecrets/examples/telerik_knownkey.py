@@ -206,6 +206,7 @@ class AsyncUpload:
         request.headers[
             "Content-Type"
         ] = f"multipart/form-data; boundary=---------------------------{multipart_boundary}"
+        request.headers.update(self.headers)
         resp = session.send(request, verify=False, proxies=self.proxies)
         if "Exception Details: " in resp.text:
             print("Verbose Errors are enabled!")
@@ -293,6 +294,7 @@ class AsyncUpload:
                         request.headers[
                             "Content-Type"
                         ] = f"multipart/form-data; boundary=---------------------------{multipart_boundary}"
+                        request.headers.update(self.headers)
                         resp = session.send(request, verify=False, proxies=self.proxies)
                         if "Could not load file or assembly" in resp.text:
                             if reported_early_indicator == False:
@@ -334,7 +336,7 @@ class DialogHandler:
         ct = self.telerik_encryptionkey.telerik_encrypt(derivedKey, derivedIV, plaintext)
         dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params(self.hash_key, ct)
         dialog_parameters_data = {"dialogParametersHolder": dialog_parameters}
-        r = requests.post(self.url, data=dialog_parameters_data, verify=False, proxies=self.proxies)
+        r = requests.post(self.url, data=dialog_parameters_data, headers=headers, verify=False, proxies=self.proxies)
         if r.status_code == 200:
             return dialog_parameters
 
@@ -517,6 +519,8 @@ def main():
     headers = {}
     if args.user_agent:
         headers["User-agent"] = args.user_agent
+    else:
+        headers["User-agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
 
     if "webresource.axd" in args.url.lower():
         print("Assuming target is a AsyncUpload Endpoint...")
