@@ -4,15 +4,14 @@
 # @paulmmueller
 
 from badsecrets.base import check_all_modules, carve_all_modules, hashcat_all_modules
+from badsecrets.helpers import print_status
 import pkg_resources
 import requests
 import argparse
 import sys
 import os
 import re
-from colorama import Fore, Style, init
 
-init(autoreset=True)  # Automatically reset the color to default after each print statement
 
 from urllib3.exceptions import InsecureRequestWarning
 
@@ -58,15 +57,15 @@ class BaseReport:
 
 class ReportSecret(BaseReport):
     def report(self):
-        self.print_report(print_status("Known Secret Found!\n", color=Fore.GREEN, passthru=True))
-        print_status(f"Secret: {self.x['secret']}", color=Fore.GREEN)
+        self.print_report(print_status("Known Secret Found!\n", color="green", passthru=True))
+        print_status(f"Secret: {self.x['secret']}", color="green")
         severity = self.x["description"]["severity"]
         if severity in ["CRITICAL", "HIGH"]:
-            severity_color = Fore.RED
+            severity_color = "red"
         elif severity in ["LOW", "MEDIUM"]:
-            severity_color = Fore.YELLOW
+            severity_color = "yellow"
         elif severity == "INFO":
-            severity_color = Fore.BLUE
+            severity_color = "blue"
         print_status(f"Severity: {self.x['description']['severity']}", color=severity_color)
         print(f"Details: {self.x['details']}")
 
@@ -74,20 +73,10 @@ class ReportSecret(BaseReport):
 class ReportIdentify(BaseReport):
     def report(self):
         self.print_report(
-            print_status("Cryptographic Product Identified (no vulnerability)\n", color=Fore.YELLOW, passthru=True)
+            print_status("Cryptographic Product Identified (no vulnerability)\n", color="yellow", passthru=True)
         )
         if self.x["hashcat"] is not None:
             print_hashcat_results(self.x["hashcat"])
-
-
-def print_status(msg, passthru=False, color=Fore.WHITE):
-    if msg:
-        if colorenabled:
-            msg = f"{color}{msg}{Style.RESET_ALL}"
-        if passthru:
-            return msg
-        else:
-            print(msg)
 
 
 def validate_url(
@@ -98,24 +87,24 @@ def validate_url(
     ),
 ):
     if not pattern.match(arg_value):
-        raise argparse.ArgumentTypeError(print_status("URL is not formatted correctly", color=Fore.RED))
+        raise argparse.ArgumentTypeError(print_status("URL is not formatted correctly", color="red"))
     return arg_value
 
 
 def validate_file(file):
     if not os.path.exists(file):
-        raise argparse.ArgumentTypeError(print_status(f"The file {file} does not exist!", color=Fore.RED))
+        raise argparse.ArgumentTypeError(print_status(f"The file {file} does not exist!", color="red"))
     if not os.path.isfile(file):
-        raise argparse.ArgumentTypeError(print_status(f"{file} is not a valid file!", color=Fore.RED))
+        raise argparse.ArgumentTypeError(print_status(f"{file} is not a valid file!", color="red"))
     if os.path.getsize(file) > 100 * 1024:  # size in bytes
         raise argparse.ArgumentTypeError(
-            print_status(f"The file {file} exceeds the maximum limit of 100KB!", color=Fore.RED)
+            print_status(f"The file {file} exceeds the maximum limit of 100KB!", color="red")
         )
     return file
 
 
 def print_hashcat_results(hashcat_candidates):
-    print_status("\nPotential matching hashcat commands:\n", color=Fore.YELLOW)
+    print_status("\nPotential matching hashcat commands:\n", color="yellow")
     for hc in hashcat_candidates:
         print(f"Module: [{hc['detecting_module']}] {hc['hashcat_description']} Command: [{hc['hashcat_command']}]")
 
@@ -140,7 +129,7 @@ def main():
     )
 
     if colorenabled:
-        print_status(ascii_art_banner, color=Fore.GREEN)
+        print_status(ascii_art_banner, color="green")
 
     else:
         print(ascii_art_banner)
@@ -187,13 +176,13 @@ def main():
         parser.error(
             print_status(
                 "Either supply the product as a positional argument (supply all products for multi-product modules), use --hashcat followed by the product as a positional argument, or use --url mode with a valid URL",
-                color=Fore.RED,
+                color="red",
             )
         )
         return
 
     if args.url and args.product:
-        parser.error(print_status("In --url mode, no positional arguments should be used", color=Fore.RED))
+        parser.error(print_status("In --url mode, no positional arguments should be used", color="red"))
         return
 
     proxies = None
@@ -203,7 +192,7 @@ def main():
     custom_resource = None
     if args.custom_secrets:
         custom_resource = args.custom_secrets
-        print_status(f"Including custom secrets list [{custom_resource}]\n", color=Fore.YELLOW)
+        print_status(f"Including custom secrets list [{custom_resource}]\n", color="yellow")
 
     if args.url:
         headers = {}
@@ -213,7 +202,7 @@ def main():
         try:
             res = requests.get(args.url, proxies=proxies, headers=headers, verify=False)
         except (requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout):
-            print_status(f"Error connecting to URL: [{args.url}]", color=Fore.RED)
+            print_status(f"Error connecting to URL: [{args.url}]", color="red")
             return
 
         r_list = carve_all_modules(requests_response=res, custom_resource=custom_resource, url=args.url)
@@ -229,7 +218,7 @@ def main():
                     report = ReportIdentify(r)
                 report.report()
         else:
-            print_status("No secrets found :(", color=Fore.RED)
+            print_status("No secrets found :(", color="red")
 
     else:
         x = check_all_modules(*args.product, custom_resource=custom_resource)
@@ -237,7 +226,7 @@ def main():
             report = ReportSecret(x)
             report.report()
         else:
-            print_status("No secrets found :(", color=Fore.RED)
+            print_status("No secrets found :(", color="red")
             if not args.no_hashcat:
                 hashcat_candidates = hashcat_all_modules(*args.product)
                 if hashcat_candidates:
