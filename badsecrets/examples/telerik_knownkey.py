@@ -197,6 +197,30 @@ class AsyncUpload:
             return f"{string}{encoded_hmac}"
         return string
 
+    def version_probe(self):
+        derived_key, iv = self.telerik_encryptionkey.telerik_derivekeys_PBKDF1_MS("GreatScott!")
+        data, multipart_boundary = self.rau_data_prep("1985.10.26", derived_key, iv, "ThinkMcFlyThink")
+        session = requests.Session()
+        request = requests.Request("POST", self.url, data=data)
+        request = request.prepare()
+        request.headers[
+            "Content-Type"
+        ] = f"multipart/form-data; boundary=---------------------------{multipart_boundary}"
+        resp = session.send(request, verify=False, proxies=self.proxies)
+        print(resp.text)
+        if "Exception Details: " in resp.text:
+            print("Verbose Errors are enabled!")
+            if "Telerik.Web.UI.CryptoExceptionThrower.ThrowGenericCryptoException" in resp.text:
+                print("Version is Post-2020 (Encrypt-Then-Mac Enabled, with Generic Crypto Failure Message)")
+            elif "Padding is invalid and cannot be removed" in resp.text:
+                print("Version is <= 2019 (Either Vulnerable, or Encrypt-Then-Mac with separate failure Message)")
+            else:
+                print("Version could not be determined")
+        else:
+            print("Verbose Errors NOT enabled")
+
+
+
     def rau_data_prep(self, version, key, iv, hashkey):
         multipart_boundary = random_hex_string(14)
         enc_target_folder = self.add_hmac(self.encrypt("", key, iv), version, hashkey)
@@ -239,16 +263,18 @@ class AsyncUpload:
         if int(version[:4]) <= 2017 or version == "2018.1.117":
             return ["PBKDF1_MS"]
 
-        elif (int(version[:4]) >= 2020) or (int(version[:4]) == 2019 and int(version[6] >= 2)):
+        elif (int(version[:4]) >= 2020) or (int(version[:4]) == 2019 and int(version[5] >= 2)):
             return ["PBKDF2"]
 
         else:  # We don't have solid intelligence on these version so we will try both
             return ["PBKDF1_MS", "PBKDF2"]
 
+
     def solve_key(self):
         reported_early_indicator = False
 
         for telerik_version in chain(telerik_versions, telerik_versions_patched):
+            print(telerik_version)
             hashkeys = (
                 ["dummyvalue"]
                 if int(telerik_version[:4]) < 2017
@@ -318,7 +344,6 @@ class DialogHandler:
             return dialog_parameters
 
     def detect_derive_function(self):
-        print("in detect_derive_function")
 
         self.key_derive_mode = "PBKDF1_MS"
         KDF_probe_data = {"dialogParametersHolder": "AAAA"}
@@ -508,8 +533,15 @@ def main():
         if "RadAsyncUpload handler is registered succesfully" not in resp_body:
             print(f"URL does not appear to be a Telerik UI AsyncUpload Endpoint")
             return
+        else:
+            "Target is confirmed to be Telerik UI Async Upload Endpoint"
 
-        mode = "RAU"
+            rau = AsyncUpload(
+            asyncupload_endpoint, proxies=proxies, headers=headers, include_machinekeys_bool=include_machinekeys_bool
+            )
+            rau.version_probe()
+            rau.solve_key()
+            return
 
     else:
         print("Assuming target is Telerik UI DialogHandler...")
@@ -522,16 +554,7 @@ def main():
         if "Loading the dialog..." not in resp_body:
             print(f"URL does not appear to be a Telerik UI DialogHandler")
             return
-        mode = "DH"
 
-    if mode == "RAU":
-        rau = AsyncUpload(
-            args.url, proxies=proxies, headers=headers, include_machinekeys_bool=include_machinekeys_bool
-        )
-        rau.solve_key()
-        return
-
-    if mode == "DH":
         dh = DialogHandler(
             args.url, proxies=proxies, headers=headers, include_machinekeys_bool=include_machinekeys_bool
         )
