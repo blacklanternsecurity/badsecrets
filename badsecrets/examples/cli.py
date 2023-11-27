@@ -74,7 +74,11 @@ class ReportSecret(BaseReport):
 class ReportIdentify(BaseReport):
     def report(self):
         self.print_report(
-            print_status("Cryptographic Product Identified (no vulnerability, or not confirmed vulnerable)\n", color=Fore.YELLOW, passthru=True)
+            print_status(
+                "Cryptographic Product Identified (no vulnerability, or not confirmed vulnerable)\n",
+                color=Fore.YELLOW,
+                passthru=True,
+            )
         )
         if self.x["hashcat"] is not None:
             print_hashcat_results(self.x["hashcat"])
