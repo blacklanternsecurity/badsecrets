@@ -123,6 +123,7 @@ telerik_versions = [
     "2015.3.930",
     "2015.3.1111",
     "2016.1.113",
+    "2016.1.1213",
     "2016.1.225",
     "2016.2.504",
     "2016.2.607",
@@ -201,13 +202,15 @@ class AsyncUpload:
         derived_key, iv = self.telerik_encryptionkey.telerik_derivekeys_PBKDF1_MS("GreatScott!")
         data, multipart_boundary = self.rau_data_prep("1985.10.26", derived_key, iv, "ThinkMcFlyThink")
         session = requests.Session()
+        if self.proxies:
+            session.proxies.update(self.proxies)
         request = requests.Request("POST", self.url, data=data)
         request = request.prepare()
         request.headers[
             "Content-Type"
         ] = f"multipart/form-data; boundary=---------------------------{multipart_boundary}"
         request.headers.update(self.headers)
-        resp = session.send(request, verify=False, proxies=self.proxies)
+        resp = session.send(request, verify=False)
         if "Exception Details: " in resp.text:
             print("Verbose Errors are enabled!")
             if "Telerik.Web.UI.CryptoExceptionThrower.ThrowGenericCryptoException" in resp.text:
@@ -289,13 +292,15 @@ class AsyncUpload:
 
                         data, multipart_boundary = self.rau_data_prep(telerik_version, derived_key, iv, hashkey)
                         session = requests.Session()
+                        if self.proxies:
+                            session.proxies.update(self.proxies)
                         request = requests.Request("POST", self.url, data=data)
                         request = request.prepare()
                         request.headers[
                             "Content-Type"
                         ] = f"multipart/form-data; boundary=---------------------------{multipart_boundary}"
                         request.headers.update(self.headers)
-                        resp = session.send(request, verify=False, proxies=self.proxies)
+                        resp = session.send(request, verify=False)
                         if "Could not load file or assembly" in resp.text:
                             if reported_early_indicator == False:
                                 print(
