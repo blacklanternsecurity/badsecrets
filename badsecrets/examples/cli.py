@@ -68,13 +68,17 @@ class ReportSecret(BaseReport):
         elif severity == "INFO":
             severity_color = Fore.BLUE
         print_status(f"Severity: {self.x['description']['severity']}", color=severity_color)
-        print(f"Details: {self.x['details']}")
+        print(f"Details: {self.x['details']}\n")
 
 
 class ReportIdentify(BaseReport):
     def report(self):
         self.print_report(
-            print_status("Cryptographic Product Identified (no vulnerability)\n", color=Fore.YELLOW, passthru=True)
+            print_status(
+                "Cryptographic Product Identified (no vulnerability, or not confirmed vulnerable)\n",
+                color=Fore.YELLOW,
+                passthru=True,
+            )
         )
         if self.x["hashcat"] is not None:
             print_hashcat_results(self.x["hashcat"])
@@ -117,7 +121,7 @@ def validate_file(file):
 def print_hashcat_results(hashcat_candidates):
     print_status("\nPotential matching hashcat commands:\n", color=Fore.YELLOW)
     for hc in hashcat_candidates:
-        print(f"Module: [{hc['detecting_module']}] {hc['hashcat_description']} Command: [{hc['hashcat_command']}]")
+        print(f"Module: [{hc['detecting_module']}] {hc['hashcat_description']} Command: [{hc['hashcat_command']}]\n")
 
 
 def main():

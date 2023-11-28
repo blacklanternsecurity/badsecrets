@@ -184,7 +184,7 @@ def test_example_cli_vulnerable_headersidentifyonly(monkeypatch, capsys):
             "Data Cookie: [session=eyJ1c2VybmFtZSI6IkJib3RJc0xpZmUifQ==] Signature Cookie: [8BrG9wzvqxuPCtKmfgdyXXGGqA7]"
             in captured.out
         )
-        assert "Cryptographic Product Identified (no vulnerability)" in captured.out
+        assert "Cryptographic Product Identified (no vulnerability, or not confirmed vulnerable)" in captured.out
 
 
 def test_example_cli_not_vulnerable_url(monkeypatch, capsys):
@@ -213,7 +213,7 @@ def test_example_cli_identifyonly_url(monkeypatch, capsys):
         cli.main()
         captured = capsys.readouterr()
         print(captured)
-        assert "Cryptographic Product Identified (no vulnerability)" in captured.out
+        assert "Cryptographic Product Identified (no vulnerability, or not confirmed vulnerable)" in captured.out
 
 
 def test_example_cli_identifyonly_hashcat(monkeypatch, capsys):
