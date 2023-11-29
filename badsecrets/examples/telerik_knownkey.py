@@ -13,7 +13,7 @@ import urllib.parse
 import argparse
 import requests
 from itertools import chain
-from badsecrets.helpers import print_status
+#from badsecrets.helpers import print_status
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 from Crypto.Cipher import AES
