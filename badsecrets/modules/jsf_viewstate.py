@@ -243,7 +243,10 @@ class Jsf_viewstate(BadsecretsBase):
 
         # Mojarra decryption
         for l in self.load_resources(["jsf_viewstate_passwords_b64.txt"]):
-            password_bytes = base64.b64decode(l.rstrip())
+            try:
+                password_bytes = base64.b64decode(l.rstrip())
+            except binascii.Error:
+                continue
             decrypted = self.AES_decrypt(jsf_viewstate_value, password_bytes)
 
             if decrypted:
@@ -279,7 +282,10 @@ class Jsf_viewstate(BadsecretsBase):
 
         # Attempt to solve mac_key
         for l in self.load_resources(["jsf_viewstate_passwords_b64.txt"]):
-            password_bytes = base64.b64decode(l.rstrip())
+            try:
+                password_bytes = base64.b64decode(l.rstrip())
+            except binascii.Error:
+                continue
             myfaces_solved_mac_key, myfaces_solved_mac_algo = self.myfaces_mac(ct_bytes, password_bytes)
             if myfaces_solved_mac_key:
                 break
@@ -297,7 +303,10 @@ class Jsf_viewstate(BadsecretsBase):
             hash_sizes = self.hash_sizes.values()
 
         for l in self.load_resources(["jsf_viewstate_passwords_b64.txt"]):
-            password_bytes = base64.b64decode(l.rstrip())
+            try:
+                password_bytes = base64.b64decode(l.rstrip())
+            except binascii.Error:
+                continue
             (
                 myfaces_solved_decryption_key,
                 myfaces_solved_decryption_algo,
