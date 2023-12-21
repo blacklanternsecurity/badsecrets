@@ -4,8 +4,9 @@ import base64
 import hashlib
 import binascii
 import urllib.parse
-from Crypto.Cipher import DES3, AES, DES
+from contextlib import suppress
 from Crypto.Util.Padding import unpad
+from Crypto.Cipher import DES3, AES, DES
 from badsecrets.helpers import Java_sha1prng
 from badsecrets.base import BadsecretsBase
 
@@ -230,41 +231,40 @@ class Jsf_viewstate(BadsecretsBase):
                 jsf_viewstate_value = base64.b64encode(uncompressed)
 
         for l in set(list(self.load_resources(["jsf_viewstate_passwords.txt", "top_10000_passwords.txt"]))):
-            password = l.rstrip()
-            if self.DES3_decrypt(jsf_viewstate_value, password):
-                return {
-                    "secret": password,
-                    "details": {
-                        "source": jsf_viewstate_value,
-                        "info": "JSF Viewstate (Mojarra 1.2.x - 2.0.3) 3DES Encrypted",
-                        "compression": True if uncompressed else False,
-                    },
-                }
-
-        # Mojarra decryption
-        for l in self.load_resources(["jsf_viewstate_passwords_b64.txt"]):
-            try:
-                password_bytes = base64.b64decode(l.rstrip())
-            except binascii.Error:
-                continue
-            decrypted = self.AES_decrypt(jsf_viewstate_value, password_bytes)
-
-            if decrypted:
-                uncompressed = self.attempt_decompress(base64.b64encode(decrypted))
-                if uncompressed:
-                    if b"java." in uncompressed:
-                        decrypted = uncompressed
-
-                decrypted_b64 = base64.b64encode(decrypted).decode()
-                if decrypted_b64.startswith("rO0"):
+            with suppress(ValueError):
+                password = l.rstrip()
+                if self.DES3_decrypt(jsf_viewstate_value, password):
                     return {
-                        "secret": base64.b64encode(password_bytes).decode(),
+                        "secret": password,
                         "details": {
                             "source": jsf_viewstate_value,
-                            "info": "JSF Viewstate (Mojarra 2.2.6 - 2.3.x) AES Encrypted",
+                            "info": "JSF Viewstate (Mojarra 1.2.x - 2.0.3) 3DES Encrypted",
                             "compression": True if uncompressed else False,
                         },
                     }
+
+        # Mojarra decryption
+        for l in self.load_resources(["jsf_viewstate_passwords_b64.txt"]):
+            with suppress(ValueError):
+                password_bytes = base64.b64decode(l.rstrip())
+                decrypted = self.AES_decrypt(jsf_viewstate_value, password_bytes)
+
+                if decrypted:
+                    uncompressed = self.attempt_decompress(base64.b64encode(decrypted))
+                    if uncompressed:
+                        if b"java." in uncompressed:
+                            decrypted = uncompressed
+
+                    decrypted_b64 = base64.b64encode(decrypted).decode()
+                    if decrypted_b64.startswith("rO0"):
+                        return {
+                            "secret": base64.b64encode(password_bytes).decode(),
+                            "details": {
+                                "source": jsf_viewstate_value,
+                                "info": "JSF Viewstate (Mojarra 2.2.6 - 2.3.x) AES Encrypted",
+                                "compression": True if uncompressed else False,
+                            },
+                        }
 
         # myfaces decryption / mac
 
@@ -282,13 +282,11 @@ class Jsf_viewstate(BadsecretsBase):
 
         # Attempt to solve mac_key
         for l in self.load_resources(["jsf_viewstate_passwords_b64.txt"]):
-            try:
+            with suppress(ValueError):
                 password_bytes = base64.b64decode(l.rstrip())
-            except binascii.Error:
-                continue
-            myfaces_solved_mac_key, myfaces_solved_mac_algo = self.myfaces_mac(ct_bytes, password_bytes)
-            if myfaces_solved_mac_key:
-                break
+                myfaces_solved_mac_key, myfaces_solved_mac_algo = self.myfaces_mac(ct_bytes, password_bytes)
+                if myfaces_solved_mac_key:
+                    break
 
         # Attempt to solve encryption_key
         dec_algos = set()
@@ -303,19 +301,17 @@ class Jsf_viewstate(BadsecretsBase):
             hash_sizes = self.hash_sizes.values()
 
         for l in self.load_resources(["jsf_viewstate_passwords_b64.txt"]):
-            try:
+            with suppress(ValueError):
                 password_bytes = base64.b64decode(l.rstrip())
-            except binascii.Error:
-                continue
-            (
-                myfaces_solved_decryption_key,
-                myfaces_solved_decryption_algo,
-                myfaces_solved_decryption_mode,
-                myfaces_solved_decryption_iv,
-                compression,
-            ) = self.myfaces_decrypt(ct_bytes, password_bytes, dec_algos, hash_sizes)
-            if myfaces_solved_decryption_key:
-                break
+                (
+                    myfaces_solved_decryption_key,
+                    myfaces_solved_decryption_algo,
+                    myfaces_solved_decryption_mode,
+                    myfaces_solved_decryption_iv,
+                    compression,
+                ) = self.myfaces_decrypt(ct_bytes, password_bytes, dec_algos, hash_sizes)
+                if myfaces_solved_decryption_key:
+                    break
 
         if myfaces_solved_mac_key or myfaces_solved_decryption_key:
             if myfaces_solved_decryption_key:
