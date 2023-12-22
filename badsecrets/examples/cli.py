@@ -33,7 +33,7 @@ ____/  \__,_| \__,_| ____/ \___| \___| _|    \___| \__| ____/
 def print_version():
     version = pkg_resources.get_distribution("badsecrets").version
     if version == "0.0.0":
-        version = "Version Unknown (Running w/poetry?)"
+        version = "ersion Unknown (Running w/poetry?)"
     print(f"v{version}\n")
 
 

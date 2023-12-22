@@ -503,6 +503,41 @@ def test_example_cli_customsecrets_toolarge(monkeypatch, capsys):
         assert "exceeds the maximum limit of 100KB!" in captured.out
 
 
+def test_example_cli_customsecrets_urlmode_expressbase64(monkeypatch, capsys):
+    base_vulnerable_page_jsf_custom = """  
+<p><input type="hidden" name="javax.faces.ViewState" id="j_id__v_0:javax.faces.ViewState:1" value="AHo0wmLu5ceItIi+I7XkEi1GAb4h12WZ894pA+Z4OH7bco2jXEy1RSCWwjtJcZNbWPcvPqL5zzfl03DoeMZfGGX7a9PSv+fUT8MAeKNouAGj1dZuO8srXt8xZIGg+wPCWWCzcX6IhWOtgWUwiXeSojCDTKXklsYt+kzlVBk5wOsXvb2lTJoO0Q==" autocomplete="off" />
+"""
+
+    with tempfile.NamedTemporaryFile("w+t", delete=False) as f:
+        f.write("base64:aGFja3RoZXBsYW5ldA==")
+        f.flush()
+
+        with requests_mock.Mocker() as m:
+            m.get(
+                f"http://example.com/vulnerablejsf.html",
+                status_code=200,
+                text=base_vulnerable_page_jsf_custom,
+            )
+
+            monkeypatch.setattr(
+                "sys.argv",
+                [
+                    "python",
+                    "--url",
+                    "http://example.com/vulnerablejsf.html",
+                    "-c",
+                    f.name,
+                ],
+            )
+            cli.main()
+            captured = capsys.readouterr()
+            print(captured)
+            assert ("Including custom secrets list") in captured.out
+            assert (
+                "e496c62dfa4ce5541939c0eb17bdbda54c9a0ed1:007a34c262eee5c788b488be23b5e4122d4601be21d76599f3de2903e678387edb728da35c4cb5452096c23b4971935b58f72f3ea2f9cf37e5d370e878c65f1865fb6bd3d2bfe7d44fc30078a368b801a3d5d66e3bcb2b5edf316481a0fb03c25960b3717e888563ad816530897792a230834ca5"
+            ) in captured.out
+
+
 def test_example_cli_customsecrets_urlmode(monkeypatch, capsys):
     base_vulnerable_page_aspnet_custom = """  
     <form method="post" action="./form.aspx" id="ctl00">
