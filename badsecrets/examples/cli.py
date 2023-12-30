@@ -185,6 +185,13 @@ def main():
         help="In URL mode, Optionally set a custom user-agent",
     )
 
+    parser.add_argument(
+        "-r",
+        "--allow-redirects",
+        action="store_true",
+        help="Optionally follow HTTP redirects. Off by default",
+    )
+
     args = parser.parse_args(unknown_args)
 
     if not args.url and not args.product:
@@ -199,6 +206,10 @@ def main():
     if args.url and args.product:
         parser.error(print_status("In --url mode, no positional arguments should be used", color=Fore.RED))
         return
+
+    allow_redirects = False
+    if args.allow_redirects:
+        allow_redirects = True
 
     proxies = None
     if args.proxy:
@@ -215,7 +226,9 @@ def main():
             headers["User-agent"] = args.user_agent
 
         try:
-            res = requests.get(args.url, proxies=proxies, headers=headers, verify=False)
+            res = requests.get(
+                args.url, proxies=proxies, headers=headers, verify=False, allow_redirects=allow_redirects
+            )
         except (requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout):
             print_status(f"Error connecting to URL: [{args.url}]", color=Fore.RED)
             return

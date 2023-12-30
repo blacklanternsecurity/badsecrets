@@ -808,3 +808,43 @@ def test_examples_cli_colors_info(monkeypatch, capsys):
     captured = capsys.readouterr()
     assert "your-256-bit-secret" in captured.out
     print(captured.out)
+
+
+def test_example_cli_redirects_allow(monkeypatch, capsys):
+    with requests_mock.Mocker() as m:
+        m.get(
+            f"http://example.com/vulnerablejwt.html",
+            status_code=200,
+            text=base_vulnerable_page,
+        )
+
+        m.get(
+            f"http://example.com/vulnerablejwt-redir.html", status_code=302, headers={"Location": "vulnerablejwt.html"}
+        )
+
+        monkeypatch.setattr(
+            "sys.argv", ["python", "--url", "http://example.com/vulnerablejwt-redir.html", "--allow-redirects"]
+        )
+        cli.main()
+        captured = capsys.readouterr()
+        assert "your-256-bit-secret" in captured.out
+
+
+def test_example_cli_redirects_default(monkeypatch, capsys):
+    with requests_mock.Mocker() as m:
+        m.get(
+            f"http://example.com/vulnerablejwt.html",
+            status_code=200,
+        )
+
+        m.get(
+            f"http://example.com/vulnerablejwt-redir.html",
+            status_code=302,
+            text=base_vulnerable_page,
+            headers={"Location": "vulnerablejwt.html"},
+        )
+
+        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerablejwt-redir.html"])
+        cli.main()
+        captured = capsys.readouterr()
+        assert "your-256-bit-secret" in captured.out
