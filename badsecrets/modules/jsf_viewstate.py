@@ -230,7 +230,7 @@ class Jsf_viewstate(BadsecretsBase):
             else:
                 jsf_viewstate_value = base64.b64encode(uncompressed)
 
-        for l in set(list(self.load_resources(["jsf_viewstate_passwords.txt", "top_10000_passwords.txt"]))):
+        for l in set(list(self.load_resources(["jsf_viewstate_passwords.txt", "top_100000_passwords.txt"]))):
             with suppress(ValueError):
                 password = l.rstrip()
                 if self.DES3_decrypt(jsf_viewstate_value, password):
