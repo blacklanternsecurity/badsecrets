@@ -52,7 +52,7 @@ class ExpressSignedCookies_ES(BadsecretsBase):
         if not self.identify(express_signed_cookie):
             return False
 
-        for l in set(list(self.load_resources(["express_session_secrets.txt", "top_10000_passwords.txt"]))):
+        for l in set(list(self.load_resources(["express_session_secrets.txt", "top_100000_passwords.txt"]))):
             session_secret = l.rstrip()
 
             r = self.expressVerify_es(express_signed_cookie, session_secret)
