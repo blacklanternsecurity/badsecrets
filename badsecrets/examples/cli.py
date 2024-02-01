@@ -32,7 +32,7 @@ ____/  \__,_| \__,_| ____/ \___| \___| _|    \___| \__| ____/
 def print_version():
     version = pkg_resources.get_distribution("badsecrets").version
     if version == "0.0.0":
-        version = "Version Unknown (Running w/poetry?)"
+        version = "ersion Unknown (Running w/poetry?)"
     print(f"v{version}\n")
 
 
@@ -67,7 +67,7 @@ class ReportSecret(BaseReport):
         elif severity == "INFO":
             severity_color = "blue"
         print_status(f"Severity: {self.x['description']['severity']}", color=severity_color)
-        print(f"Details: {self.x['details']}")
+        print(f"Details: {self.x['details']}\n")
 
 
 class ReportIdentify(BaseReport):
@@ -106,7 +106,7 @@ def validate_file(file):
 def print_hashcat_results(hashcat_candidates):
     print_status("\nPotential matching hashcat commands:\n", color="yellow")
     for hc in hashcat_candidates:
-        print(f"Module: [{hc['detecting_module']}] {hc['hashcat_description']} Command: [{hc['hashcat_command']}]")
+        print(f"Module: [{hc['detecting_module']}] {hc['hashcat_description']} Command: [{hc['hashcat_command']}]\n")
 
 
 def main():
