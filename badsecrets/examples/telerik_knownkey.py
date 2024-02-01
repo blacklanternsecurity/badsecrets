@@ -13,7 +13,8 @@ import urllib.parse
 import argparse
 import requests
 from itertools import chain
-#from badsecrets.helpers import print_status
+
+# from badsecrets.helpers import print_status
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 from Crypto.Cipher import AES
@@ -206,9 +207,9 @@ class AsyncUpload:
             session.proxies.update(self.proxies)
         request = requests.Request("POST", self.url, data=data)
         request = request.prepare()
-        request.headers[
-            "Content-Type"
-        ] = f"multipart/form-data; boundary=---------------------------{multipart_boundary}"
+        request.headers["Content-Type"] = (
+            f"multipart/form-data; boundary=---------------------------{multipart_boundary}"
+        )
         request.headers.update(self.headers)
         resp = session.send(request, verify=False)
         if "Exception Details: " in resp.text:
@@ -296,9 +297,9 @@ class AsyncUpload:
                             session.proxies.update(self.proxies)
                         request = requests.Request("POST", self.url, data=data)
                         request = request.prepare()
-                        request.headers[
-                            "Content-Type"
-                        ] = f"multipart/form-data; boundary=---------------------------{multipart_boundary}"
+                        request.headers["Content-Type"] = (
+                            f"multipart/form-data; boundary=---------------------------{multipart_boundary}"
+                        )
                         request.headers.update(self.headers)
                         resp = session.send(request, verify=False)
                         if "Could not load file or assembly" in resp.text:
@@ -525,7 +526,9 @@ def main():
     if args.user_agent:
         headers["User-agent"] = args.user_agent
     else:
-        headers["User-agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
+        headers["User-agent"] = (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
+        )
 
     if "webresource.axd" in args.url.lower():
         print("Assuming target is a AsyncUpload Endpoint...")
