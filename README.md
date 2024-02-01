@@ -60,9 +60,6 @@ python ./badsecrets/examples/cli.py eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXI
 ```
 
 
-
-
-
 ## Examples
 
 To use the examples, after doing the pip install just `git clone` the repo and `cd` into the `badsecrets` directory:
@@ -477,6 +474,6 @@ Requests for modules are always very welcome as well!
 ### Planned Modules and Future Development
 
 - ~~Laravel~~
--  ~~Express~~
+- ~~Express~~
 - Research into network devices with default keys that are detectable via a cryptographic product (For example, Palo Alto Global Protect default masterkeys)
 
