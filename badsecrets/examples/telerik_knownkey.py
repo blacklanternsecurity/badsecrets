@@ -509,6 +509,9 @@ def main():
         "-m", "--machine-keys", help="Optionally include ASP.NET MachineKeys when loading keys", action="store_true"
     )
 
+    parser.add_argument(
+        "-f", "--force", help="Force enumeration of vulnerable Async upload without user interaction", action="store_true"
+    )
     args = parser.parse_args()
 
     if not args.url:
@@ -554,11 +557,12 @@ def main():
                 include_machinekeys_bool=include_machinekeys_bool,
             )
             rau.version_probe()
-            response = input("Ready attempt exploit, press enter to continue...")
-            print(response)
-            if response.lower() != "":
-                print("aborting...")
-                sys.exit(2)
+            if not args.force:
+                response = input("Ready attempt exploit, press enter to continue...")
+                print(response)
+                if response.lower() != "":
+                    print("aborting...")
+                    sys.exit(2)
             rau.solve_key()
             return
 
