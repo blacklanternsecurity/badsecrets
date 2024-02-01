@@ -88,7 +88,7 @@ class Generic_JWT(BadsecretsBase):
             return None
 
         if algorithm[0].lower() == "h":
-            for l in self.load_resources(["jwt_secrets.txt"]):
+            for l in self.load_resources(["jwt_secrets.txt", "top_100000_passwords.txt"]):
                 key = l.strip()
 
                 r = self.jwtVerify(JWT, key, algorithm)
