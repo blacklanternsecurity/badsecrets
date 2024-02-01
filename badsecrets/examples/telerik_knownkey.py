@@ -341,7 +341,9 @@ class DialogHandler:
         ct = self.telerik_encryptionkey.telerik_encrypt(derivedKey, derivedIV, plaintext)
         dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params(self.hash_key, ct)
         dialog_parameters_data = {"dialogParametersHolder": dialog_parameters}
-        r = requests.post(self.url, data=dialog_parameters_data, headers=self.headers, verify=False, proxies=self.proxies)
+        r = requests.post(
+            self.url, data=dialog_parameters_data, headers=self.headers, verify=False, proxies=self.proxies
+        )
         if r.status_code == 200:
             return dialog_parameters
 
