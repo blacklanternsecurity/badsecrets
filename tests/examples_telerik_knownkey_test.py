@@ -23,6 +23,17 @@ partial_dialog_page = """
 """
 
 
+def asyncupload_verbose_error_PBKDF2(request):
+
+    if (
+        b'{"TotalChunks":1,"ChunkIndex":0,"TotalFileSize":1,"UploadID":"6cf6c6cdcabc.txt"}' in request.body
+        and b"mQheol55IDiQWWSxl+Atkc68JXWUJ6QSirwLhEwleMiw3vN4cwABE74V2fWsLGg8CFXHOP6np90M+sLrLDqFACGNvonxmgT8aBsTZPWbXErewMGNWBP34aX0DmMvXVyTEpQ6FkFhZi19cTtdYfRLI8Uc04uNSsdWnltDMQ2CX/sSLOXUFNnZdAwAXgUuprYhU28Zwh/GdgYh447ksXfAC2fuPqEJqKDDwBlltxsS/zSq8ipIg326ymB2dmOpH/P3hcAmTKOyzB0dW6a6pmJvqNVU+50DlrUC00RbBbTJwlV6Xm4s4XTvgXLvMQ6czz2OAYY18HI+HYX5uvajctj/25UR8edwu68ZCgedsD7EZHRSSthjxohxfAyrfshjcu1LnhCEd0ClowKxBS4eiaLxVxhJAdB7XcbbXxIS9WWKa7gtRMNc/jUAOlIpvOZ3N+bOQ6rsNMHv7TZk1g0bxPl99yBn9qvtAwDMNPDoADxoBSisAkIIl9mImKv7y7nAiKoj7ukApdu5XQuVo10SxwkLkqHcvEEgjxTrOlCbEbxK2/du9TgXxD9iqKyaPLHPzNZsnzCsG6qNXv0fNkeASP9tZAyvi/y1eLrpScE+J7blfT+kBkGPTTFc6Z4z6lN7GqSHofq/CDHC2S2+qdoRdC3C25V74j+Ae6MkpSfqYx4KZYNtxBAxjf9Uf3JVSiZh3X2W/7aFeimFft0h/liybSjJTzO+AwNJluI4kXqemFoHnjVFfUQViaIuk4UP0D861kCU6KIGLZLpOaa0g0KM8hmu3OjwVOy8QVXYtbx5lOmSX9h3imRzMDFRTXK25YpUJgD0/LFMgCeZLA8SCYzkThyN2d8f8n5l8iOScR47o8i8sqCp/fd3JTogSbwD7LxnHudpiw2W/OfpMGipgc6loQFoX4klQaYwKkA4w+GUzahfAJmIiukZuTLOPCPQvX4wKtLqw1YiHtuaLHvLYq2/F66QQXNrZ4SucUNED0p5TUVTvHGUbuA0zxAyYSfYVgTNZjXGguQBY7DsN1SkpCa/ltvIiGtCbHQR86OrvjJMACe0wdpMCqEg7JiGym3RrLqvmjpS&sbZRwxJ96gmXFBSbSvT0ve7jpvDoieqd6RbG+GIP0H7sO5/0ZnvheosB9jQAifuMabY7lW4UzZgr5o2iqE0tBl4SGhfWyYW7iCFXnd3aIuCnUvhT58Rp8g7kGkA/eU/s68E66KOBXNuBnokZR9cIsjE0Tt3Jfxrk018+CmVcXpjXp/RmhRwCJTgEAXQuNplb/KdkLxqDn519iRtbiU6aLZX8YctdFQBqyKVgkk8WYXxcXQ8wYnxtpEtGuBcsndUi1iPp4Od8rYY1HPWg+FIquW17YPHjfP4gO4dhZe4sd7gH0ARyGDjiYVj7ODDE0wGmwmFVdQTrDX5AaxKuJy0NbQ=="
+        in request.body
+    ):
+        return True
+    return False
+
+
 def asyncupload_found_key_matcher(request):
 
     if (
@@ -417,3 +428,73 @@ def test_full_run_asyncupload_PBKDF1_MS(monkeypatch, capsys, mocker):
             "TARGET VULNERABLE! Version: [2014.3.1024] Encryption Key: [d2a312d9-7af4-43de-be5a-ae717b46cea6] Derive Algo: [PBKDF1_MS]"
             in captured.out
         )
+
+
+def test_verbose_error_parsing_PBKDF1_MS(monkeypatch, capsys, mocker):
+
+    mocker.patch.object(
+        telerik_knownkey.AsyncUpload,
+        "solve_key",
+        lambda x: None,
+    )
+
+    with requests_mock.Mocker() as m:
+
+        # Basic Probe Detects Telerik
+        m.get(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
+
+        m.post(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            status_code=200,
+            text="<b> Exception Details: </b>System.Security.Cryptography.CryptographicException: Padding is invalid and cannot be removed.<br><br>",
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert "Verbose Errors are enabled!" in captured.out
+        assert (
+            "Version is <= 2019 (Either Vulnerable, or Encrypt-Then-Mac with separate failure Message)" in captured.out
+        )
+
+
+def test_verbose_error_parsing_PBKDF2(monkeypatch, capsys, mocker):
+
+    mocker.patch.object(
+        telerik_knownkey.AsyncUpload,
+        "solve_key",
+        lambda x: None,
+    )
+
+    with requests_mock.Mocker() as m:
+
+        # Basic Probe Detects Telerik
+        m.get(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
+
+        m.post(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            status_code=200,
+            text='<b> Exception Details: </b>System.Security.Cryptography.CryptographicException: The cryptographic operation has failed!<br><br><b>Stack Trace:</b> <br><br><table width=100% bgcolor="#ffffcc"><tr><td>code><pre>[CryptographicException: The cryptographic operation has failed!]Telerik.Web.UI.CryptoExceptionThrower.ThrowGenericCryptoException() +62',
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert "Verbose Errors are enabled!" in captured.out
+        assert "Version is Post-2020 (Encrypt-Then-Mac Enabled, with Generic Crypto Failure Message)" in captured.out
