@@ -14,7 +14,6 @@ import argparse
 import requests
 from itertools import chain
 
-# from badsecrets.helpers import print_status
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 from Crypto.Cipher import AES
@@ -510,6 +509,12 @@ def main():
         "-m", "--machine-keys", help="Optionally include ASP.NET MachineKeys when loading keys", action="store_true"
     )
 
+    parser.add_argument(
+        "-f",
+        "--force",
+        help="Force enumeration of vulnerable AsyncUpload endpoint without user confirmation",
+        action="store_true",
+    )
     args = parser.parse_args()
 
     if not args.url:
@@ -535,7 +540,6 @@ def main():
     if "webresource.axd" in args.url.lower():
         print("Assuming target is a AsyncUpload Endpoint...")
         asyncupload_endpoint = args.url.split("?")[0] + "?type=RAU"
-        print(asyncupload_endpoint)
         try:
             res = requests.get(asyncupload_endpoint, proxies=proxies, headers=headers, verify=False)
         except (requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout):
@@ -555,11 +559,11 @@ def main():
                 include_machinekeys_bool=include_machinekeys_bool,
             )
             rau.version_probe()
-            response = input("Ready to attempt exploit, press enter to continue...")
-            print(response)
-            if response.lower() != "":
-                print("aborting...")
-                sys.exit(2)
+            if not args.force:
+                response = input("Ready to attempt brute-force, press enter to continue...")
+                if response.lower() != "":
+                    print("aborting...")
+                    sys.exit(2)
             rau.solve_key()
             return
 
@@ -582,7 +586,7 @@ def main():
         )
         dh.detect_derive_function()
         if dh.solve_key():
-            print("solved key!!!!!!!")
+            print("solved key!")
             if dh.solve_version():
                 print(f"Found Telerik Version! [{dh.version}]")
                 print("Submit a POST request, with dialogParametersHolder POST parameter set to this value")

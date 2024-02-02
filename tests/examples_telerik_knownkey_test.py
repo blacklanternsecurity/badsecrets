@@ -23,6 +23,46 @@ partial_dialog_page = """
 """
 
 
+def asyncupload_found_key_matcher(request):
+
+    if (
+        b"c7g3CANCQbJ+X+IODBkErbuhQJ1AK1dJ03CaDAQ10aShpEysYFi6JD5Lg/QsepJ9T3Wsp126Z4vVzaH7fU6BmozmhQ1hIosvIFAwaPlsx4FWMGxX9wkEgESpazGqRXqWEJPsINIQBUB0DSOMnSNzlFWoDKkaCp7ZlXCJ0ZgMFYqBvPyK8DhMYri1RpiY1zgI4I/RA5Q1cqwwKjEcqP1XdwRMbE5we0z0fLs6Gmh83Z2rcriARFnBVZ45Wt40ENII6Gs7k4oQeeAx+JocDdu+K73FFFBAN1VwdNGOLO2lor4j/Pz1hxjgxNUmbpsWfQ2OdSLYKZxiOBMrD36tJeSRosQcwwbY8NVKKqv/44bzjTe01m2Smv0V+gusVyidEhCEVjKtRk+arUKMXg6BWEf4GReKkWiujlEf4lKeaYCz90LbGZajJvcw6OggVrGPALuJTC0JlmJ/Ms6v5i+x6mSXWcbAqPMEWGHLH303iZIpj36ivzZTvp3H85pXcJ2HLwfUSVLD4XShNFF9KyppZzqP18sCnEJl7ngXnAd6aReC1HyHMODgQ9Naj5wVYbgqEhuSCglebz+Ndhe3JybnDrb8aEjU542LWC3MxZF/GMIl60C/s7tzr5zNzb9487ELpKGOY4XYTuWihmK4zUrt0i733mEg73X7NkmzmnCgLRdaOx1bKYife22mqE8B7JBee3QYWdqyMTg1u3g934pI97bMnAzLkE7ASwLyN2sWOs9jpdnMgCWgh4EfJco6H9f/V4JkdgKE8Dud1ICUqWVm1xR+MUhScEq7KUEl3fSDV9bCplUx12KuXL4QUG6z74w8YnUV4V1aIKHZsh6G1/V3viEEr/3AqxHiTJixhgyHIhIST0fJQQdkMZdufqDPR2P+200MKv92IQ3StN2rw8WQ4sZaijH9OP0HlgouVYE4y9yrDfemw7++iWdbu91T6NiTYau5Z6AOG8jXOxzcrHZF3HWtRoeu3DlpGWPOXVLosenUm3bD/UxfqPwa5B36uCTh6Qsd4+53nZOItLpooo7KjGk//qYvfWpY5duCKqBVgBK+kIWv7PeKUsZfqaRI7tCn/jsA8vKLS7utYDMLM04L/ycFExlCk5Xc40ZeqVjGeSOnl/2MFeDyJDBdWTbf44gBLQyrxP5ofCDg+YvOn/ntbjOy78TtDD+kU8RtCtXRNam6nDLgfYmN8icAsxSCwQduQMu/ZS1qxMm/KhsiPsWLvdtNhfb2Jra57V1moG42K7O6VZuSS+bVVXMS2h3raSvXOSQWKLuwbcvg7Dro7+UXMJtVY2W6bksKvFOYYOYAlBIodCg=&MZHHCxK8LwqtvEKkgBFFUe7zg+by4jHrTU//aYL0k0b6ulXwqCrXGUCjqKoidbDQwSoa9hteI8tLEoFvWyslU4FU0XPU3riYQ0Pq/H8DVHcPIR++q5mKHUgtAgM7cruftoyjZRbWqgaQijwhkY53c5QvnpjiqkhFYx3ILsLtHvbl4i64h9p3tZFa1adNnYXjvmQ/gq6obcaR3IYXttWrCEdnuxO9TzLb6tSVuBuOWOKYwKrKl+XS4h4RTfWyDxLR26l6y2oyBWcW62tcn132PdLtoYpxXyr+ByL8I5OEtX0j7YCbO1VDutoV/D9GZDAVpViJNDXPaD4QWn/ccD98YQ=="
+        in request.body
+    ):
+        return True
+    return False
+
+
+def asyncupload_found_key_matcher_incorrect(request):
+
+    if (
+        b"c7g3CANCQbJ+X+IODBkErbuhQJ1AK1dJ03CaDAQ10aShpEysYFi6JD5Lg/QsepJ9T3Wsp126Z4vVzaH7fU6BmozmhQ1hIosvIFAwaPlsx4FWMGxX9wkEgESpazGqRXqWEJPsINIQBUB0DSOMnSNzlFWoDKkaCp7ZlXCJ0ZgMFYqBvPyK8DhMYri1RpiY1zgI4I/RA5Q1cqwwKjEcqP1XdwRMbE5we0z0fLs6Gmh83Z2rcriARFnBVZ45Wt40ENII6Gs7k4oQeeAx+JocDdu+K73FFFBAN1VwdNGOLO2lor4j/Pz1hxjgxNUmbpsWfQ2OdSLYKZxiOBMrD36tJeSRosQcwwbY8NVKKqv/44bzjTe01m2Smv0V+gusVyidEhCEVjKtRk+arUKMXg6BWEf4GReKkWiujlEf4lKeaYCz90LbGZajJvcw6OggVrGPALuJTC0JlmJ/Ms6v5i+x6mSXWcbAqPMEWGHLH303iZIpj36ivzZTvp3H85pXcJ2HLwfUSVLD4XShNFF9KyppZzqP18sCnEJl7ngXnAd6aReC1HyHMODgQ9Naj5wVYbgqEhuSCglebz+Ndhe3JybnDrb8aEjU542LWC3MxZF/GMIl60C/s7tzr5zNzb9487ELpKGOY4XYTuWihmK4zUrt0i733mEg73X7NkmzmnCgLRdaOx1bKYife22mqE8B7JBee3QYWdqyMTg1u3g934pI97bMnAzLkE7ASwLyN2sWOs9jpdnMgCWgh4EfJco6H9f/V4JkdgKE8Dud1ICUqWVm1xR+MUhScEq7KUEl3fSDV9bCplUx12KuXL4QUG6z74w8YnUV4V1aIKHZsh6G1/V3viEEr/3AqxHiTJixhgyHIhIST0fJQQdkMZdufqDPR2P+200MKv92IQ3StN2rw8WQ4sZaijH9OP0HlgouVYE4y9yrDfemw7++iWdbu91T6NiTYau5Z6AOG8jXOxzcrHZF3HWtRoeu3DlpGWPOXVLosenUm3bD/UxfqPwa5B36uCTh6Qsd4+53nZOItLpooo7KjGk//qYvfWpY5duCKqBVgBK+kIWv7PeKUsZfqaRI7tCn/jsA8vKLS7utYDMLM04L/ycFExlCk5Xc40ZeqVjGeSOnl/2MFeDyJDBdWTbf44gBLQyrxP5ofCDg+YvOn/ntbjOy78TtDD+kU8RtCtXRNam6nDLgfYmN8icAsxSCwQduQMu/ZS1qxMm/KhsiPsWLvdtNhfb2Jra57V1moG42K7O6VZuSS+bVVXMS2h3raSvXOSQWKLuwbcvg7Dro7+UXMJtVY2W6bksKvFOYYOYAlBIodCg=&MZHHCxK8LwqtvEKkgBFFUe7zg+by4jHrTU//aYL0k0b6ulXwqCrXGUCjqKoidbDQwSoa9hteI8tLEoFvWyslU4FU0XPU3riYQ0Pq/H8DVHcPIR++q5mKHUgtAgM7cruftoyjZRbWqgaQijwhkY53c5QvnpjiqkhFYx3ILsLtHvbl4i64h9p3tZFa1adNnYXjvmQ/gq6obcaR3IYXttWrCEdnuxO9TzLb6tSVuBuOWOKYwKrKl+XS4h4RTfWyDxLR26l6y2oyBWcW62tcn132PdLtoYpxXyr+ByL8I5OEtX0j7YCbO1VDutoV/D9GZDAVpViJNDXPaD4QWn/ccD98YQ=="
+        in request.body
+    ):
+        return False
+    return True
+
+
+def asyncupload_found_key_matcher_PBKDF1_MS(request):
+
+    if (
+        b"z3TV+wmyQiHUCiyUIKb/5VSJkb+rgQUYlw9fs9Bh1aikXUQpWVw3DQyPPCNuxD5zI9DI1NXdtBFzXwglAwVHAVhQcWA79V/hc8dx4q1rq38qgYnIf80kbohlpHONMJEeWi99Ha5sQe41Afy6j1JTDnh629pjPgidJ4Ben0+hSyX3NIh3tgRpZvj7e6f98c4BfN89uSraNzCMQej0LvAs3wY1ec5LYeC2XcDGW94MPdWBasJpB3Ka96aOJ+P6X+MUDaqSPCorC00uC17rQ4c0If1Kj8g4ZLuViuU7ESbhqcCLNW1ZLmOcl+4x+UohKeNJqVN3SNfFdu+CzXl+pkADAyTBNIGG4vuqLYPGCKPyyWYi5gTmKSXWcLLqwTvRvWxpohlEpIeFDJN7aaIp0qVzmsgP6NAg8WciboLuNkhi4gVTMgEm03WTfRCYW5mK+t/db2Ec4xPn6U3vZdPzUR9mWFuc9uu4mH0NLw6cZUr8iLQ9OMzebFyBpfHi3oTN5ztj+ZyurfFaVJKRhaWYoMXcD0cZqeA4nImvtCw8M9iH4cjPGj16UZEu/xW8myeOb0N2iJVSzirNQ8ZIDLOID90Zk0NV813u0EiyfSiyX7HkYz+MDtul+eQpyCREYsnMfYXcW/L7FQSWwcAnBgwNeCbRUx34f3Lw4ifuQ9rXP63DYUglIaL3Y859jOALQZ2m/YvhI+azF6GfZTYvRrzTeaCvk1uoE48+eb917uVnImH8eUUI4sTqsIG9RBpG/E3rzAXL+tXQ+0Y+4M/D+XqO27pg8+U4FoThJeOFsvkS0TiNja1CMV4D5Ej6LVe0qqOX7yJlJYmnHfn6Dymofg0rs0HJG+eJJPQW3+rAivEWeZR0t/xUEJZ60I7+puUSy4euzZzTA8oBb0gwqYsjTnJFe0JrCPDS0ktxreOzSUZ81IxrATjcsEfc3IbcWe5lYgWfNabEAZnSC7PnUEkpA5+mJstTznE8YkFYi3aEVE44IHMkYFecumW/hwqxSvwVFe8kmixASk1540cT4eM5/Xc+hQzehjd6eBI7Lne7nC1HJ5AL1talf8UCcykPh4fu7IqguEMw&Yask2YKsPSxDbrmYLHaHB5MMRIO9n33I10MmRNJCyS6m12Rjp7gqc+de/QszySP2TwCQDTTYyBAvNFJAl9IcnqwqwkDwswrtgAQTNZlIxlGdBZkfndRQFgvoKIJmV+tcnAHuvv3wPmRuxNou/qwQq1LikSfuBF5W443Hzm43y67v+59XzUjOC3pc+9+fcrU5KSeE1kqeITCN8wdR9TEtF/QdisA5ET7he6d+0If4VlCeRZzr8Qu2+nA9vBB4wYnUalt/xM4o6nOTcBcC2yMjqlh44HyhYN64n49r8+AwAHK1UuqoE0W46n3xA4JZE5XTGXwGZU7oabHRY6Sb2zOFtzuoa0u4Q+QzSMYtB5dCJt0="
+        in request.body
+    ):
+        return True
+    return False
+
+
+def asyncupload_found_key_matcher_PBKDF1_MS_incorrect(request):
+
+    if (
+        b"z3TV+wmyQiHUCiyUIKb/5VSJkb+rgQUYlw9fs9Bh1aikXUQpWVw3DQyPPCNuxD5zI9DI1NXdtBFzXwglAwVHAVhQcWA79V/hc8dx4q1rq38qgYnIf80kbohlpHONMJEeWi99Ha5sQe41Afy6j1JTDnh629pjPgidJ4Ben0+hSyX3NIh3tgRpZvj7e6f98c4BfN89uSraNzCMQej0LvAs3wY1ec5LYeC2XcDGW94MPdWBasJpB3Ka96aOJ+P6X+MUDaqSPCorC00uC17rQ4c0If1Kj8g4ZLuViuU7ESbhqcCLNW1ZLmOcl+4x+UohKeNJqVN3SNfFdu+CzXl+pkADAyTBNIGG4vuqLYPGCKPyyWYi5gTmKSXWcLLqwTvRvWxpohlEpIeFDJN7aaIp0qVzmsgP6NAg8WciboLuNkhi4gVTMgEm03WTfRCYW5mK+t/db2Ec4xPn6U3vZdPzUR9mWFuc9uu4mH0NLw6cZUr8iLQ9OMzebFyBpfHi3oTN5ztj+ZyurfFaVJKRhaWYoMXcD0cZqeA4nImvtCw8M9iH4cjPGj16UZEu/xW8myeOb0N2iJVSzirNQ8ZIDLOID90Zk0NV813u0EiyfSiyX7HkYz+MDtul+eQpyCREYsnMfYXcW/L7FQSWwcAnBgwNeCbRUx34f3Lw4ifuQ9rXP63DYUglIaL3Y859jOALQZ2m/YvhI+azF6GfZTYvRrzTeaCvk1uoE48+eb917uVnImH8eUUI4sTqsIG9RBpG/E3rzAXL+tXQ+0Y+4M/D+XqO27pg8+U4FoThJeOFsvkS0TiNja1CMV4D5Ej6LVe0qqOX7yJlJYmnHfn6Dymofg0rs0HJG+eJJPQW3+rAivEWeZR0t/xUEJZ60I7+puUSy4euzZzTA8oBb0gwqYsjTnJFe0JrCPDS0ktxreOzSUZ81IxrATjcsEfc3IbcWe5lYgWfNabEAZnSC7PnUEkpA5+mJstTznE8YkFYi3aEVE44IHMkYFecumW/hwqxSvwVFe8kmixASk1540cT4eM5/Xc+hQzehjd6eBI7Lne7nC1HJ5AL1talf8UCcykPh4fu7IqguEMw&Yask2YKsPSxDbrmYLHaHB5MMRIO9n33I10MmRNJCyS6m12Rjp7gqc+de/QszySP2TwCQDTTYyBAvNFJAl9IcnqwqwkDwswrtgAQTNZlIxlGdBZkfndRQFgvoKIJmV+tcnAHuvv3wPmRuxNou/qwQq1LikSfuBF5W443Hzm43y67v+59XzUjOC3pc+9+fcrU5KSeE1kqeITCN8wdR9TEtF/QdisA5ET7he6d+0If4VlCeRZzr8Qu2+nA9vBB4wYnUalt/xM4o6nOTcBcC2yMjqlh44HyhYN64n49r8+AwAHK1UuqoE0W46n3xA4JZE5XTGXwGZU7oabHRY6Sb2zOFtzuoa0u4Q+QzSMYtB5dCJt0="
+        in request.body
+    ):
+        return False
+    return True
+
+
 def PBKDF2_found_key_matcher(request):
     if (
         request.body
@@ -305,3 +345,75 @@ def test_full_run_PBKDF1_MS(monkeypatch, capsys, mocker):
             in captured.out
         )
         print(captured)
+
+
+def test_full_run_asyncupload(monkeypatch, capsys, mocker):
+    with requests_mock.Mocker() as m:
+
+        # Basic Probe Detects Telerik
+        m.get(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
+
+        m.post(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            additional_matcher=asyncupload_found_key_matcher,
+            status_code=200,
+            text='{"fileInfo":{"FileName":"1c72ebb0","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}, "metaData":"a+pkVM70XskLLvpXsOGH+RUEWaNgrvi2EGIZcUrVQ4rr7hIwpIcHtxyJsGCQYWy5tgSKmK58kIk/HpDDs9Gh2qnaFi3m+pe0kb4xb8s6zIkxQYrYGrfj7EesKwvuY6HUn+y3GwesijRrVsPpt0/N5FYxu4ptrsmjWfIM65XOe8b47kLO/Rpx/4/lfJyT9ZFsFuvSZmJzWDdoV40wu5ROK9DVnU26ztRRCwpnqqxmeKvdSGpYwd/d1gisJy0i5UVNFuvRT2XC32eDiw3Kn9GOrRldOHtq5WAQWu2YzVmxr/NOmvjg3NpRLtbxU+h9D0u0K/B3kRYliO+XlCpG+l/QMLh2nAjQehNvaCG3wJ4dkW9JHHeNzbPyd+tNrlSBj6/Z+b/Ld2HCk3XydTRHuUyzqk8bC6rEHGdclNPmTIS2X0IZaI0wTctsnPHxiruwdWVNjepnaSv5IHHYFH3WhCzKy6cLPES0cAuVgxycs+49nuj7kL/JzqT6iJm0YZd/Qjo4" }',
+        )
+
+        m.post(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            additional_matcher=asyncupload_found_key_matcher_incorrect,
+            status_code=500,
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert (
+            "TARGET VULNERABLE! Version: [2022.3.913] Encryption Key: [d2a312d9-7af4-43de-be5a-ae717b46cea6] Hash Key: [YOUR_ENCRYPTION_KEY_TO_GO_HERE] Derive Algo: [PBKDF2]"
+            in captured.out
+        )
+
+
+def test_full_run_asyncupload_PBKDF1_MS(monkeypatch, capsys, mocker):
+    with requests_mock.Mocker() as m:
+
+        # Basic Probe Detects Telerik
+        m.get(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
+
+        m.post(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            additional_matcher=asyncupload_found_key_matcher_PBKDF1_MS,
+            status_code=200,
+            text='{"fileInfo":{"FileName":"1c72ebb0","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}, "metaData":"a+pkVM70XskLLvpXsOGH+RUEWaNgrvi2EGIZcUrVQ4rr7hIwpIcHtxyJsGCQYWy5tgSKmK58kIk/HpDDs9Gh2qnaFi3m+pe0kb4xb8s6zIkxQYrYGrfj7EesKwvuY6HUn+y3GwesijRrVsPpt0/N5FYxu4ptrsmjWfIM65XOe8b47kLO/Rpx/4/lfJyT9ZFsFuvSZmJzWDdoV40wu5ROK9DVnU26ztRRCwpnqqxmeKvdSGpYwd/d1gisJy0i5UVNFuvRT2XC32eDiw3Kn9GOrRldOHtq5WAQWu2YzVmxr/NOmvjg3NpRLtbxU+h9D0u0K/B3kRYliO+XlCpG+l/QMLh2nAjQehNvaCG3wJ4dkW9JHHeNzbPyd+tNrlSBj6/Z+b/Ld2HCk3XydTRHuUyzqk8bC6rEHGdclNPmTIS2X0IZaI0wTctsnPHxiruwdWVNjepnaSv5IHHYFH3WhCzKy6cLPES0cAuVgxycs+49nuj7kL/JzqT6iJm0YZd/Qjo4" }',
+        )
+
+        m.post(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            additional_matcher=asyncupload_found_key_matcher_PBKDF1_MS_incorrect,
+            status_code=500,
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert (
+            "TARGET VULNERABLE! Version: [2014.3.1024] Encryption Key: [d2a312d9-7af4-43de-be5a-ae717b46cea6] Derive Algo: [PBKDF1_MS]"
+            in captured.out
+        )
