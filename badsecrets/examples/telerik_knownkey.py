@@ -510,7 +510,10 @@ def main():
     )
 
     parser.add_argument(
-        "-f", "--force", help="Force enumeration of vulnerable Async upload without user interaction", action="store_true"
+        "-f",
+        "--force",
+        help="Force enumeration of vulnerable AsyncUpload endpoint without user confirmation",
+        action="store_true",
     )
     args = parser.parse_args()
 
@@ -558,7 +561,7 @@ def main():
             )
             rau.version_probe()
             if not args.force:
-                response = input("Ready attempt exploit, press enter to continue...")
+                response = input("Ready to attempt brute-force, press enter to continue...")
                 print(response)
                 if response.lower() != "":
                     print("aborting...")
