@@ -54,6 +54,20 @@ def asyncupload_found_key_matcher_incorrect(request):
     return True
 
 
+def asyncupload_early_result_matcher(request):
+
+    if b"r+R+MLL7r9MwAHb7S6n5psOS6iwav8/lRtiOVHMaFba4gCRg0YWT5j+A=" in request.body:
+        return True
+    return False
+
+
+def asyncupload_early_result_matcher_incorrect(request):
+
+    if b"r+R+MLL7r9MwAHb7S6n5psOS6iwav8/lRtiOVHMaFba4gCRg0YWT5j+A=" in request.body:
+        return False
+    return True
+
+
 def asyncupload_found_key_matcher_PBKDF1_MS(request):
 
     if (
@@ -232,7 +246,6 @@ def test_full_run_PBKDF2(monkeypatch, capsys, mocker):
         return iter(["Not_The_Real_HaSh_Key", "YOUR_ENCRYPTION_KEY_TO_GO_HERE", "Y3t_anoth3r_f@k3_key"])
 
     mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
-
     mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
     with requests_mock.Mocker() as m:
@@ -358,7 +371,67 @@ def test_full_run_PBKDF1_MS(monkeypatch, capsys, mocker):
         print(captured)
 
 
-def test_full_run_asyncupload(monkeypatch, capsys, mocker):
+def test_full_run_asyncupload_earlydetection(monkeypatch, capsys, mocker):
+
+    def generate_keylist_enc(include_machinekeys):
+        return iter(
+            ["Not_The_Real_Encryption_Key", "d2a312d9-7af4-43de-be5a-ae717b46cea6", "another_fake_encryption_key"]
+        )
+
+    def generate_keylist_hash(include_machinekeys):
+        return iter(["Not_The_Real_HaSh_Key", "YOUR_ENCRYPTION_KEY_TO_GO_HERE", "Y3t_anoth3r_f@k3_key"])
+
+    mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
+    mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
+
+    with requests_mock.Mocker() as m:
+
+        # Basic Probe Detects Telerik
+        m.get(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
+
+        m.post(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            additional_matcher=asyncupload_early_result_matcher,
+            status_code=500,
+            text="<b> Exception Details: </b>System.IO.FileLoadException: Could not load file or assembly 'Telerik.Web.UI, Version=2022.3.1109, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)<br><br>",
+        )
+
+        m.post(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            additional_matcher=asyncupload_early_result_matcher_incorrect,
+            status_code=500,
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert (
+            "Detected early signs that target is likely vulnerable! Continuing to find vulnerable version..."
+            in captured.out
+        )
+
+
+def test_full_run_asyncupload_success(monkeypatch, capsys, mocker):
+
+    def generate_keylist_enc(include_machinekeys):
+        return iter(
+            ["Not_The_Real_Encryption_Key", "d2a312d9-7af4-43de-be5a-ae717b46cea6", "another_fake_encryption_key"]
+        )
+
+    def generate_keylist_hash(include_machinekeys):
+        return iter(["Not_The_Real_HaSh_Key", "YOUR_ENCRYPTION_KEY_TO_GO_HERE", "Y3t_anoth3r_f@k3_key"])
+
+    mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
+    mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
+
     with requests_mock.Mocker() as m:
 
         # Basic Probe Detects Telerik
