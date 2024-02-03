@@ -396,8 +396,8 @@ class DialogHandler:
 
                     self.hash_key = hash_key
                     break
-                elif "The hash is not valid!" in resp_body:
-                    continue
+
+                elif "The hash is not valid!" in resp_body: continue
 
                 elif "The input is not a valid Base-64 string" in resp_body:
                     print("The target appears to be a pre-2017 version, and does not have a hash key.")
@@ -482,7 +482,6 @@ class DialogHandler:
                 self.version = version
                 self.dialog_parameters = dialog_parameters
                 return True
-        return None
 
 
 def main():
