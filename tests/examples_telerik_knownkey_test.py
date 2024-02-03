@@ -23,10 +23,87 @@ partial_dialog_page = """
 """
 
 
+def pre2017_matcher(request):
+    if "dialogParametersHolder=AAAA" in request.body:
+        return True
+    return False
+
+
+def pre2017_matcher_probe(request):
+    if "dialogParametersHolder=AAAA" not in request.body:
+        return True
+    return False
+
+
+def asyncupload_verbose_error_PBKDF2(request):
+
+    if (
+        b'{"TotalChunks":1,"ChunkIndex":0,"TotalFileSize":1,"UploadID":"6cf6c6cdcabc.txt"}' in request.body
+        and "mQheol55IDiQWWSxl+Atkc68JXWUJ6QSirwLhEwleMiw3vN4cwABE74V2fWsLGg8CFXHOP6np90M+sLrLDqFACGNvonxmgT8aBsTZPWbXErewMGNWBP34aX0DmMvXVyTEpQ6FkFhZi19cTtdYfRLI8Uc04uNSsdWnltDMQ2CX/sSLOXUFNnZdAwAXgUuprYhU28Zwh/GdgYh447ksXfAC2fuPqEJqKDDwBlltxsS/zSq8ipIg326ymB2dmOpH/P3hcAmTKOyzB0dW6a6pmJvqNVU+50DlrUC00RbBbTJwlV6Xm4s4XTvgXLvMQ6czz2OAYY18HI+HYX5uvajctj/25UR8edwu68ZCgedsD7EZHRSSthjxohxfAyrfshjcu1LnhCEd0ClowKxBS4eiaLxVxhJAdB7XcbbXxIS9WWKa7gtRMNc/jUAOlIpvOZ3N+bOQ6rsNMHv7TZk1g0bxPl99yBn9qvtAwDMNPDoADxoBSisAkIIl9mImKv7y7nAiKoj7ukApdu5XQuVo10SxwkLkqHcvEEgjxTrOlCbEbxK2/du9TgXxD9iqKyaPLHPzNZsnzCsG6qNXv0fNkeASP9tZAyvi/y1eLrpScE+J7blfT+kBkGPTTFc6Z4z6lN7GqSHofq/CDHC2S2+qdoRdC3C25V74j+Ae6MkpSfqYx4KZYNtxBAxjf9Uf3JVSiZh3X2W/7aFeimFft0h/liybSjJTzO+AwNJluI4kXqemFoHnjVFfUQViaIuk4UP0D861kCU6KIGLZLpOaa0g0KM8hmu3OjwVOy8QVXYtbx5lOmSX9h3imRzMDFRTXK25YpUJgD0/LFMgCeZLA8SCYzkThyN2d8f8n5l8iOScR47o8i8sqCp/fd3JTogSbwD7LxnHudpiw2W/OfpMGipgc6loQFoX4klQaYwKkA4w+GUzahfAJmIiukZuTLOPCPQvX4wKtLqw1YiHtuaLHvLYq2/F66QQXNrZ4SucUNED0p5TUVTvHGUbuA0zxAyYSfYVgTNZjXGguQBY7DsN1SkpCa/ltvIiGtCbHQR86OrvjJMACe0wdpMCqEg7JiGym3RrLqvmjpS&sbZRwxJ96gmXFBSbSvT0ve7jpvDoieqd6RbG+GIP0H7sO5/0ZnvheosB9jQAifuMabY7lW4UzZgr5o2iqE0tBl4SGhfWyYW7iCFXnd3aIuCnUvhT58Rp8g7kGkA/eU/s68E66KOBXNuBnokZR9cIsjE0Tt3Jfxrk018+CmVcXpjXp/RmhRwCJTgEAXQuNplb/KdkLxqDn519iRtbiU6aLZX8YctdFQBqyKVgkk8WYXxcXQ8wYnxtpEtGuBcsndUi1iPp4Od8rYY1HPWg+FIquW17YPHjfP4gO4dhZe4sd7gH0ARyGDjiYVj7ODDE0wGmwmFVdQTrDX5AaxKuJy0NbQ=="
+        in request.body
+    ):
+        return True
+    return False
+
+
+def asyncupload_found_key_matcher(request):
+
+    if (
+        b"c7g3CANCQbJ+X+IODBkErbuhQJ1AK1dJ03CaDAQ10aShpEysYFi6JD5Lg/QsepJ9T3Wsp126Z4vVzaH7fU6BmozmhQ1hIosvIFAwaPlsx4FWMGxX9wkEgESpazGqRXqWEJPsINIQBUB0DSOMnSNzlFWoDKkaCp7ZlXCJ0ZgMFYqBvPyK8DhMYri1RpiY1zgI4I/RA5Q1cqwwKjEcqP1XdwRMbE5we0z0fLs6Gmh83Z2rcriARFnBVZ45Wt40ENII6Gs7k4oQeeAx+JocDdu+K73FFFBAN1VwdNGOLO2lor4j/Pz1hxjgxNUmbpsWfQ2OdSLYKZxiOBMrD36tJeSRosQcwwbY8NVKKqv/44bzjTe01m2Smv0V+gusVyidEhCEVjKtRk+arUKMXg6BWEf4GReKkWiujlEf4lKeaYCz90LbGZajJvcw6OggVrGPALuJTC0JlmJ/Ms6v5i+x6mSXWcbAqPMEWGHLH303iZIpj36ivzZTvp3H85pXcJ2HLwfUSVLD4XShNFF9KyppZzqP18sCnEJl7ngXnAd6aReC1HyHMODgQ9Naj5wVYbgqEhuSCglebz+Ndhe3JybnDrb8aEjU542LWC3MxZF/GMIl60C/s7tzr5zNzb9487ELpKGOY4XYTuWihmK4zUrt0i733mEg73X7NkmzmnCgLRdaOx1bKYife22mqE8B7JBee3QYWdqyMTg1u3g934pI97bMnAzLkE7ASwLyN2sWOs9jpdnMgCWgh4EfJco6H9f/V4JkdgKE8Dud1ICUqWVm1xR+MUhScEq7KUEl3fSDV9bCplUx12KuXL4QUG6z74w8YnUV4V1aIKHZsh6G1/V3viEEr/3AqxHiTJixhgyHIhIST0fJQQdkMZdufqDPR2P+200MKv92IQ3StN2rw8WQ4sZaijH9OP0HlgouVYE4y9yrDfemw7++iWdbu91T6NiTYau5Z6AOG8jXOxzcrHZF3HWtRoeu3DlpGWPOXVLosenUm3bD/UxfqPwa5B36uCTh6Qsd4+53nZOItLpooo7KjGk//qYvfWpY5duCKqBVgBK+kIWv7PeKUsZfqaRI7tCn/jsA8vKLS7utYDMLM04L/ycFExlCk5Xc40ZeqVjGeSOnl/2MFeDyJDBdWTbf44gBLQyrxP5ofCDg+YvOn/ntbjOy78TtDD+kU8RtCtXRNam6nDLgfYmN8icAsxSCwQduQMu/ZS1qxMm/KhsiPsWLvdtNhfb2Jra57V1moG42K7O6VZuSS+bVVXMS2h3raSvXOSQWKLuwbcvg7Dro7+UXMJtVY2W6bksKvFOYYOYAlBIodCg=&MZHHCxK8LwqtvEKkgBFFUe7zg+by4jHrTU//aYL0k0b6ulXwqCrXGUCjqKoidbDQwSoa9hteI8tLEoFvWyslU4FU0XPU3riYQ0Pq/H8DVHcPIR++q5mKHUgtAgM7cruftoyjZRbWqgaQijwhkY53c5QvnpjiqkhFYx3ILsLtHvbl4i64h9p3tZFa1adNnYXjvmQ/gq6obcaR3IYXttWrCEdnuxO9TzLb6tSVuBuOWOKYwKrKl+XS4h4RTfWyDxLR26l6y2oyBWcW62tcn132PdLtoYpxXyr+ByL8I5OEtX0j7YCbO1VDutoV/D9GZDAVpViJNDXPaD4QWn/ccD98YQ=="
+        in request.body
+    ):
+        return True
+    return False
+
+
+def asyncupload_found_key_matcher_incorrect(request):
+
+    if (
+        b"c7g3CANCQbJ+X+IODBkErbuhQJ1AK1dJ03CaDAQ10aShpEysYFi6JD5Lg/QsepJ9T3Wsp126Z4vVzaH7fU6BmozmhQ1hIosvIFAwaPlsx4FWMGxX9wkEgESpazGqRXqWEJPsINIQBUB0DSOMnSNzlFWoDKkaCp7ZlXCJ0ZgMFYqBvPyK8DhMYri1RpiY1zgI4I/RA5Q1cqwwKjEcqP1XdwRMbE5we0z0fLs6Gmh83Z2rcriARFnBVZ45Wt40ENII6Gs7k4oQeeAx+JocDdu+K73FFFBAN1VwdNGOLO2lor4j/Pz1hxjgxNUmbpsWfQ2OdSLYKZxiOBMrD36tJeSRosQcwwbY8NVKKqv/44bzjTe01m2Smv0V+gusVyidEhCEVjKtRk+arUKMXg6BWEf4GReKkWiujlEf4lKeaYCz90LbGZajJvcw6OggVrGPALuJTC0JlmJ/Ms6v5i+x6mSXWcbAqPMEWGHLH303iZIpj36ivzZTvp3H85pXcJ2HLwfUSVLD4XShNFF9KyppZzqP18sCnEJl7ngXnAd6aReC1HyHMODgQ9Naj5wVYbgqEhuSCglebz+Ndhe3JybnDrb8aEjU542LWC3MxZF/GMIl60C/s7tzr5zNzb9487ELpKGOY4XYTuWihmK4zUrt0i733mEg73X7NkmzmnCgLRdaOx1bKYife22mqE8B7JBee3QYWdqyMTg1u3g934pI97bMnAzLkE7ASwLyN2sWOs9jpdnMgCWgh4EfJco6H9f/V4JkdgKE8Dud1ICUqWVm1xR+MUhScEq7KUEl3fSDV9bCplUx12KuXL4QUG6z74w8YnUV4V1aIKHZsh6G1/V3viEEr/3AqxHiTJixhgyHIhIST0fJQQdkMZdufqDPR2P+200MKv92IQ3StN2rw8WQ4sZaijH9OP0HlgouVYE4y9yrDfemw7++iWdbu91T6NiTYau5Z6AOG8jXOxzcrHZF3HWtRoeu3DlpGWPOXVLosenUm3bD/UxfqPwa5B36uCTh6Qsd4+53nZOItLpooo7KjGk//qYvfWpY5duCKqBVgBK+kIWv7PeKUsZfqaRI7tCn/jsA8vKLS7utYDMLM04L/ycFExlCk5Xc40ZeqVjGeSOnl/2MFeDyJDBdWTbf44gBLQyrxP5ofCDg+YvOn/ntbjOy78TtDD+kU8RtCtXRNam6nDLgfYmN8icAsxSCwQduQMu/ZS1qxMm/KhsiPsWLvdtNhfb2Jra57V1moG42K7O6VZuSS+bVVXMS2h3raSvXOSQWKLuwbcvg7Dro7+UXMJtVY2W6bksKvFOYYOYAlBIodCg=&MZHHCxK8LwqtvEKkgBFFUe7zg+by4jHrTU//aYL0k0b6ulXwqCrXGUCjqKoidbDQwSoa9hteI8tLEoFvWyslU4FU0XPU3riYQ0Pq/H8DVHcPIR++q5mKHUgtAgM7cruftoyjZRbWqgaQijwhkY53c5QvnpjiqkhFYx3ILsLtHvbl4i64h9p3tZFa1adNnYXjvmQ/gq6obcaR3IYXttWrCEdnuxO9TzLb6tSVuBuOWOKYwKrKl+XS4h4RTfWyDxLR26l6y2oyBWcW62tcn132PdLtoYpxXyr+ByL8I5OEtX0j7YCbO1VDutoV/D9GZDAVpViJNDXPaD4QWn/ccD98YQ=="
+        in request.body
+    ):
+        return False
+    return True
+
+
+def asyncupload_early_result_matcher(request):
+
+    if b"r+R+MLL7r9MwAHb7S6n5psOS6iwav8/lRtiOVHMaFba4gCRg0YWT5j+A=" in request.body:
+        return True
+    return False
+
+
+def asyncupload_early_result_matcher_incorrect(request):
+
+    if b"r+R+MLL7r9MwAHb7S6n5psOS6iwav8/lRtiOVHMaFba4gCRg0YWT5j+A=" in request.body:
+        return False
+    return True
+
+
+def asyncupload_found_key_matcher_PBKDF1_MS(request):
+
+    if (
+        b"z3TV+wmyQiHUCiyUIKb/5VSJkb+rgQUYlw9fs9Bh1aikXUQpWVw3DQyPPCNuxD5zI9DI1NXdtBFzXwglAwVHAVhQcWA79V/hc8dx4q1rq38qgYnIf80kbohlpHONMJEeWi99Ha5sQe41Afy6j1JTDnh629pjPgidJ4Ben0+hSyX3NIh3tgRpZvj7e6f98c4BfN89uSraNzCMQej0LvAs3wY1ec5LYeC2XcDGW94MPdWBasJpB3Ka96aOJ+P6X+MUDaqSPCorC00uC17rQ4c0If1Kj8g4ZLuViuU7ESbhqcCLNW1ZLmOcl+4x+UohKeNJqVN3SNfFdu+CzXl+pkADAyTBNIGG4vuqLYPGCKPyyWYi5gTmKSXWcLLqwTvRvWxpohlEpIeFDJN7aaIp0qVzmsgP6NAg8WciboLuNkhi4gVTMgEm03WTfRCYW5mK+t/db2Ec4xPn6U3vZdPzUR9mWFuc9uu4mH0NLw6cZUr8iLQ9OMzebFyBpfHi3oTN5ztj+ZyurfFaVJKRhaWYoMXcD0cZqeA4nImvtCw8M9iH4cjPGj16UZEu/xW8myeOb0N2iJVSzirNQ8ZIDLOID90Zk0NV813u0EiyfSiyX7HkYz+MDtul+eQpyCREYsnMfYXcW/L7FQSWwcAnBgwNeCbRUx34f3Lw4ifuQ9rXP63DYUglIaL3Y859jOALQZ2m/YvhI+azF6GfZTYvRrzTeaCvk1uoE48+eb917uVnImH8eUUI4sTqsIG9RBpG/E3rzAXL+tXQ+0Y+4M/D+XqO27pg8+U4FoThJeOFsvkS0TiNja1CMV4D5Ej6LVe0qqOX7yJlJYmnHfn6Dymofg0rs0HJG+eJJPQW3+rAivEWeZR0t/xUEJZ60I7+puUSy4euzZzTA8oBb0gwqYsjTnJFe0JrCPDS0ktxreOzSUZ81IxrATjcsEfc3IbcWe5lYgWfNabEAZnSC7PnUEkpA5+mJstTznE8YkFYi3aEVE44IHMkYFecumW/hwqxSvwVFe8kmixASk1540cT4eM5/Xc+hQzehjd6eBI7Lne7nC1HJ5AL1talf8UCcykPh4fu7IqguEMw&Yask2YKsPSxDbrmYLHaHB5MMRIO9n33I10MmRNJCyS6m12Rjp7gqc+de/QszySP2TwCQDTTYyBAvNFJAl9IcnqwqwkDwswrtgAQTNZlIxlGdBZkfndRQFgvoKIJmV+tcnAHuvv3wPmRuxNou/qwQq1LikSfuBF5W443Hzm43y67v+59XzUjOC3pc+9+fcrU5KSeE1kqeITCN8wdR9TEtF/QdisA5ET7he6d+0If4VlCeRZzr8Qu2+nA9vBB4wYnUalt/xM4o6nOTcBcC2yMjqlh44HyhYN64n49r8+AwAHK1UuqoE0W46n3xA4JZE5XTGXwGZU7oabHRY6Sb2zOFtzuoa0u4Q+QzSMYtB5dCJt0="
+        in request.body
+    ):
+        return True
+    return False
+
+
+def asyncupload_found_key_matcher_PBKDF1_MS_incorrect(request):
+
+    if (
+        b"z3TV+wmyQiHUCiyUIKb/5VSJkb+rgQUYlw9fs9Bh1aikXUQpWVw3DQyPPCNuxD5zI9DI1NXdtBFzXwglAwVHAVhQcWA79V/hc8dx4q1rq38qgYnIf80kbohlpHONMJEeWi99Ha5sQe41Afy6j1JTDnh629pjPgidJ4Ben0+hSyX3NIh3tgRpZvj7e6f98c4BfN89uSraNzCMQej0LvAs3wY1ec5LYeC2XcDGW94MPdWBasJpB3Ka96aOJ+P6X+MUDaqSPCorC00uC17rQ4c0If1Kj8g4ZLuViuU7ESbhqcCLNW1ZLmOcl+4x+UohKeNJqVN3SNfFdu+CzXl+pkADAyTBNIGG4vuqLYPGCKPyyWYi5gTmKSXWcLLqwTvRvWxpohlEpIeFDJN7aaIp0qVzmsgP6NAg8WciboLuNkhi4gVTMgEm03WTfRCYW5mK+t/db2Ec4xPn6U3vZdPzUR9mWFuc9uu4mH0NLw6cZUr8iLQ9OMzebFyBpfHi3oTN5ztj+ZyurfFaVJKRhaWYoMXcD0cZqeA4nImvtCw8M9iH4cjPGj16UZEu/xW8myeOb0N2iJVSzirNQ8ZIDLOID90Zk0NV813u0EiyfSiyX7HkYz+MDtul+eQpyCREYsnMfYXcW/L7FQSWwcAnBgwNeCbRUx34f3Lw4ifuQ9rXP63DYUglIaL3Y859jOALQZ2m/YvhI+azF6GfZTYvRrzTeaCvk1uoE48+eb917uVnImH8eUUI4sTqsIG9RBpG/E3rzAXL+tXQ+0Y+4M/D+XqO27pg8+U4FoThJeOFsvkS0TiNja1CMV4D5Ej6LVe0qqOX7yJlJYmnHfn6Dymofg0rs0HJG+eJJPQW3+rAivEWeZR0t/xUEJZ60I7+puUSy4euzZzTA8oBb0gwqYsjTnJFe0JrCPDS0ktxreOzSUZ81IxrATjcsEfc3IbcWe5lYgWfNabEAZnSC7PnUEkpA5+mJstTznE8YkFYi3aEVE44IHMkYFecumW/hwqxSvwVFe8kmixASk1540cT4eM5/Xc+hQzehjd6eBI7Lne7nC1HJ5AL1talf8UCcykPh4fu7IqguEMw&Yask2YKsPSxDbrmYLHaHB5MMRIO9n33I10MmRNJCyS6m12Rjp7gqc+de/QszySP2TwCQDTTYyBAvNFJAl9IcnqwqwkDwswrtgAQTNZlIxlGdBZkfndRQFgvoKIJmV+tcnAHuvv3wPmRuxNou/qwQq1LikSfuBF5W443Hzm43y67v+59XzUjOC3pc+9+fcrU5KSeE1kqeITCN8wdR9TEtF/QdisA5ET7he6d+0If4VlCeRZzr8Qu2+nA9vBB4wYnUalt/xM4o6nOTcBcC2yMjqlh44HyhYN64n49r8+AwAHK1UuqoE0W46n3xA4JZE5XTGXwGZU7oabHRY6Sb2zOFtzuoa0u4Q+QzSMYtB5dCJt0="
+        in request.body
+    ):
+        return False
+    return True
+
+
 def PBKDF2_found_key_matcher(request):
     if (
         request.body
-        == "dialogParametersHolder=Ct3E%2FAXZ0ct05hNqzzSbCRVxte%2F%2BQBIVbVz21p21CqLSnQsGfzTjsiq%2FxoAQaaDuaafBKu8cNXMOGT5kJcE0snNDBVbQqvbQLEYa1cWQYr%2FL2tOMq8Rnuzq6F7HKpN2%2BUJzGeJxt25pqbTTLzS1VwSSsBRgS3Y13wCJNk24A%2BmI%3D"
+        == "dialogParametersHolder=Ct3E%2FAXZ0ct05hNqzzSbCRVxte%2F%2BQBIVbVz21p21CqLSnQsGfzTjsiq%2FxoAQaaDuaafBKu8cNXMOGT5kJcE0snNDBVbQqvbQLEYa1cWQYr%2FL2tOMq8Rnuzq6F7HKpN2%2BP0tdCPxrO3s6K2W43kvEO5wyaDlijlF9r2XI6UL1FUk%3D"
     ):
         return True
     return False
@@ -35,10 +112,32 @@ def PBKDF2_found_key_matcher(request):
 def PBKDF2_found_key_matcher_negative(request):
     if (
         request.body
-        == "dialogParametersHolder=Ct3E%2FAXZ0ct05hNqzzSbCRVxte%2F%2BQBIVbVz21p21CqLSnQsGfzTjsiq%2FxoAQaaDuaafBKu8cNXMOGT5kJcE0snNDBVbQqvbQLEYa1cWQYr%2FL2tOMq8Rnuzq6F7HKpN2%2BUJzGeJxt25pqbTTLzS1VwSSsBRgS3Y13wCJNk24A%2BmI%3D"
+        == "dialogParametersHolder=Ct3E%2FAXZ0ct05hNqzzSbCRVxte%2F%2BQBIVbVz21p21CqLSnQsGfzTjsiq%2FxoAQaaDuaafBKu8cNXMOGT5kJcE0snNDBVbQqvbQLEYa1cWQYr%2FL2tOMq8Rnuzq6F7HKpN2%2BP0tdCPxrO3s6K2W43kvEO5wyaDlijlF9r2XI6UL1FUk%3D"
     ):
         return False
     return True
+
+
+def PBKDF2_version_probe_matcher(request):
+    if (
+        request.body != "dialogParametersHolder=AAAA"
+        and request.body
+        == "dialogParametersHolder=%2Bv%2BRs6kf9lDUYnqqYk32Vg84DkpdruQOKGZRmm6RMkaYuxNmvg5Ca5cT%2F74qkOozHIKkG1ovf6XBsjlp4kgO8BJ6KgNcT78BExQZfT1mN5rMO8kcLDRdffFhFXmvAr0o%2F4x%2B9VoRJVaOyGLXk2nhX4OMP%2BjGP2C96Fa6LyfGWHlk1CF0E5mAPeQ6CLbycR88WU5hlmUUqniXC2UdeYd6HO9RFnISEnhq72MkdiEfvNsqAhr2XaCX2%2BQxFXfCLi2%2Fc%2Bn2NmUiFRdhCLutnVxILEnYiRmU5eHJdB2IOTtoc2XZ3NUdZJwrwOswjzCkk7LOwt2bddTvOXdfWtRrbNz1GDNXlPz1cXotgAhucxLLsknNDbeeboMbL%2Bk3tIeervi7oI%2FRQn6Ml3ffUAfcqHzwcZCEIlQXh%2FBEIKHAY9fGKs5JSdtRbREDI0rh9sH%2B0TmYv444WQyqYpa8pOqtxgC1QRRcsNQcVGFzpyNL2SfKSlLTZi5Q7bo8XMTfLG6jg60csDEDiJ7MwJBGIm1iYzt%2FP9JEKkZujTMyHoBI0RESNpux7BeanEIDsfDmfwbcUo%2B2%2BkoHkCE4zXWBdW3lqssk4GwSbc0mbmf3U79rsQdNEqIOL87evE1U6tGB5PuXgwAIj9sKdyffd8%2B%2Bz1CCffFovLM72ilbCmSljAJ%2BvVBfNpTiL7RV7j3XGygljzi4NL8yXJuCLYiNxmqPMdV8DahLed0jSe2mkU1u6rx4yS3dcWEfwMWjI5tVrfnbqtdInC8TliXkTZ919CtORoydmIXGL1u3kdBIq8EZcjRMa4bN4VTvUlbqeIe8p8QYEQwAi7vXiZCKS6R6dmJfQv%2B%2FqBHXWSFuglLYde019GNtNdGQfEnY31zT0Q86ieDYn4k55LbYq5lK8PNjg50gdJxn9fNtHTQ7frKP9vRM4cImRSvDBTATVw1PDzMqn0exo3xciYd5%2BXYAxlFoqwFMDz40w2xR4OWwoPsixpVjR2DYiqYiZrYytFMjziRCLQhkVuJpED8nB9CTlo05WBKN%2Bb4UBHBg%2FkCkHXJxNakIX7UbAjDcqzrNCGhjrgehCGA81uOf0Ppfswda0ZHMi8g9W6Y7uwWmn7Ux7xBMgDCUNIi8I3UvLGXdKnuB8YHX8TLC1z2%2Fm3ip797Pix1ya2sBsbw9KgOJ7PBT0u9W0puchi7zpT%2FzFe3V2HbV0ottDethRJhzaN856VgvjyNhbbmA04gnal%2Fq01j7LNWxEwTjNPyHORI1l9jztvYqItLei7YQYg2pFhmvuv0Od8DPfH40Y1m3mL2F2d%2FAy3ImzFI%2BKQB6mnGPvRcDIS1j7zPhciKRuLfu3dCxhIH7ojo83rhQus3SyXdyZ5cjkFKcG3H7WmBBMOFs2o5xjWcdLARevRbNbqwRfATerc5GuJxy1Qb8RJvOqhDcS5YAHyxVMx2QYU3yMhg0tCpy4wW%2FHsa33feu3NeBu9lRI38ojJNM7o6xYRoSTQu4tYadB4Yh4w60e%2FsttnecOC5plZrLw6BYN2piqvUD07BnO4yTvrpdBDXR%2BMFDchnFh2YK9JtvvtAISvpoSOJojOhwRKuafCwEJn0GB1dsdmOOxxaFHkPXQ7789eCxlTL5mkVf3ktzmHQdDyBxBlDLFWSjmFIBHp%2BPobFdDOmv5p6J3%2F%2FM23PMgGDLRMrj5LVZV3trGV1ZaJHEFIGmVwW0tN4426Q4rCdcxT4ju%2B%2FNhcq90e8crWw9nrF2rPTzW1YM7VqWWwhLj8MtVtGZFa3N%2FxdjEys8FWyT8VqAbC4IltuT5lW1ou1SXsA96h%2F9y3vzJADbm4Lv624OGnh6M%2FCmR930i6YeUlWWmMw1%2FpcZ5werHPm9v0OWulNmGfbNEoKuThz2sSCZ8FLNVToygv1VXPXnur4dJnoCkwBP2%2BQQ6%2FHlyFRXnrrGsiDJE3qtRXgECIhc2zpuC5HAz9FhIfC9VZZ5nxRMbhA6W%2Fz%2BjPpKLCBpmLqHJfy8%2B%2FausiZJv7d9yQ0SvHtq0y%2FSY04hOgZTJul6IIYpObD6s%2FqrGy2nMmY3%2FtEn830%2F%2BFERnXMeBsj%2B%2F5ZSewYe4xBnub1wvSbsA3qjoU5gq7fhDJOhmMQXkbas%2FRholsU9CNKNXpSyqVarqAc8XwaG34JmdG3wjQXd6p%2Bz2jZLew5ja8nelvVdIeN%2F9ejCNOoXcPApYLHyxslcrEuJrSHlAMR4FbonfrFhYYTR%2B8pdxRGYGpVUDxlIRvay5xE4PoiuJ4tF82nhc3kr%2FsJWj86DXt9uK%2FPIDMokhA1wZ2BS8rN8V8J43gXMVkQtHFyqiAMoKttVwox3GtbTdmzYcjtjdZmL3VB27giGRreZsDbr6lsLJKVYnGtzAwL1nb45fLFtBNpiGXKHwE0soY3dapt%2FwadcvpFryVyG%2BesgLUwLWjgGepMMbQgPgi7Lk9TDgl5pO9Sg2%2B%2BCDEKkhmknkE%2FW4zr%2FbE3Qg97NK3hkIC0ajQvysQCsD2G98NREwRp5Yo2qUVqoKsz%2BM5FifnHVivHtbpB%2B0jSdbMPBVqrn6aJutLfJazoTo1MP5RGYQXwBR%2BiE%2BzrvvH3cYwPt7ac%2FkG%2BPEEDYQKPU%2F945Sh5D2ST2TwV1nVjoVq0xMgmM4rJmTTKSABcevdVyK41RiiOgJ1hXMLvtClnaA0rmU1zdilFkAHpka5VW9IKQa4edHYgnnLRdQfQ6YljskVGbbHuSZX9a5AiW9eHYyoNYZno%3D"
+    ):
+        return True
+    return False
+
+
+def PBKDF2_version_probe_matcher_incorrect(request):
+    if (
+        request.body != "dialogParametersHolder=AAAA"
+        and request.body
+        != "dialogParametersHolder=%2Bv%2BRs6kf9lDUYnqqYk32Vg84DkpdruQOKGZRmm6RMkaYuxNmvg5Ca5cT%2F74qkOozHIKkG1ovf6XBsjlp4kgO8BJ6KgNcT78BExQZfT1mN5rMO8kcLDRdffFhFXmvAr0o%2F4x%2B9VoRJVaOyGLXk2nhX4OMP%2BjGP2C96Fa6LyfGWHlk1CF0E5mAPeQ6CLbycR88WU5hlmUUqniXC2UdeYd6HO9RFnISEnhq72MkdiEfvNsqAhr2XaCX2%2BQxFXfCLi2%2Fc%2Bn2NmUiFRdhCLutnVxILEnYiRmU5eHJdB2IOTtoc2XZ3NUdZJwrwOswjzCkk7LOwt2bddTvOXdfWtRrbNz1GDNXlPz1cXotgAhucxLLsknNDbeeboMbL%2Bk3tIeervi7oI%2FRQn6Ml3ffUAfcqHzwcZCEIlQXh%2FBEIKHAY9fGKs5JSdtRbREDI0rh9sH%2B0TmYv444WQyqYpa8pOqtxgC1QRRcsNQcVGFzpyNL2SfKSlLTZi5Q7bo8XMTfLG6jg60csDEDiJ7MwJBGIm1iYzt%2FP9JEKkZujTMyHoBI0RESNpux7BeanEIDsfDmfwbcUo%2B2%2BkoHkCE4zXWBdW3lqssk4GwSbc0mbmf3U79rsQdNEqIOL87evE1U6tGB5PuXgwAIj9sKdyffd8%2B%2Bz1CCffFovLM72ilbCmSljAJ%2BvVBfNpTiL7RV7j3XGygljzi4NL8yXJuCLYiNxmqPMdV8DahLed0jSe2mkU1u6rx4yS3dcWEfwMWjI5tVrfnbqtdInC8TliXkTZ919CtORoydmIXGL1u3kdBIq8EZcjRMa4bN4VTvUlbqeIe8p8QYEQwAi7vXiZCKS6R6dmJfQv%2B%2FqBHXWSFuglLYde019GNtNdGQfEnY31zT0Q86ieDYn4k55LbYq5lK8PNjg50gdJxn9fNtHTQ7frKP9vRM4cImRSvDBTATVw1PDzMqn0exo3xciYd5%2BXYAxlFoqwFMDz40w2xR4OWwoPsixpVjR2DYiqYiZrYytFMjziRCLQhkVuJpED8nB9CTlo05WBKN%2Bb4UBHBg%2FkCkHXJxNakIX7UbAjDcqzrNCGhjrgehCGA81uOf0Ppfswda0ZHMi8g9W6Y7uwWmn7Ux7xBMgDCUNIi8I3UvLGXdKnuB8YHX8TLC1z2%2Fm3ip797Pix1ya2sBsbw9KgOJ7PBT0u9W0puchi7zpT%2FzFe3V2HbV0ottDethRJhzaN856VgvjyNhbbmA04gnal%2Fq01j7LNWxEwTjNPyHORI1l9jztvYqItLei7YQYg2pFhmvuv0Od8DPfH40Y1m3mL2F2d%2FAy3ImzFI%2BKQB6mnGPvRcDIS1j7zPhciKRuLfu3dCxhIH7ojo83rhQus3SyXdyZ5cjkFKcG3H7WmBBMOFs2o5xjWcdLARevRbNbqwRfATerc5GuJxy1Qb8RJvOqhDcS5YAHyxVMx2QYU3yMhg0tCpy4wW%2FHsa33feu3NeBu9lRI38ojJNM7o6xYRoSTQu4tYadB4Yh4w60e%2FsttnecOC5plZrLw6BYN2piqvUD07BnO4yTvrpdBDXR%2BMFDchnFh2YK9JtvvtAISvpoSOJojOhwRKuafCwEJn0GB1dsdmOOxxaFHkPXQ7789eCxlTL5mkVf3ktzmHQdDyBxBlDLFWSjmFIBHp%2BPobFdDOmv5p6J3%2F%2FM23PMgGDLRMrj5LVZV3trGV1ZaJHEFIGmVwW0tN4426Q4rCdcxT4ju%2B%2FNhcq90e8crWw9nrF2rPTzW1YM7VqWWwhLj8MtVtGZFa3N%2FxdjEys8FWyT8VqAbC4IltuT5lW1ou1SXsA96h%2F9y3vzJADbm4Lv624OGnh6M%2FCmR930i6YeUlWWmMw1%2FpcZ5werHPm9v0OWulNmGfbNEoKuThz2sSCZ8FLNVToygv1VXPXnur4dJnoCkwBP2%2BQQ6%2FHlyFRXnrrGsiDJE3qtRXgECIhc2zpuC5HAz9FhIfC9VZZ5nxRMbhA6W%2Fz%2BjPpKLCBpmLqHJfy8%2B%2FausiZJv7d9yQ0SvHtq0y%2FSY04hOgZTJul6IIYpObD6s%2FqrGy2nMmY3%2FtEn830%2F%2BFERnXMeBsj%2B%2F5ZSewYe4xBnub1wvSbsA3qjoU5gq7fhDJOhmMQXkbas%2FRholsU9CNKNXpSyqVarqAc8XwaG34JmdG3wjQXd6p%2Bz2jZLew5ja8nelvVdIeN%2F9ejCNOoXcPApYLHyxslcrEuJrSHlAMR4FbonfrFhYYTR%2B8pdxRGYGpVUDxlIRvay5xE4PoiuJ4tF82nhc3kr%2FsJWj86DXt9uK%2FPIDMokhA1wZ2BS8rN8V8J43gXMVkQtHFyqiAMoKttVwox3GtbTdmzYcjtjdZmL3VB27giGRreZsDbr6lsLJKVYnGtzAwL1nb45fLFtBNpiGXKHwE0soY3dapt%2FwadcvpFryVyG%2BesgLUwLWjgGepMMbQgPgi7Lk9TDgl5pO9Sg2%2B%2BCDEKkhmknkE%2FW4zr%2FbE3Qg97NK3hkIC0ajQvysQCsD2G98NREwRp5Yo2qUVqoKsz%2BM5FifnHVivHtbpB%2B0jSdbMPBVqrn6aJutLfJazoTo1MP5RGYQXwBR%2BiE%2BzrvvH3cYwPt7ac%2FkG%2BPEEDYQKPU%2F945Sh5D2ST2TwV1nVjoVq0xMgmM4rJmTTKSABcevdVyK41RiiOgJ1hXMLvtClnaA0rmU1zdilFkAHpka5VW9IKQa4edHYgnnLRdQfQ6YljskVGbbHuSZX9a5AiW9eHYyoNYZno%3D"
+        and request.body
+        != "dialogParametersHolder=Ct3E%2FAXZ0ct05hNqzzSbCRVxte%2F%2BQBIVbVz21p21CqLSnQsGfzTjsiq%2FxoAQaaDuaafBKu8cNXMOGT5kJcE0snNDBVbQqvbQLEYa1cWQYr%2FL2tOMq8Rnuzq6F7HKpN2%2BP0tdCPxrO3s6K2W43kvEO5wyaDlijlF9r2XI6UL1FUk%3D"
+    ):
+        return True
+    return False
 
 
 def PBKDF1_MS_found_key_matcher(request):
@@ -148,19 +247,18 @@ def test_url_not_up(monkeypatch, capsys):
         assert "Error connecting to URL" in captured.out
 
 
-def test_full_run_PBKDF2(monkeypatch, capsys, mocker):
-    mocker.patch.object(
-        Telerik_EncryptionKey,
-        "prepare_keylist",
-        return_value=iter(
+def test_fullrun_PBKDF2(monkeypatch, capsys, mocker):
+
+    def generate_keylist_enc(include_machinekeys):
+        return iter(
             ["Not_The_Real_Encryption_Key", "d2a312d9-7af4-43de-be5a-ae717b46cea6", "another_fake_encryption_key"]
-        ),
-    )
-    mocker.patch.object(
-        Telerik_HashKey,
-        "prepare_keylist",
-        return_value=iter(["Not_The_Real_HaSh_Key", "YOUR_ENCRYPTION_KEY_TO_GO_HERE", "Y3t_anoth3r_f@k3_key"]),
-    )
+        )
+
+    def generate_keylist_hash(include_machinekeys):
+        return iter(["Not_The_Real_HaSh_Key", "YOUR_ENCRYPTION_KEY_TO_GO_HERE", "Y3t_anoth3r_f@k3_key"])
+
+    mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
+    mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
     with requests_mock.Mocker() as m:
         # Basic Probe Detects Telerik
@@ -182,23 +280,90 @@ def test_full_run_PBKDF2(monkeypatch, capsys, mocker):
             text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>",
         )
 
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_version_probe_matcher,
+            status_code=200,
+            text="DoesntMatter",
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_version_probe_matcher_incorrect,
+            status_code=500,
+        )
+
         monkeypatch.setattr(
             "sys.argv",
             ["python", "--url", "http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx"],
         )
         telerik_knownkey.main()
         captured = capsys.readouterr()
+        print(captured.out)
         assert "Target is a newer version of Telerik UI" in captured.out
         assert "Found Encryption key!" in captured.out
         assert "Found matching hashkey!" in captured.out
         assert (
-            "%2Bv%2BRs6kf9lDUYnqqYk32Vg84DkpdruQOKGZRmm6RMkaYuxNmvg5Ca5cT%2F74qkOozHIKkG1ovf6XBsjlp4kgO8BJ6KgNcT78BExQZfT1mN5rMO8kcLDRdffFhFXmvAr0o%2F4x%2B9VoRJVaOyGLXk2nhX4OMP%2BjGP2C96Fa6LyfGWHlk1CF0E5mAPeQ6CLbycR88WU5hlmUUqniXC2UdeYd6HO9RFnISEnhq72MkdiEfvNsqAhr2XaCX2%2BQxFXfCLi2%2Fc%2Bn2NmUiFRdhCLutnVxILEnYiRmU5eHJdB2IOTtoc2XZ3NUdZJwrwOswjzCkk7LOwt2bddTvOXdfWtRrbNz1GDNXlPz1cXotgAhucxLLsknNDbeeboMbL%2Bk3tIeervi7oI%2FRQn6Ml3ffUAfcqHzwcZCEIlQXh%2FBEIKHAY9fGKs5JSdtRbREDI0rh9sH%2B0TmYv444WQyqYpa8pOqtxgC1QRRcsNQcVGFzpyNL2SfKSlLTZi5Q7bo8XMTfLG6jg60csDEDiJ7MwJBGIm1iYzt%2FP9JEKkZujTMyHoBI0RESNpux7BeanEIDsfDmfwbcUo%2B2%2BkoHkCE4zXWBdW3lqssk4GwSbc0mbmf3U79rsQdNEqIOL87evE1U6tGB5PuXgwAIj9sKdyffd8%2B%2Bz1CCffFovLM72ilbCmSljAJ%2BvVBfNpTiL7RV7j3XGygljzi4NL8yXJuCLYiNxmqPMdV8DahLed0jSe2mkU1u6rx4yS3dcWEfwMWjI5tVrfnbqtdInC8TliXkTZ919CtORoydmIXGL1u3kdBIq8EZcjRMa4bN4VTvUlbqeIe8p8QYEQwAi7vXiZCKS6R6dmJfQv%2B%2FqBHXWSFuglLYde019GNtNdGQfEnY31zT0Q86ieDYn4k55LbYq5lK8PNjg50gdJxn9fNtHTQ7frKP9vRM4cImRSvDBTATVw1PDzMqn0exo3xciYd5%2BXYAxlFoqwFMDz40w2xR4OWwoPsixpVjR2DYiqYiZrYytFMjziRCLQhkVuJpED8nB9CTlo05WBKN%2Bb4UBHBg%2FkCkHXJxNakIX7UbAjDcqzrNCGhjrgehCGA81uOf0Ppfswda0ZHMi8g9W6Y7uwWmn7Ux7xBMgDCUNIi8I3UvLGXdKnuB8YHX8TLC1z2%2Fm3ip797Pix1ya2sBsbw9KgOJ7PBT0u9W0puchi7zpT%2FzFe3V2HbV0ottDethRJhzaN856VgvjyNhbbmA04gnal%2Fq01j7LNWxEwTjNPyHORI1l9jztvYqItLei7YQYg2pFhmvuv0Od8DPfH40Y1m3mL2F2d%2FAy3ImzFI%2BKQB6mnGPvRcDIS1j7zPhciKRuLfu3dCxhIH7ojo83rhQus3SyXdyZ5cjkFKcG3H7WmBBMOFs2o5xjWcdLARevRbNbqwRfATerc5GuJxy1Qb8RJvOqhDcS5YAHyxVMx2QYU3yMhg0tCpy4wW%2FHsa33feu3NeBu9lRI38ojJNM7o6xYRoSTQu4tYadB4Yh4w60e%2FsttnecOC5plZrLw6BYN2piqvUD07BnO4yTvrpdBDXR%2BMFDchnFh2YK9JtvvtAISvpoSOJojOhwRKuafCwEJn0GB1dsdmOOxxaFHkPXQ7789eCxlTL5mkVf3ktzmHQdDyBxBlDLFWSjmFIBHp%2BPobFdDOmv5p6J3%2F%2FM23PMgGDLRMrj5LVZV3trGV1ZaJHEFIGmVwW0tN4426Q4rCdcxT4ju%2B%2FNhcq90e8crWw9nrF2rPTzW1YM7VqWWwhLj8MtVtGZFa3N%2FxdjEys8FWyT8VqAbC4IltuT5lW1ou1SXsA96h%2F9y3vzJADbm4Lv624OGnh6M%2FCmR930i6YeUlWWmMw1%2FpcZ5werHPm9v0OWulNmGfbNEoKuThz2sSCZ8FLNVToygv1VXPXnur4dJnoCkwBP2%2BQQ6%2FHlyFRXnrrGsiDJE3qtRXgECIhc2zpuC5HAz9FhIfC9VZZ5nxRMbhA6W%2Fz%2BjPpKLCBpmLqHJfy8%2B%2FausiZJv7d9yQ0SvHtq0y%2FSY04hOgZTJul6IIYpObD6s%2FqrGy2nMmY3%2FtEn830%2F%2BFERnXMeBsj%2B%2F5ZSewYe4xBnub1wvSbsA3qjoU5gq7fhDJOhmMQXkbas%2FRholsU9CNKNXpSyqVarqAc8XwaG34JmdG3wjQXd6p%2Bz2jZLew5ja8nelvVdIeN%2F9ejCNOoXcPApYLHyxslcrEuJrSHlAMR4FbonfrFhYYTR%2B8pdxRGYGpVUDxlIRvay5xE4PoiuJ4tF82nhc3kr%2FsJWj86DXt9uK%2FPIDMokhA3fOe%2BrL4lXuzGGv7ZJBaIgkKFliYYdW1axURY4MjnW8jyI5YRuG%2FTCW1ZjBBqDaym%2BmmAjjd2gWID9klXsEA5%2BY%2FjHaDfQJVwm5Bukzr7eZx1zc13OWRVKnbThUNdzOZAEP%2FPnFsxPqZkDZp53nSPzQTJeOldSMnV4YUInoXN%2BTOIcoHAssVkv4iplzNOy1HZT63jfJ1fr6uvhIRZvQ3OolQWlbsk0RoNnFOqXX7lGKYzq8EGCjuwApDN3zvcV16VeRE98GpQUx0qMXOGgo3RdaVqWEOCI4vqhcx3LtEoA8ZDkLqiHKzjqU0UTh92laKWefnBI2XeeKpwZ%2BJireCrS8yWZ%2BLQ2kRDnO2ezbcREVERW7Vvg100MxDKpDVha3oRWNcKtXxu8exJ3ndLi1dY9BNywI3TTnzoW8x0VzAMuyjIfHpvpk0jcqyI3%2BL3cMEU%3D"
+            "%2Bv%2BRs6kf9lDUYnqqYk32Vg84DkpdruQOKGZRmm6RMkaYuxNmvg5Ca5cT%2F74qkOozHIKkG1ovf6XBsjlp4kgO8BJ6KgNcT78BExQZfT1mN5rMO8kcLDRdffFhFXmvAr0o%2F4x%2B9VoRJVaOyGLXk2nhX4OMP%2BjGP2C96Fa6LyfGWHlk1CF0E5mAPeQ6CLbycR88WU5hlmUUqniXC2UdeYd6HO9RFnISEnhq72MkdiEfvNsqAhr2XaCX2%2BQxFXfCLi2%2Fc%2Bn2NmUiFRdhCLutnVxILEnYiRmU5eHJdB2IOTtoc2XZ3NUdZJwrwOswjzCkk7LOwt2bddTvOXdfWtRrbNz1GDNXlPz1cXotgAhucxLLsknNDbeeboMbL%2Bk3tIeervi7oI%2FRQn6Ml3ffUAfcqHzwcZCEIlQXh%2FBEIKHAY9fGKs5JSdtRbREDI0rh9sH%2B0TmYv444WQyqYpa8pOqtxgC1QRRcsNQcVGFzpyNL2SfKSlLTZi5Q7bo8XMTfLG6jg60csDEDiJ7MwJBGIm1iYzt%2FP9JEKkZujTMyHoBI0RESNpux7BeanEIDsfDmfwbcUo%2B2%2BkoHkCE4zXWBdW3lqssk4GwSbc0mbmf3U79rsQdNEqIOL87evE1U6tGB5PuXgwAIj9sKdyffd8%2B%2Bz1CCffFovLM72ilbCmSljAJ%2BvVBfNpTiL7RV7j3XGygljzi4NL8yXJuCLYiNxmqPMdV8DahLed0jSe2mkU1u6rx4yS3dcWEfwMWjI5tVrfnbqtdInC8TliXkTZ919CtORoydmIXGL1u3kdBIq8EZcjRMa4bN4VTvUlbqeIe8p8QYEQwAi7vXiZCKS6R6dmJfQv%2B%2FqBHXWSFuglLYde019GNtNdGQfEnY31zT0Q86ieDYn4k55LbYq5lK8PNjg50gdJxn9fNtHTQ7frKP9vRM4cImRSvDBTATVw1PDzMqn0exo3xciYd5%2BXYAxlFoqwFMDz40w2xR4OWwoPsixpVjR2DYiqYiZrYytFMjziRCLQhkVuJpED8nB9CTlo05WBKN%2Bb4UBHBg%2FkCkHXJxNakIX7UbAjDcqzrNCGhjrgehCGA81uOf0Ppfswda0ZHMi8g9W6Y7uwWmn7Ux7xBMgDCUNIi8I3UvLGXdKnuB8YHX8TLC1z2%2Fm3ip797Pix1ya2sBsbw9KgOJ7PBT0u9W0puchi7zpT%2FzFe3V2HbV0ottDethRJhzaN856VgvjyNhbbmA04gnal%2Fq01j7LNWxEwTjNPyHORI1l9jztvYqItLei7YQYg2pFhmvuv0Od8DPfH40Y1m3mL2F2d%2FAy3ImzFI%2BKQB6mnGPvRcDIS1j7zPhciKRuLfu3dCxhIH7ojo83rhQus3SyXdyZ5cjkFKcG3H7WmBBMOFs2o5xjWcdLARevRbNbqwRfATerc5GuJxy1Qb8RJvOqhDcS5YAHyxVMx2QYU3yMhg0tCpy4wW%2FHsa33feu3NeBu9lRI38ojJNM7o6xYRoSTQu4tYadB4Yh4w60e%2FsttnecOC5plZrLw6BYN2piqvUD07BnO4yTvrpdBDXR%2BMFDchnFh2YK9JtvvtAISvpoSOJojOhwRKuafCwEJn0GB1dsdmOOxxaFHkPXQ7789eCxlTL5mkVf3ktzmHQdDyBxBlDLFWSjmFIBHp%2BPobFdDOmv5p6J3%2F%2FM23PMgGDLRMrj5LVZV3trGV1ZaJHEFIGmVwW0tN4426Q4rCdcxT4ju%2B%2FNhcq90e8crWw9nrF2rPTzW1YM7VqWWwhLj8MtVtGZFa3N%2FxdjEys8FWyT8VqAbC4IltuT5lW1ou1SXsA96h%2F9y3vzJADbm4Lv624OGnh6M%2FCmR930i6YeUlWWmMw1%2FpcZ5werHPm9v0OWulNmGfbNEoKuThz2sSCZ8FLNVToygv1VXPXnur4dJnoCkwBP2%2BQQ6%2FHlyFRXnrrGsiDJE3qtRXgECIhc2zpuC5HAz9FhIfC9VZZ5nxRMbhA6W%2Fz%2BjPpKLCBpmLqHJfy8%2B%2FausiZJv7d9yQ0SvHtq0y%2FSY04hOgZTJul6IIYpObD6s%2FqrGy2nMmY3%2FtEn830%2F%2BFERnXMeBsj%2B%2F5ZSewYe4xBnub1wvSbsA3qjoU5gq7fhDJOhmMQXkbas%2FRholsU9CNKNXpSyqVarqAc8XwaG34JmdG3wjQXd6p%2Bz2jZLew5ja8nelvVdIeN%2F9ejCNOoXcPApYLHyxslcrEuJrSHlAMR4FbonfrFhYYTR%2B8pdxRGYGpVUDxlIRvay5xE4PoiuJ4tF82nhc3kr%2FsJWj86DXt9uK%2FPIDMokhA1wZ2BS8rN8V8J43gXMVkQtHFyqiAMoKttVwox3GtbTdmzYcjtjdZmL3VB27giGRreZsDbr6lsLJKVYnGtzAwL1nb45fLFtBNpiGXKHwE0soY3dapt%2FwadcvpFryVyG%2BesgLUwLWjgGepMMbQgPgi7Lk9TDgl5pO9Sg2%2B%2BCDEKkhmknkE%2FW4zr%2FbE3Qg97NK3hkIC0ajQvysQCsD2G98NREwRp5Yo2qUVqoKsz%2BM5FifnHVivHtbpB%2B0jSdbMPBVqrn6aJutLfJazoTo1MP5RGYQXwBR%2BiE%2BzrvvH3cYwPt7ac%2FkG%2BPEEDYQKPU%2F945Sh5D2ST2TwV1nVjoVq0xMgmM4rJmTTKSABcevdVyK41RiiOgJ1hXMLvtClnaA0rmU1zdilFkAHpka5VW9IKQa4edHYgnnLRdQfQ6YljskVGbbHuSZX9a5AiW9eHYyoNYZno%3D"
             in captured.out
         )
-        print(captured)
+        print(captured.out)
 
 
-def test_full_run_PBKDF1_MS(monkeypatch, capsys, mocker):
+def test_nomatch_PBKDF2(monkeypatch, capsys, mocker):
+
+    def generate_keylist_enc(include_machinekeys):
+        return iter(
+            ["Not_The_Real_Encryption_Key", "d2a312d9-7af4-43de-be5a-ae717b46cea6", "another_fake_encryption_key"]
+        )
+
+    def generate_keylist_hash(include_machinekeys):
+        return iter(["Not_The_Real_HaSh_Key", "YOUR_ENCRYPTION_KEY_TO_GO_HERE", "Y3t_anoth3r_f@k3_key"])
+
+    mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
+    mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
+
+    with requests_mock.Mocker() as m:
+        # Basic Probe Detects Telerik
+        m.get(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", status_code=200, text=partial_dialog_page
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            status_code=200,
+            text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>",
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_version_probe_matcher,
+            status_code=200,
+            text="DoesntMatter",
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_version_probe_matcher_incorrect,
+            status_code=500,
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--machine-keys"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert "Target is a newer version of Telerik UI" in captured.out
+        assert (
+            "Warning: MachineKeys inclusion mode is enabled, which affects this Telerik version particularly dramatically. Brute Forcing will be VERY SLOW"
+            in captured.out
+        )
+        print(captured.out)
+
+
+def test_fullrun_PBKDF1_MS(monkeypatch, capsys, mocker):
     mocker.patch.object(
         Telerik_EncryptionKey,
         "prepare_keylist",
@@ -269,3 +434,407 @@ def test_full_run_PBKDF1_MS(monkeypatch, capsys, mocker):
             in captured.out
         )
         print(captured)
+
+
+def test_misctest_PBKDF1_MS(monkeypatch, capsys, mocker):
+
+    mocker.patch.object(
+        telerik_knownkey,
+        "telerik_versions",
+        [],
+    )
+
+    mocker.patch.object(
+        telerik_knownkey,
+        "telerik_versions_patched",
+        [],
+    )
+
+    mocker.patch.object(
+        Telerik_EncryptionKey,
+        "prepare_keylist",
+        return_value=iter(["Not_The_Real_Encryption_Key", "aaaaaaaaaaaaaaaaaaaaaaa", "another_fake_encryption_key"]),
+    )
+    mocker.patch.object(
+        Telerik_HashKey,
+        "prepare_keylist",
+        return_value=iter(["Not_The_Real_HaSh_Key", "YOUR_ENCRYPTION_KEY_TO_GO_HERE", "Y3t_anoth3r_f@k3_key"]),
+    )
+
+    with requests_mock.Mocker() as m:
+
+        m.get(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            status_code=200,
+            text=partial_dialog_page,
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_found_key_matcher,
+            status_code=200,
+            text="<div>Error Message:The input data is not a complete block.</div>",
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_found_key_matcher_negative,
+            status_code=200,
+            text="<div>Error Message:The hash is not valid!</div>",
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_probe_matcher,
+            status_code=200,
+            text="Error Message:Length cannot be less than zero",
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_encryption_probe_matcher,
+            status_code=200,
+            text="<div>Error Message:Index was outside the bounds of the array.</div>",
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_version_probe_matcher_incorrect,
+            status_code=500,
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        assert "Target is a valid DialogHandler endpoint. Brute forcing Telerik Hash Key" in captured.out
+        assert "Found Telerik Version!" not in captured.out
+        assert "Since we found a valid hash key, we can check for known Telerik Encryption Keys" in captured.out
+        assert "Could not identify encryption key." in captured.out
+        print(captured.out)
+
+
+def test_nomatch_PBKDF1_MS(monkeypatch, capsys, mocker):
+    def generate_keylist_enc(include_machinekeys):
+        return iter(
+            ["Not_The_Real_Encryption_Key", "d2a312d9-7af4-43de-be5a-ae717b46cea6", "another_fake_encryption_key"]
+        )
+
+    def generate_keylist_hash(include_machinekeys):
+        return iter(["Not_The_Real_HaSh_Key", "YOUR_ENCRYPTION_KEY_TO_GO_HERE", "Y3t_anoth3r_f@k3_key"])
+
+    mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
+    mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
+
+    with requests_mock.Mocker() as m:
+
+        m.get(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            status_code=200,
+            text=partial_dialog_page,
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=pre2017_matcher_probe,
+            status_code=200,
+            text="<div style='color:red'>Cannot deserialize dialog parameters. Please refresh the editor page.</div><div>Error Message:The input is not a valid Base-64 string as it contains a non-base 64 character, more than two padding characters, or an illegal character among the padding characters. </div>",
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=pre2017_matcher,
+            status_code=200,
+            text="<div style='color:red'>Cannot deserialize dialog parameters. Please refresh the editor page.</div><div>Error Message:Invalid length for a Base-64 char array or string.</div>",
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        assert "This means it should be vulnerable to CVE-2017-9248!!!" in captured.out
+
+
+def test_badoutput_PBKDF1_MS(monkeypatch, capsys, mocker):
+    def generate_keylist_enc(include_machinekeys):
+        return iter(
+            ["Not_The_Real_Encryption_Key", "d2a312d9-7af4-43de-be5a-ae717b46cea6", "another_fake_encryption_key"]
+        )
+
+    def generate_keylist_hash(include_machinekeys):
+        return iter(["Not_The_Real_HaSh_Key", "YOUR_ENCRYPTION_KEY_TO_GO_HERE", "Y3t_anoth3r_f@k3_key"])
+
+    mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
+    mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
+
+    with requests_mock.Mocker() as m:
+        with patch("sys.exit") as exit_mock:
+            m.get(
+                f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+                status_code=200,
+                text=partial_dialog_page,
+            )
+
+            m.post(
+                f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+                additional_matcher=pre2017_matcher_probe,
+                status_code=200,
+                text="garbage data",
+            )
+
+            m.post(
+                f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+                additional_matcher=pre2017_matcher,
+                status_code=200,
+                text="garbage data",
+            )
+
+            monkeypatch.setattr(
+                "sys.argv",
+                ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx"],
+            )
+            telerik_knownkey.main()
+            captured = capsys.readouterr()
+            print(captured.out)
+            assert "Unexpected response encountered: [garbage data] aborting." in captured.out
+            assert exit_mock.called
+
+
+def test_fullrun_asyncupload_earlydetection(monkeypatch, capsys, mocker):
+
+    def generate_keylist_enc(include_machinekeys):
+        return iter(
+            ["Not_The_Real_Encryption_Key", "d2a312d9-7af4-43de-be5a-ae717b46cea6", "another_fake_encryption_key"]
+        )
+
+    def generate_keylist_hash(include_machinekeys):
+        return iter(["Not_The_Real_HaSh_Key", "YOUR_ENCRYPTION_KEY_TO_GO_HERE", "Y3t_anoth3r_f@k3_key"])
+
+    mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
+    mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
+
+    with requests_mock.Mocker() as m:
+
+        # Basic Probe Detects Telerik
+        m.get(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
+
+        m.post(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            additional_matcher=asyncupload_early_result_matcher,
+            status_code=500,
+            text="<b> Exception Details: </b>System.IO.FileLoadException: Could not load file or assembly 'Telerik.Web.UI, Version=2022.3.1109, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)<br><br>",
+        )
+
+        m.post(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            additional_matcher=asyncupload_early_result_matcher_incorrect,
+            status_code=500,
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert (
+            "Detected early signs that target is likely vulnerable! Continuing to find vulnerable version..."
+            in captured.out
+        )
+
+
+def test_fullrun_asyncupload_success(monkeypatch, capsys, mocker):
+
+    def generate_keylist_enc(include_machinekeys):
+        return iter(
+            ["Not_The_Real_Encryption_Key", "d2a312d9-7af4-43de-be5a-ae717b46cea6", "another_fake_encryption_key"]
+        )
+
+    def generate_keylist_hash(include_machinekeys):
+        return iter(["Not_The_Real_HaSh_Key", "YOUR_ENCRYPTION_KEY_TO_GO_HERE", "Y3t_anoth3r_f@k3_key"])
+
+    mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
+    mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
+
+    with requests_mock.Mocker() as m:
+
+        # Basic Probe Detects Telerik
+        m.get(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
+
+        m.post(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            additional_matcher=asyncupload_found_key_matcher,
+            status_code=200,
+            text='{"fileInfo":{"FileName":"1c72ebb0","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}, "metaData":"a+pkVM70XskLLvpXsOGH+RUEWaNgrvi2EGIZcUrVQ4rr7hIwpIcHtxyJsGCQYWy5tgSKmK58kIk/HpDDs9Gh2qnaFi3m+pe0kb4xb8s6zIkxQYrYGrfj7EesKwvuY6HUn+y3GwesijRrVsPpt0/N5FYxu4ptrsmjWfIM65XOe8b47kLO/Rpx/4/lfJyT9ZFsFuvSZmJzWDdoV40wu5ROK9DVnU26ztRRCwpnqqxmeKvdSGpYwd/d1gisJy0i5UVNFuvRT2XC32eDiw3Kn9GOrRldOHtq5WAQWu2YzVmxr/NOmvjg3NpRLtbxU+h9D0u0K/B3kRYliO+XlCpG+l/QMLh2nAjQehNvaCG3wJ4dkW9JHHeNzbPyd+tNrlSBj6/Z+b/Ld2HCk3XydTRHuUyzqk8bC6rEHGdclNPmTIS2X0IZaI0wTctsnPHxiruwdWVNjepnaSv5IHHYFH3WhCzKy6cLPES0cAuVgxycs+49nuj7kL/JzqT6iJm0YZd/Qjo4" }',
+        )
+
+        m.post(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            additional_matcher=asyncupload_found_key_matcher_incorrect,
+            status_code=500,
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert (
+            "TARGET VULNERABLE! Version: [2022.3.913] Encryption Key: [d2a312d9-7af4-43de-be5a-ae717b46cea6] Hash Key: [YOUR_ENCRYPTION_KEY_TO_GO_HERE] Derive Algo: [PBKDF2]"
+            in captured.out
+        )
+
+
+def test_fullrun_asyncupload_PBKDF1_MS(monkeypatch, capsys, mocker):
+    with requests_mock.Mocker() as m:
+
+        # Basic Probe Detects Telerik
+        m.get(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
+
+        m.post(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            additional_matcher=asyncupload_found_key_matcher_PBKDF1_MS,
+            status_code=200,
+            text='{"fileInfo":{"FileName":"1c72ebb0","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}, "metaData":"a+pkVM70XskLLvpXsOGH+RUEWaNgrvi2EGIZcUrVQ4rr7hIwpIcHtxyJsGCQYWy5tgSKmK58kIk/HpDDs9Gh2qnaFi3m+pe0kb4xb8s6zIkxQYrYGrfj7EesKwvuY6HUn+y3GwesijRrVsPpt0/N5FYxu4ptrsmjWfIM65XOe8b47kLO/Rpx/4/lfJyT9ZFsFuvSZmJzWDdoV40wu5ROK9DVnU26ztRRCwpnqqxmeKvdSGpYwd/d1gisJy0i5UVNFuvRT2XC32eDiw3Kn9GOrRldOHtq5WAQWu2YzVmxr/NOmvjg3NpRLtbxU+h9D0u0K/B3kRYliO+XlCpG+l/QMLh2nAjQehNvaCG3wJ4dkW9JHHeNzbPyd+tNrlSBj6/Z+b/Ld2HCk3XydTRHuUyzqk8bC6rEHGdclNPmTIS2X0IZaI0wTctsnPHxiruwdWVNjepnaSv5IHHYFH3WhCzKy6cLPES0cAuVgxycs+49nuj7kL/JzqT6iJm0YZd/Qjo4" }',
+        )
+
+        m.post(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            additional_matcher=asyncupload_found_key_matcher_PBKDF1_MS_incorrect,
+            status_code=500,
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert (
+            "TARGET VULNERABLE! Version: [2014.3.1024] Encryption Key: [d2a312d9-7af4-43de-be5a-ae717b46cea6] Derive Algo: [PBKDF1_MS]"
+            in captured.out
+        )
+
+
+def test_verbose_error_parsing_PBKDF1_MS(monkeypatch, capsys, mocker):
+
+    mocker.patch.object(
+        telerik_knownkey.AsyncUpload,
+        "solve_key",
+        lambda x: None,
+    )
+
+    with requests_mock.Mocker() as m:
+
+        # Basic Probe Detects Telerik
+        m.get(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
+
+        m.post(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            status_code=200,
+            text="<b> Exception Details: </b>System.Security.Cryptography.CryptographicException: Padding is invalid and cannot be removed.<br><br>",
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert "Verbose Errors are enabled!" in captured.out
+        assert (
+            "Version is <= 2019 (Either Vulnerable, or Encrypt-Then-Mac with separate failure Message)" in captured.out
+        )
+
+
+def test_verbose_error_parsing_notdetermined_PBKDF1_MS(monkeypatch, capsys, mocker):
+
+    mocker.patch.object(
+        telerik_knownkey.AsyncUpload,
+        "solve_key",
+        lambda x: None,
+    )
+
+    with requests_mock.Mocker() as m:
+
+        # Basic Probe Detects Telerik
+        m.get(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
+
+        m.post(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            status_code=200,
+            text="<b> Exception Details: garbage",
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert "Verbose Errors are enabled!" in captured.out
+        assert "Version could not be determined" in captured.out
+
+
+def test_verbose_error_parsing_PBKDF2(monkeypatch, capsys, mocker):
+
+    mocker.patch.object(
+        telerik_knownkey.AsyncUpload,
+        "solve_key",
+        lambda x: None,
+    )
+
+    with requests_mock.Mocker() as m:
+
+        # Basic Probe Detects Telerik
+        m.get(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
+
+        m.post(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            status_code=200,
+            text='<b> Exception Details: </b>System.Security.Cryptography.CryptographicException: The cryptographic operation has failed!<br><br><b>Stack Trace:</b> <br><br><table width=100% bgcolor="#ffffcc"><tr><td>code><pre>[CryptographicException: The cryptographic operation has failed!]Telerik.Web.UI.CryptoExceptionThrower.ThrowGenericCryptoException() +62',
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert "Verbose Errors are enabled!" in captured.out
+        assert "Version is Post-2020 (Encrypt-Then-Mac Enabled, with Generic Crypto Failure Message)" in captured.out

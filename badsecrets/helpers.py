@@ -2,7 +2,24 @@ import sys
 import hmac
 import struct
 import hashlib
+from colorama import Fore, Style, init
 from badsecrets.errors import BadsecretsException
+
+init(autoreset=True)  # Automatically reset the color to default after each print statement
+
+
+def print_status(msg, passthru=False, color="white", colorenabled=True):
+    color_dict = {"white": Fore.WHITE, "red": Fore.RED, "yellow": Fore.YELLOW, "blue": Fore.BLUE, "green": Fore.GREEN}
+
+    colorama_color = color_dict.get(color.lower(), Fore.WHITE)
+
+    if msg:
+        if colorenabled:
+            msg = f"{colorama_color}{msg}{Style.RESET_ALL}"
+        if passthru:
+            return msg
+        else:
+            print(msg)
 
 
 def _writeuint(v):
