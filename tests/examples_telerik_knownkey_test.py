@@ -436,6 +436,86 @@ def test_fullrun_PBKDF1_MS(monkeypatch, capsys, mocker):
         print(captured)
 
 
+def test_misctest_PBKDF1_MS(monkeypatch, capsys, mocker):
+
+    mocker.patch.object(
+        telerik_knownkey,
+        "telerik_versions",
+        [],
+    )
+
+    mocker.patch.object(
+        telerik_knownkey,
+        "telerik_versions_patched",
+        [],
+    )
+
+    mocker.patch.object(
+        Telerik_EncryptionKey,
+        "prepare_keylist",
+        return_value=iter(["Not_The_Real_Encryption_Key", "aaaaaaaaaaaaaaaaaaaaaaa", "another_fake_encryption_key"]),
+    )
+    mocker.patch.object(
+        Telerik_HashKey,
+        "prepare_keylist",
+        return_value=iter(["Not_The_Real_HaSh_Key", "YOUR_ENCRYPTION_KEY_TO_GO_HERE", "Y3t_anoth3r_f@k3_key"]),
+    )
+
+    with requests_mock.Mocker() as m:
+
+        m.get(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            status_code=200,
+            text=partial_dialog_page,
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_found_key_matcher,
+            status_code=200,
+            text="<div>Error Message:The input data is not a complete block.</div>",
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_found_key_matcher_negative,
+            status_code=200,
+            text="<div>Error Message:The hash is not valid!</div>",
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_probe_matcher,
+            status_code=200,
+            text="Error Message:Length cannot be less than zero",
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_encryption_probe_matcher,
+            status_code=200,
+            text="<div>Error Message:Index was outside the bounds of the array.</div>",
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_version_probe_matcher_incorrect,
+            status_code=500,
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        assert "Target is a valid DialogHandler endpoint. Brute forcing Telerik Hash Key" in captured.out
+        assert "Found Telerik Version!" not in captured.out
+        assert "Since we found a valid hash key, we can check for known Telerik Encryption Keys" in captured.out
+        assert "Could not identify encryption key." in captured.out
+        print(captured.out)
+
+
 def test_nomatch_PBKDF1_MS(monkeypatch, capsys, mocker):
     def generate_keylist_enc(include_machinekeys):
         return iter(
@@ -521,6 +601,7 @@ def test_badoutput_PBKDF1_MS(monkeypatch, capsys, mocker):
             captured = capsys.readouterr()
             print(captured.out)
             assert "Unexpected response encountered: [garbage data] aborting." in captured.out
+            assert exit_mock.called
 
 
 def test_fullrun_asyncupload_earlydetection(monkeypatch, capsys, mocker):

