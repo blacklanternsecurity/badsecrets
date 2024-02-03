@@ -291,6 +291,7 @@ class AsyncUpload:
 
                         data, multipart_boundary = self.rau_data_prep(telerik_version, derived_key, iv, hashkey)
                         session = requests.Session()
+
                         if self.proxies:
                             session.proxies.update(self.proxies)
 

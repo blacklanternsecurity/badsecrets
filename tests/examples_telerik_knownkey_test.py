@@ -556,7 +556,7 @@ def test_nomatch_PBKDF1_MS(monkeypatch, capsys, mocker):
         )
         telerik_knownkey.main()
         captured = capsys.readouterr()
-        print(captured.out)
+        assert "This means it should be vulnerable to CVE-2017-9248!!!" in captured.out
 
 
 def test_badoutput_PBKDF1_MS(monkeypatch, capsys, mocker):
@@ -770,6 +770,40 @@ def test_verbose_error_parsing_PBKDF1_MS(monkeypatch, capsys, mocker):
         assert (
             "Version is <= 2019 (Either Vulnerable, or Encrypt-Then-Mac with separate failure Message)" in captured.out
         )
+
+
+def test_verbose_error_parsing_notdetermined_PBKDF1_MS(monkeypatch, capsys, mocker):
+
+    mocker.patch.object(
+        telerik_knownkey.AsyncUpload,
+        "solve_key",
+        lambda x: None,
+    )
+
+    with requests_mock.Mocker() as m:
+
+        # Basic Probe Detects Telerik
+        m.get(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
+
+        m.post(
+            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+            status_code=200,
+            text="<b> Exception Details: garbage",
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert "Verbose Errors are enabled!" in captured.out
+        assert "Version could not be determined" in captured.out
 
 
 def test_verbose_error_parsing_PBKDF2(monkeypatch, capsys, mocker):
