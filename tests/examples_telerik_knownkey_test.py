@@ -298,6 +298,59 @@ def test_full_run_PBKDF2(monkeypatch, capsys, mocker):
         print(captured.out)
 
 
+def test_nomatch_PBKDF2(monkeypatch, capsys, mocker):
+
+    def generate_keylist_enc(include_machinekeys):
+        return iter(
+            ["Not_The_Real_Encryption_Key", "d2a312d9-7af4-43de-be5a-ae717b46cea6", "another_fake_encryption_key"]
+        )
+
+    def generate_keylist_hash(include_machinekeys):
+        return iter(["Not_The_Real_HaSh_Key", "YOUR_ENCRYPTION_KEY_TO_GO_HERE", "Y3t_anoth3r_f@k3_key"])
+
+    mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
+    mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
+
+    with requests_mock.Mocker() as m:
+        # Basic Probe Detects Telerik
+        m.get(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", status_code=200, text=partial_dialog_page
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            status_code=200,
+            text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>",
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_version_probe_matcher,
+            status_code=200,
+            text="DoesntMatter",
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_version_probe_matcher_incorrect,
+            status_code=500,
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--machine-keys"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert "Target is a newer version of Telerik UI" in captured.out
+        assert (
+            "Warning: MachineKeys inclusion mode is enabled, which affects this Telerik version particularly dramatically. Brute Forcing will be VERY SLOW"
+            in captured.out
+        )
+        print(captured.out)
+
+
 def test_full_run_PBKDF1_MS(monkeypatch, capsys, mocker):
     mocker.patch.object(
         Telerik_EncryptionKey,
