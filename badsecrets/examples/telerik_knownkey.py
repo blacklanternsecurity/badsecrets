@@ -171,9 +171,11 @@ telerik_versions_patched = [
 
 # Heavily derived from https://github.com/bao7uo/RAU_crypto/blob/master/RAU_crypto.py <3
 class AsyncUpload:
-    def __init__(self, url, include_machinekeys_bool=False, proxies=None, headers=None):
+    def __init__(self, url, include_machinekeys_bool=False, proxies={}, headers=None):
         self.url = url
         self.asyncupload_key = None
+        if proxies == None:
+            proxies = {}
         self.proxies = proxies
         self.headers = headers
         self.include_machinekeys_bool = include_machinekeys_bool
@@ -201,8 +203,7 @@ class AsyncUpload:
         derived_key, iv = self.telerik_encryptionkey.telerik_derivekeys_PBKDF1_MS("GreatScott!")
         data, multipart_boundary = self.rau_data_prep("1985.10.26", derived_key, iv, "ThinkMcFlyThink")
         session = requests.Session()
-        if self.proxies:
-            session.proxies.update(self.proxies)
+        session.proxies.update(self.proxies)
         request = requests.Request("POST", self.url, data=data)
         request = request.prepare()
         request.headers["Content-Type"] = (
@@ -291,10 +292,7 @@ class AsyncUpload:
 
                         data, multipart_boundary = self.rau_data_prep(telerik_version, derived_key, iv, hashkey)
                         session = requests.Session()
-
-                        if self.proxies:
-                            session.proxies.update(self.proxies)
-
+                        session.proxies.update(self.proxies)
                         request = requests.Request("POST", self.url, data=data)
                         request = request.prepare()
                         request.headers["Content-Type"] = (
@@ -321,12 +319,14 @@ class AsyncUpload:
 
 
 class DialogHandler:
-    def __init__(self, url, include_machinekeys_bool=False, proxies=None, headers=None):
+    def __init__(self, url, include_machinekeys_bool=False, proxies={}, headers=None):
         self.url = url
         self.telerik_hashkey = Telerik_HashKey()
         self.telerik_encryptionkey = Telerik_EncryptionKey()
         self.encryption_key = None
         self.hash_key = None
+        if proxies == None:
+            proxies = {}
         self.proxies = proxies
         self.headers = headers
         self.include_machinekeys_bool = include_machinekeys_bool
