@@ -23,13 +23,13 @@ partial_dialog_page = """
 """
 
 
-def pre2017_matcher_probe(request):
+def pre2017_matcher(request):
     if "dialogParametersHolder=AAAA" in request.body:
         return True
     return False
 
 
-def pre2017_matcher(request):
+def pre2017_matcher_probe(request):
     if "dialogParametersHolder=AAAA" not in request.body:
         return True
     return False
@@ -458,14 +458,14 @@ def test_nomatch_PBKDF1_MS(monkeypatch, capsys, mocker):
 
         m.post(
             f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=pre2017_matcher,
+            additional_matcher=pre2017_matcher_probe,
             status_code=200,
             text="<div style='color:red'>Cannot deserialize dialog parameters. Please refresh the editor page.</div><div>Error Message:The input is not a valid Base-64 string as it contains a non-base 64 character, more than two padding characters, or an illegal character among the padding characters. </div>",
         )
 
         m.post(
             f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=pre2017_matcher_probe,
+            additional_matcher=pre2017_matcher,
             status_code=200,
             text="<div style='color:red'>Cannot deserialize dialog parameters. Please refresh the editor page.</div><div>Error Message:Invalid length for a Base-64 char array or string.</div>",
         )
@@ -477,6 +477,50 @@ def test_nomatch_PBKDF1_MS(monkeypatch, capsys, mocker):
         telerik_knownkey.main()
         captured = capsys.readouterr()
         print(captured.out)
+
+
+def test_badoutput_PBKDF1_MS(monkeypatch, capsys, mocker):
+    def generate_keylist_enc(include_machinekeys):
+        return iter(
+            ["Not_The_Real_Encryption_Key", "d2a312d9-7af4-43de-be5a-ae717b46cea6", "another_fake_encryption_key"]
+        )
+
+    def generate_keylist_hash(include_machinekeys):
+        return iter(["Not_The_Real_HaSh_Key", "YOUR_ENCRYPTION_KEY_TO_GO_HERE", "Y3t_anoth3r_f@k3_key"])
+
+    mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
+    mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
+
+    with requests_mock.Mocker() as m:
+        with patch("sys.exit") as exit_mock:
+            m.get(
+                f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+                status_code=200,
+                text=partial_dialog_page,
+            )
+
+            m.post(
+                f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+                additional_matcher=pre2017_matcher_probe,
+                status_code=200,
+                text="garbage data",
+            )
+
+            m.post(
+                f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+                additional_matcher=pre2017_matcher,
+                status_code=200,
+                text="garbage data",
+            )
+
+            monkeypatch.setattr(
+                "sys.argv",
+                ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx"],
+            )
+            telerik_knownkey.main()
+            captured = capsys.readouterr()
+            print(captured.out)
+            assert "Unexpected response encountered: [garbage data] aborting." in captured.out
 
 
 def test_fullrun_asyncupload_earlydetection(monkeypatch, capsys, mocker):
