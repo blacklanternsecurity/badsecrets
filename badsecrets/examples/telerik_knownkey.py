@@ -201,8 +201,7 @@ class AsyncUpload:
         derived_key, iv = self.telerik_encryptionkey.telerik_derivekeys_PBKDF1_MS("GreatScott!")
         data, multipart_boundary = self.rau_data_prep("1985.10.26", derived_key, iv, "ThinkMcFlyThink")
         session = requests.Session()
-        if self.proxies:
-            session.proxies.update(self.proxies)
+        if self.proxies: session.proxies.update(self.proxies)
         request = requests.Request("POST", self.url, data=data)
         request = request.prepare()
         request.headers["Content-Type"] = (
@@ -292,8 +291,7 @@ class AsyncUpload:
                         data, multipart_boundary = self.rau_data_prep(telerik_version, derived_key, iv, hashkey)
                         session = requests.Session()
 
-                        if self.proxies:
-                            session.proxies.update(self.proxies)
+                        if self.proxies: session.proxies.update(self.proxies)
 
                         request = requests.Request("POST", self.url, data=data)
                         request = request.prepare()
