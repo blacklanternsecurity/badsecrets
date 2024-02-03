@@ -23,11 +23,23 @@ partial_dialog_page = """
 """
 
 
+def pre2017_matcher_probe(request):
+    if "dialogParametersHolder=AAAA" in request.body:
+        return True
+    return False
+
+
+def pre2017_matcher(request):
+    if "dialogParametersHolder=AAAA" not in request.body:
+        return True
+    return False
+
+
 def asyncupload_verbose_error_PBKDF2(request):
 
     if (
         b'{"TotalChunks":1,"ChunkIndex":0,"TotalFileSize":1,"UploadID":"6cf6c6cdcabc.txt"}' in request.body
-        and b"mQheol55IDiQWWSxl+Atkc68JXWUJ6QSirwLhEwleMiw3vN4cwABE74V2fWsLGg8CFXHOP6np90M+sLrLDqFACGNvonxmgT8aBsTZPWbXErewMGNWBP34aX0DmMvXVyTEpQ6FkFhZi19cTtdYfRLI8Uc04uNSsdWnltDMQ2CX/sSLOXUFNnZdAwAXgUuprYhU28Zwh/GdgYh447ksXfAC2fuPqEJqKDDwBlltxsS/zSq8ipIg326ymB2dmOpH/P3hcAmTKOyzB0dW6a6pmJvqNVU+50DlrUC00RbBbTJwlV6Xm4s4XTvgXLvMQ6czz2OAYY18HI+HYX5uvajctj/25UR8edwu68ZCgedsD7EZHRSSthjxohxfAyrfshjcu1LnhCEd0ClowKxBS4eiaLxVxhJAdB7XcbbXxIS9WWKa7gtRMNc/jUAOlIpvOZ3N+bOQ6rsNMHv7TZk1g0bxPl99yBn9qvtAwDMNPDoADxoBSisAkIIl9mImKv7y7nAiKoj7ukApdu5XQuVo10SxwkLkqHcvEEgjxTrOlCbEbxK2/du9TgXxD9iqKyaPLHPzNZsnzCsG6qNXv0fNkeASP9tZAyvi/y1eLrpScE+J7blfT+kBkGPTTFc6Z4z6lN7GqSHofq/CDHC2S2+qdoRdC3C25V74j+Ae6MkpSfqYx4KZYNtxBAxjf9Uf3JVSiZh3X2W/7aFeimFft0h/liybSjJTzO+AwNJluI4kXqemFoHnjVFfUQViaIuk4UP0D861kCU6KIGLZLpOaa0g0KM8hmu3OjwVOy8QVXYtbx5lOmSX9h3imRzMDFRTXK25YpUJgD0/LFMgCeZLA8SCYzkThyN2d8f8n5l8iOScR47o8i8sqCp/fd3JTogSbwD7LxnHudpiw2W/OfpMGipgc6loQFoX4klQaYwKkA4w+GUzahfAJmIiukZuTLOPCPQvX4wKtLqw1YiHtuaLHvLYq2/F66QQXNrZ4SucUNED0p5TUVTvHGUbuA0zxAyYSfYVgTNZjXGguQBY7DsN1SkpCa/ltvIiGtCbHQR86OrvjJMACe0wdpMCqEg7JiGym3RrLqvmjpS&sbZRwxJ96gmXFBSbSvT0ve7jpvDoieqd6RbG+GIP0H7sO5/0ZnvheosB9jQAifuMabY7lW4UzZgr5o2iqE0tBl4SGhfWyYW7iCFXnd3aIuCnUvhT58Rp8g7kGkA/eU/s68E66KOBXNuBnokZR9cIsjE0Tt3Jfxrk018+CmVcXpjXp/RmhRwCJTgEAXQuNplb/KdkLxqDn519iRtbiU6aLZX8YctdFQBqyKVgkk8WYXxcXQ8wYnxtpEtGuBcsndUi1iPp4Od8rYY1HPWg+FIquW17YPHjfP4gO4dhZe4sd7gH0ARyGDjiYVj7ODDE0wGmwmFVdQTrDX5AaxKuJy0NbQ=="
+        and "mQheol55IDiQWWSxl+Atkc68JXWUJ6QSirwLhEwleMiw3vN4cwABE74V2fWsLGg8CFXHOP6np90M+sLrLDqFACGNvonxmgT8aBsTZPWbXErewMGNWBP34aX0DmMvXVyTEpQ6FkFhZi19cTtdYfRLI8Uc04uNSsdWnltDMQ2CX/sSLOXUFNnZdAwAXgUuprYhU28Zwh/GdgYh447ksXfAC2fuPqEJqKDDwBlltxsS/zSq8ipIg326ymB2dmOpH/P3hcAmTKOyzB0dW6a6pmJvqNVU+50DlrUC00RbBbTJwlV6Xm4s4XTvgXLvMQ6czz2OAYY18HI+HYX5uvajctj/25UR8edwu68ZCgedsD7EZHRSSthjxohxfAyrfshjcu1LnhCEd0ClowKxBS4eiaLxVxhJAdB7XcbbXxIS9WWKa7gtRMNc/jUAOlIpvOZ3N+bOQ6rsNMHv7TZk1g0bxPl99yBn9qvtAwDMNPDoADxoBSisAkIIl9mImKv7y7nAiKoj7ukApdu5XQuVo10SxwkLkqHcvEEgjxTrOlCbEbxK2/du9TgXxD9iqKyaPLHPzNZsnzCsG6qNXv0fNkeASP9tZAyvi/y1eLrpScE+J7blfT+kBkGPTTFc6Z4z6lN7GqSHofq/CDHC2S2+qdoRdC3C25V74j+Ae6MkpSfqYx4KZYNtxBAxjf9Uf3JVSiZh3X2W/7aFeimFft0h/liybSjJTzO+AwNJluI4kXqemFoHnjVFfUQViaIuk4UP0D861kCU6KIGLZLpOaa0g0KM8hmu3OjwVOy8QVXYtbx5lOmSX9h3imRzMDFRTXK25YpUJgD0/LFMgCeZLA8SCYzkThyN2d8f8n5l8iOScR47o8i8sqCp/fd3JTogSbwD7LxnHudpiw2W/OfpMGipgc6loQFoX4klQaYwKkA4w+GUzahfAJmIiukZuTLOPCPQvX4wKtLqw1YiHtuaLHvLYq2/F66QQXNrZ4SucUNED0p5TUVTvHGUbuA0zxAyYSfYVgTNZjXGguQBY7DsN1SkpCa/ltvIiGtCbHQR86OrvjJMACe0wdpMCqEg7JiGym3RrLqvmjpS&sbZRwxJ96gmXFBSbSvT0ve7jpvDoieqd6RbG+GIP0H7sO5/0ZnvheosB9jQAifuMabY7lW4UzZgr5o2iqE0tBl4SGhfWyYW7iCFXnd3aIuCnUvhT58Rp8g7kGkA/eU/s68E66KOBXNuBnokZR9cIsjE0Tt3Jfxrk018+CmVcXpjXp/RmhRwCJTgEAXQuNplb/KdkLxqDn519iRtbiU6aLZX8YctdFQBqyKVgkk8WYXxcXQ8wYnxtpEtGuBcsndUi1iPp4Od8rYY1HPWg+FIquW17YPHjfP4gO4dhZe4sd7gH0ARyGDjiYVj7ODDE0wGmwmFVdQTrDX5AaxKuJy0NbQ=="
         in request.body
     ):
         return True
@@ -235,7 +247,7 @@ def test_url_not_up(monkeypatch, capsys):
         assert "Error connecting to URL" in captured.out
 
 
-def test_full_run_PBKDF2(monkeypatch, capsys, mocker):
+def test_fullrun_PBKDF2(monkeypatch, capsys, mocker):
 
     def generate_keylist_enc(include_machinekeys):
         return iter(
@@ -351,7 +363,7 @@ def test_nomatch_PBKDF2(monkeypatch, capsys, mocker):
         print(captured.out)
 
 
-def test_full_run_PBKDF1_MS(monkeypatch, capsys, mocker):
+def test_fullrun_PBKDF1_MS(monkeypatch, capsys, mocker):
     mocker.patch.object(
         Telerik_EncryptionKey,
         "prepare_keylist",
@@ -424,7 +436,50 @@ def test_full_run_PBKDF1_MS(monkeypatch, capsys, mocker):
         print(captured)
 
 
-def test_full_run_asyncupload_earlydetection(monkeypatch, capsys, mocker):
+def test_nomatch_PBKDF1_MS(monkeypatch, capsys, mocker):
+    def generate_keylist_enc(include_machinekeys):
+        return iter(
+            ["Not_The_Real_Encryption_Key", "d2a312d9-7af4-43de-be5a-ae717b46cea6", "another_fake_encryption_key"]
+        )
+
+    def generate_keylist_hash(include_machinekeys):
+        return iter(["Not_The_Real_HaSh_Key", "YOUR_ENCRYPTION_KEY_TO_GO_HERE", "Y3t_anoth3r_f@k3_key"])
+
+    mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
+    mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
+
+    with requests_mock.Mocker() as m:
+
+        m.get(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            status_code=200,
+            text=partial_dialog_page,
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=pre2017_matcher,
+            status_code=200,
+            text="<div style='color:red'>Cannot deserialize dialog parameters. Please refresh the editor page.</div><div>Error Message:The input is not a valid Base-64 string as it contains a non-base 64 character, more than two padding characters, or an illegal character among the padding characters. </div>",
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=pre2017_matcher_probe,
+            status_code=200,
+            text="<div style='color:red'>Cannot deserialize dialog parameters. Please refresh the editor page.</div><div>Error Message:Invalid length for a Base-64 char array or string.</div>",
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+
+
+def test_fullrun_asyncupload_earlydetection(monkeypatch, capsys, mocker):
 
     def generate_keylist_enc(include_machinekeys):
         return iter(
@@ -472,7 +527,7 @@ def test_full_run_asyncupload_earlydetection(monkeypatch, capsys, mocker):
         )
 
 
-def test_full_run_asyncupload_success(monkeypatch, capsys, mocker):
+def test_fullrun_asyncupload_success(monkeypatch, capsys, mocker):
 
     def generate_keylist_enc(include_machinekeys):
         return iter(
@@ -520,7 +575,7 @@ def test_full_run_asyncupload_success(monkeypatch, capsys, mocker):
         )
 
 
-def test_full_run_asyncupload_PBKDF1_MS(monkeypatch, capsys, mocker):
+def test_fullrun_asyncupload_PBKDF1_MS(monkeypatch, capsys, mocker):
     with requests_mock.Mocker() as m:
 
         # Basic Probe Detects Telerik

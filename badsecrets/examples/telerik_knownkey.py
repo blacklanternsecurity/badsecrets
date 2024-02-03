@@ -424,7 +424,7 @@ class DialogHandler:
                     print("Could not identify encryption key.")
                     return
             else:
-                print("Count not identify hash key.")
+                print("Could not identify hash key.")
                 return
 
         elif self.key_derive_mode == "PBKDF2":
