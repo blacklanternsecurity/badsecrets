@@ -213,12 +213,20 @@ python ./badsecrets/examples/blacklist3r.py --viewstate /wEPDwUJODExMDE5NzY5ZGQM
 
 ### Telerik_knownkey.py
 
-Fully functional CLI example for identifying known Telerik Hash keys and Encryption keys for Post-2017 versions (those patched for CVE-2017-9248), and brute-forcing version / generating exploitation DialogParameters values.
+Fully functional CLI example for identifying known Telerik Hash keys (`Telerik.Upload.ConfigurationHashKey`) and Encryption keys (Telerik.Web.UI.DialogParametersEncryptionKey) used with Telerik DialogHandler instances for Post-2017 versions (those patched for CVE-2017-9248), and brute-forcing version / generating exploitation DialogParameters values.
+
+Currently, this appears to be the only tool capable of building a working exploit URL for "patched" versions of Telerik.
 
 ```bash
 python ./badsecrets/examples/telerik_knownkey.py --url http://vulnerablesite/Telerik.Web.UI.DialogHandler.aspx
 ```
 Optionally include ASP.NET MachineKeys with --machine-keys (Will SIGNIFICANTLY increase brute-forcing time)
+
+*Update: This utility will now, in addition to the `Telerik.Web.UI.DialogHandler.aspx` endpoint, also detect known `Telerik.AsyncUpload.ConfigurationEncryptionKey)` keys in use via the `Telerik.Web.UI.WebResource.axd` endpoint.*
+
+```bash
+python ./badsecrets/examples/telerik_knownkey.py --url http://vulnerablesite/Telerik.Web.UI.WebResource.axd
+```
 
 ### Symfony_knownkey.py
 
