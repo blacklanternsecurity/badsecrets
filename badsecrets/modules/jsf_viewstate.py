@@ -176,7 +176,10 @@ class Jsf_viewstate(BadsecretsBase):
 
     def get_hashcat_commands(self, jsf_viewstate_value, *args):
         commands = []
-        decoded_viewstate = base64.b64decode(urllib.parse.unquote(jsf_viewstate_value))
+        try:
+            decoded_viewstate = base64.b64decode(urllib.parse.unquote(jsf_viewstate_value))
+        except binascii.Error:
+            return []
         sig = decoded_viewstate[:32]
         data = decoded_viewstate[32:]
 

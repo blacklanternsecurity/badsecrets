@@ -104,9 +104,12 @@ def validate_file(file):
 
 
 def print_hashcat_results(hashcat_candidates):
-    print_status("\nPotential matching hashcat commands:\n", color="yellow")
-    for hc in hashcat_candidates:
-        print(f"Module: [{hc['detecting_module']}] {hc['hashcat_description']} Command: [{hc['hashcat_command']}]\n")
+    if hashcat_candidates:
+        print_status("\nPotential matching hashcat commands:\n", color="yellow")
+        for hc in hashcat_candidates:
+            print(
+                f"Module: [{hc['detecting_module']}] {hc['hashcat_description']} Command: [{hc['hashcat_command']}]\n"
+            )
 
 
 def main():
