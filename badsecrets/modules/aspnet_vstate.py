@@ -11,7 +11,7 @@ class ASPNET_vstate(BadsecretsBase):
     description = {"product": "ASP.NET Compressed Vstate", "secret": "unprotected", "severity": "CRITICAL"}
 
     def carve_regex(self):
-        return re.compile(r"<input.+__VSTATE\"\svalue=\"(.*)\"")
+        return re.compile(r"<input[^>]+__VSTATE\"\s*value=\"(.*?)\"")
 
     def get_product_from_carve(self, regex_search):
         product = regex_search.groups()[0]
