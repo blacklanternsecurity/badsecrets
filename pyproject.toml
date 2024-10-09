@@ -26,6 +26,8 @@ colorama = "^0.4.6"
 
 [tool.poetry.scripts]
 badsecrets = 'badsecrets.examples.cli:main'
+telerik-knownkey = 'badsecrets.examples.telerik_knownkey:main'
+symfony-knownkey = 'badsecrets.examples.symfony_knownkey:main'
 
 [tool.black]
 line-length = 119
