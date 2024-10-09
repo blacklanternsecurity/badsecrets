@@ -5,7 +5,7 @@
 
 from badsecrets.base import check_all_modules, carve_all_modules, hashcat_all_modules
 from badsecrets.helpers import print_status
-import pkg_resources
+from importlib.metadata import version, PackageNotFoundError
 import requests
 import argparse
 import sys
@@ -30,10 +30,12 @@ ____/  \__,_| \__,_| ____/ \___| \___| _|    \___| \__| ____/
 
 
 def print_version():
-    version = pkg_resources.get_distribution("badsecrets").version
-    if version == "0.0.0":
-        version = "ersion Unknown (Running w/poetry?)"
-    print(f"v{version}\n")
+    try:
+        dist_version = version("badsecrets")
+    except PackageNotFoundError:
+        dist_version = "ersion Unknown (Running w/poetry?)"
+
+    print(f"v{dist_version}\n")
 
 
 class CustomArgumentParser(argparse.ArgumentParser):
@@ -104,9 +106,12 @@ def validate_file(file):
 
 
 def print_hashcat_results(hashcat_candidates):
-    print_status("\nPotential matching hashcat commands:\n", color="yellow")
-    for hc in hashcat_candidates:
-        print(f"Module: [{hc['detecting_module']}] {hc['hashcat_description']} Command: [{hc['hashcat_command']}]\n")
+    if hashcat_candidates:
+        print_status("\nPotential matching hashcat commands:\n", color="yellow")
+        for hc in hashcat_candidates:
+            print(
+                f"Module: [{hc['detecting_module']}] {hc['hashcat_description']} Command: [{hc['hashcat_command']}]\n"
+            )
 
 
 def main():

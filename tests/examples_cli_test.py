@@ -849,3 +849,22 @@ def test_example_cli_redirects_default(monkeypatch, capsys):
         cli.main()
         captured = capsys.readouterr()
         assert "your-256-bit-secret" in captured.out
+
+
+serverside_jsfviewstate_html = '<input type="hidden" name="javax.faces.ViewState" id="javax.faces.ViewState" value="-7521159484971427124:9144573339387850859" autocomplete="off" /></form>'
+
+
+def test_example_cli_jsfviewstate_serverside(monkeypatch, capsys):
+    with requests_mock.Mocker() as m:
+
+        m.get(
+            f"http://example.com/serverside_jsfviewstate.html",
+            status_code=200,
+            text=serverside_jsfviewstate_html,
+        )
+
+        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/serverside_jsfviewstate.html"])
+        cli.main()
+        captured = capsys.readouterr()
+        assert "Cryptographic Product Identified (no vulnerability)" in captured.out
+        assert not "Potential matching hashcat commands:" in captured.out
