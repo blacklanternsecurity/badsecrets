@@ -84,3 +84,12 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1.5
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
+      - name: Get current version from Poetry
+        id: get_version
+        run: echo "::set-output name=VERSION::$(poetry version --short)"
+      - name: Create Git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$(echo ${{ steps.get_version.outputs.VERSION }})" -m "Release v${{ steps.get_version.outputs.VERSION }}"
+          git push origin "v$(echo ${{ steps.get_version.outputs.VERSION }})"
