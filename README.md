@@ -228,7 +228,7 @@ Optionally include ASP.NET MachineKeys with --machine-keys (Will SIGNIFICANTLY i
 python ./badsecrets/examples/telerik_knownkey.py --url http://vulnerablesite/Telerik.Web.UI.WebResource.axd
 ```
 
-*With a pip install, can now be run directly via the `telerik-knownkey` command
+*With a pip install, can now be run directly via the `telerik-knownkey` command*
 ```bash
 python telerik-knownkey --url http://vulnerablesite/Telerik.Web.UI.WebResource.axd
 ```
@@ -241,7 +241,7 @@ Brute-force detection of Symfony known secret key when "\_fragment" URLs are ena
 python ./badsecrets/examples/symfony_knownkey.py --url https://localhost/
 ```
 
-*With a pip install, can now be run directly via the `symfony-knownkey` command
+*With a pip install, can now be run directly via the `symfony-knownkey` command*
 ```bash
 python symfony-knownkey --url http://vulnerablesite/Telerik.Web.UI.WebResource.axd
 ```
