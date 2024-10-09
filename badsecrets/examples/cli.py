@@ -21,7 +21,7 @@ requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
-ascii_art_banner = """
+ascii_art_banner = r"""
  __ )              |                                |         
  __ \    _` |   _` |   __|   _ \   __|   __|   _ \  __|   __| 
  |   |  (   |  (   | \__ \   __/  (     |      __/  |   \__ \ 

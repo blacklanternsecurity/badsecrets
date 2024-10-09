@@ -198,7 +198,7 @@ Secret: fake123
 Details: {'sub': '1234567890', 'name': 'John Doe', 'iat': 1516239022, 'jwt_headers': {'alg': 'HS256', 'typ': 'JWT'}}
 ```
 
-### Blacklist3r.py
+### blacklist3r.py
 
 *Note: This is now obsolete, since `cli.py` is now capable of handling machinekeys/generator values. It will remain included for reference.*
 *Example: `badsecrets KLox5XeGYfb7Lo8zFzr1YepUagXuixcxX55lpFht+rrW6VGheZi831vdusH6DCMfxIhsLG1EPU3OuPvqN2XBc/fj0ew15TQ1zBmmKWJVns4= AAAAAAAA`*
@@ -211,7 +211,7 @@ python ./badsecrets/examples/blacklist3r.py --url http://vulnerablesite/vulnerab
 python ./badsecrets/examples/blacklist3r.py --viewstate /wEPDwUJODExMDE5NzY5ZGQMKS6jehX5HkJgXxrPh09vumNTKQ== --generator EDD8C9AE
 ```
 
-### Telerik_knownkey.py
+### telerik_knownkey.py
 
 Fully functional CLI example for identifying known Telerik Hash keys (`Telerik.Upload.ConfigurationHashKey`) and Encryption keys (`Telerik.Web.UI.DialogParametersEncryptionKey`) used with Telerik DialogHandler instances for Post-2017 versions (those patched for CVE-2017-9248), and brute-forcing version / generating exploitation DialogParameters values.
 
@@ -228,12 +228,22 @@ Optionally include ASP.NET MachineKeys with --machine-keys (Will SIGNIFICANTLY i
 python ./badsecrets/examples/telerik_knownkey.py --url http://vulnerablesite/Telerik.Web.UI.WebResource.axd
 ```
 
-### Symfony_knownkey.py
+*With a pip install, can now be run directly via the `telerik-knownkey` command*
+```bash
+python telerik-knownkey --url http://vulnerablesite/Telerik.Web.UI.WebResource.axd
+```
+
+### symfony_knownkey.py
 
 Brute-force detection of Symfony known secret key when "\_fragment" URLs are enabled, even when no example URL containing a hash can be located. [Relevent Blog Post](https://www.ambionics.io/blog/symfony-secret-fragment).
 
 ```bash
 python ./badsecrets/examples/symfony_knownkey.py --url https://localhost/
+```
+
+*With a pip install, can now be run directly via the `symfony-knownkey` command*
+```bash
+python symfony-knownkey --url http://vulnerablesite/Telerik.Web.UI.WebResource.axd
 ```
 
 ## BBOT Module
@@ -247,9 +257,7 @@ bbot -f subdomain-enum -m badsecrets -t evil.corp
 ![badsecrets](https://user-images.githubusercontent.com/24899338/227044294-59e0408e-c55f-481a-a494-7ee5dd0a39be.png)
 
 
-
 ### Basic library usage
-
 
 #### check_secret
 
