@@ -76,7 +76,7 @@ If you are using the Badsecrets [BBOT](https://github.com/blacklanternsecurity/b
 
 ### cli.py
 
-Bad secrets includes an [example CLI](https://github.com/blacklanternsecurity/badsecrets/blob/dev/examples/cli.py) for convenience when manually checking secrets. As mentioned above, it is also accessible by just executing `badsecrets`, after a successful pip install.
+Bad secrets includes an [example CLI](https://github.com/blacklanternsecurity/badsecrets/blob/dev/badsecrets/examples/cli.py) for convenience when manually checking secrets. As mentioned above, it is also accessible by just executing `badsecrets`, after a successful pip install.
 
 #### Usage
 
