@@ -1571,12 +1571,13 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "viewstate"
-version = "0.5.3"
+version = "0.6.0"
 description = "ASP.NET View State Decoder"
 optional = false
-python-versions = ">=3.5.0"
+python-versions = "<4.0,>=3.8"
 files = [
-    {file = "viewstate-0.5.3.tar.gz", hash = "sha256:4d3703c914167ab2208afe8f162e8213231cad4f11d0d5b591bf33e6468e2fdc"},
+    {file = "viewstate-0.6.0-py3-none-any.whl", hash = "sha256:98eb05fd68c41b25d9f3555bca1197ac438168246468e35d6c6f2d1e5f8dcccc"},
+    {file = "viewstate-0.6.0.tar.gz", hash = "sha256:82746f28cc51262f64d0b26e84bfbcaae2b93dfa416d6ae296f779e0957aad9b"},
 ]
 
 [[package]]
@@ -1711,4 +1712,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "337f18e9bc8d0c9e2d8dc4bd622cfb96ae5ae1f64dd6a07201bc05e7099d072c"
+content-hash = "25a2bc86e354f2731f4ddb30dac7255db97fa52a5ce2415dda717b62106f219e"
