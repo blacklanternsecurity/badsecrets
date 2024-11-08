@@ -1109,17 +1109,17 @@ files = [
 
 [[package]]
 name = "poetry-dynamic-versioning"
-version = "0.21.5"
+version = "1.4.1"
 description = "Plugin for Poetry to enable dynamic versioning based on VCS tags"
 optional = false
-python-versions = ">=3.7,<4.0"
+python-versions = "<4.0,>=3.7"
 files = [
-    {file = "poetry_dynamic_versioning-0.21.5-py3-none-any.whl", hash = "sha256:4f299e4bfe780e0dd85e8e9ed3ddfa42d050447a36ac8f5e8c1ebd66f66c82cc"},
-    {file = "poetry_dynamic_versioning-0.21.5.tar.gz", hash = "sha256:aa3ff2883394daf80d0cfb1e12d10ecdedc407a8b7c296545ad8b6124979dffc"},
+    {file = "poetry_dynamic_versioning-1.4.1-py3-none-any.whl", hash = "sha256:44866ccbf869849d32baed4fc5fadf97f786180d8efa1719c88bf17a471bd663"},
+    {file = "poetry_dynamic_versioning-1.4.1.tar.gz", hash = "sha256:21584d21ca405aa7d83d23d38372e3c11da664a8742995bdd517577e8676d0e1"},
 ]
 
 [package.dependencies]
-dunamai = ">=1.16.0,<2.0.0"
+dunamai = ">=1.21.0,<2.0.0"
 jinja2 = ">=2.11.1,<4"
 poetry = {version = ">=1.2.0,<2.0.0", optional = true, markers = "extra == \"plugin\""}
 tomlkit = ">=0.4"
@@ -1712,4 +1712,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "4ba30698f4b8d42f6768cd8b4f9438272947260ae9765e1af3300dcf3ffd13f9"
+content-hash = "429706b1b5b331d8e79476c4637eaa9ae247ec6c4264d28160c6ecc3ee5b299a"
