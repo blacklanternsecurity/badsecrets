@@ -31,6 +31,7 @@ jobs:
       - name: flake8
         run: |
           flake8 --select F,E722 --ignore F403,F405,F541
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -76,6 +77,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install poetry build
           poetry self add "poetry-dynamic-versioning[plugin]"
+
       - name: Get current version from Poetry
         id: get_version
         run: echo "VERSION=$(poetry version --short)" >> $GITHUB_ENV
@@ -91,6 +93,7 @@ jobs:
         run: |
           CURRENT_VERSION=${{ env.VERSION }}
           LATEST_VERSION=${{ env.LATEST_TAG }}
+          # Extract major.minor for comparison
           CURRENT_MAJOR_MINOR=$(echo $CURRENT_VERSION | cut -d '.' -f 1-2)
           LATEST_MAJOR_MINOR=$(echo $LATEST_VERSION | cut -d '.' -f 1-2)
           if [ "$CURRENT_MAJOR_MINOR" == "$LATEST_MAJOR_MINOR" ]; then
@@ -98,11 +101,15 @@ jobs:
           else
             echo "VERSION_CHANGE=true" >> $GITHUB_ENV
       
-      - name: Build and publish if major or minor version changed
+      - name: Build PyPi package
         if: env.VERSION_CHANGE == 'true'
-        run: |
-          python -m build
-          twine upload dist/* -u __token__ -p ${{ secrets.PYPI_API_TOKEN }}
+        run: python -m build
+
+      - name: Publish PyPi package
+        if: env.VERSION_CHANGE == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1.5
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
       
       - name: Tag the release if major or minor version changed
         if: env.VERSION_CHANGE == 'true'
