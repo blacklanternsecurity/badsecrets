@@ -31,6 +31,7 @@ jobs:
       - name: flake8
         run: |
           flake8 --select F,E722 --ignore F403,F405,F541
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -57,12 +58,11 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./cov.xml
           verbose: true
-      
+
   publish:
     runs-on: ubuntu-latest
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v3
         with:
@@ -76,20 +76,56 @@ jobs:
           python -m pip install --upgrade pip
           pip install poetry build
           poetry self add "poetry-dynamic-versioning[plugin]"
-      - name: Build Pypi package
-        if: github.ref == 'refs/heads/main'
+
+      - name: Get current version from Poetry
+        id: get_version
+        run: |
+          VERSION=$(poetry version --short)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Fetch latest tag
+        run: |
+          git fetch --tags
+          LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+          echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
+
+      - name: Retrieve and strip "v" prefix if present
+        run: |
+          # Retrieve and strip "v" prefix if present
+          CURRENT_VERSION="${{ env.VERSION }}"
+          LATEST_VERSION="${{ env.LATEST_TAG }}"
+          CURRENT_VERSION="${CURRENT_VERSION#v}"
+          LATEST_VERSION="${LATEST_VERSION#v}"
+          
+          # Extract major.minor for comparison
+          CURRENT_MAJOR_MINOR=$(echo "$CURRENT_VERSION" | cut -d '.' -f 1-2)
+          LATEST_MAJOR_MINOR=$(echo "$LATEST_VERSION" | cut -d '.' -f 1-2)
+          
+          # Compare versions
+          if [ "$CURRENT_MAJOR_MINOR" == "$LATEST_MAJOR_MINOR" ]; then
+            echo "VERSION_CHANGE=false" >> $GITHUB_ENV
+          else
+            echo "VERSION_CHANGE=true" >> $GITHUB_ENV
+          fi
+        shell: bash
+        env:
+          VERSION: ${{ env.VERSION }}  # dynamically passed VERSION variable
+          LATEST_TAG: ${{ env.LATEST_TAG }}  # dynamically passed LATEST_TAG variable
+
+      - name: Build PyPi package
+        if: github.ref == 'refs/heads/main' && env.VERSION_CHANGE == 'true'
         run: python -m build
-      - name: Publish Pypi package
-        if: github.ref == 'refs/heads/main'
+
+      - name: Publish PyPi package
+        if: github.ref == 'refs/heads/main' && env.VERSION_CHANGE == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1.5
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
-      - name: Get current version from Poetry
-        id: get_version
-        run: echo "::set-output name=VERSION::$(poetry version --short)"
-      - name: Create Git tag
+
+      - name: Tag the release if major or minor version changed
+        if: github.ref == 'refs/heads/main' && env.VERSION_CHANGE == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "$(echo ${{ steps.get_version.outputs.VERSION }})" -m "Release ${{ steps.get_version.outputs.VERSION }}"
-          git push origin "$(echo ${{ steps.get_version.outputs.VERSION }})"
+          git tag -a "${{ env.VERSION }}" -m "Release ${{ env.VERSION }}"
+          git push origin "refs/tags/${{ env.VERSION }}"
