@@ -63,7 +63,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v3
         with:
@@ -93,7 +92,6 @@ jobs:
         run: |
           CURRENT_VERSION=${{ env.VERSION }}
           LATEST_VERSION=${{ env.LATEST_TAG }}
-          # Extract major.minor for comparison
           CURRENT_MAJOR_MINOR=$(echo $CURRENT_VERSION | cut -d '.' -f 1-2)
           LATEST_MAJOR_MINOR=$(echo $LATEST_VERSION | cut -d '.' -f 1-2)
           if [ "$CURRENT_MAJOR_MINOR" == "$LATEST_MAJOR_MINOR" ]; then
@@ -102,17 +100,17 @@ jobs:
             echo "VERSION_CHANGE=true" >> $GITHUB_ENV
       
       - name: Build PyPi package
-        if: env.VERSION_CHANGE == 'true'
+        if: github.ref == 'refs/heads/main' && env.VERSION_CHANGE == 'true'
         run: python -m build
 
       - name: Publish PyPi package
-        if: env.VERSION_CHANGE == 'true'
+        if: github.ref == 'refs/heads/main' && env.VERSION_CHANGE == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1.5
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
       
       - name: Tag the release if major or minor version changed
-        if: env.VERSION_CHANGE == 'true'
+        if: github.ref == 'refs/heads/main' && env.VERSION_CHANGE == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
