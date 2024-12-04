@@ -656,12 +656,13 @@ dotenv = ["python-dotenv"]
 
 [[package]]
 name = "flask-unsign"
-version = "1.2.0"
+version = "1.2.1"
 description = "Flask Unsign is a penetration testing utility that attempts to uncover a Flask server's secret key by taking a signed session verifying it against a wordlist of commonly used and publicly known secret keys (sourced from books, GitHub, StackOverflow and various other sources)."
 optional = false
 python-versions = ">=3.6.0"
 files = [
-    {file = "flask-unsign-1.2.0.tar.gz", hash = "sha256:ff685e5a9e54958d401ddee8d2899c43ad0643df4cf41af844b00a0650ae7b6e"},
+    {file = "flask_unsign-1.2.1-py3-none-any.whl", hash = "sha256:6328fa8a4c10a34f65c3e3c6d96e076d1031839f61b94b63e12c70eda93531b2"},
+    {file = "flask_unsign-1.2.1.tar.gz", hash = "sha256:2b70955b6599effff3773b6de5bd44828c43d92a3fb64ab4db96b754363afd25"},
 ]
 
 [package.dependencies]
