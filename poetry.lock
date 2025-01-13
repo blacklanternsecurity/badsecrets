@@ -1110,13 +1110,13 @@ files = [
 
 [[package]]
 name = "poetry-dynamic-versioning"
-version = "1.5.2"
+version = "1.6.0"
 description = "Plugin for Poetry to enable dynamic versioning based on VCS tags"
 optional = false
 python-versions = "<4.0,>=3.7"
 files = [
-    {file = "poetry_dynamic_versioning-1.5.2-py3-none-any.whl", hash = "sha256:3e06aba4ef382117d795530b1a1c0aec4907fef768fc357afa2ffba09c45a241"},
-    {file = "poetry_dynamic_versioning-1.5.2.tar.gz", hash = "sha256:7e7b1e54623e56e86ba454016a0b5c1e60e2bd26e4f6f006b8b53f4ae1b555f4"},
+    {file = "poetry_dynamic_versioning-1.6.0-py3-none-any.whl", hash = "sha256:6c54bc6e6426b70f7cf7d0cff33799d1079abe541624104680dd3b288068beaa"},
+    {file = "poetry_dynamic_versioning-1.6.0.tar.gz", hash = "sha256:568b728eeb7b2c4a3b818565bbaffc2128bde68ad037152d464b92975f45ce70"},
 ]
 
 [package.dependencies]
@@ -1713,4 +1713,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "d762c74867928fd7ac7be822697bd7eede13b19a017304b0d310c5a8e63e3a6b"
+content-hash = "e77c1da776a98cb2ed73a9fd624d61ce587a3ae7a0e37063a7e116074b79d4e6"
