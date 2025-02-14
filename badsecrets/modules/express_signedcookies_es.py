@@ -24,7 +24,7 @@ class ExpressSignedCookies_ES(BadsecretsBase):
     }
 
     def carve_regex(self):
-        return re.compile(r"(s%3[Aa][^\.]+\.(?!.*%20|.*%22)[a-zA-Z0-9%]{20,90})")
+        return re.compile(r"(?<!http)(s%3[Aa][^.]+\.(?![^ ]*%20|[^ ]*%22)[a-zA-Z0-9%]{20,90})")
 
     def expressHMAC(self, payload, secret, hash_algorithm):
         return no_padding_urlsafe_base64_encode_es(

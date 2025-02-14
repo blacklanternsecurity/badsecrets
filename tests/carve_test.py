@@ -14,6 +14,7 @@ Telerik_EncryptionKey = modules_loaded["telerik_encryptionkey"]
 Rails_SecretKeyBase = modules_loaded["rails_secretkeybase"]
 Generic_JWT = modules_loaded["generic_jwt"]
 Jsf_viewstate = modules_loaded["jsf_viewstate"]
+Express_SignedCookies_ES = modules_loaded["express_signedcookies_es"]
 
 aspnet_viewstate_sample = """
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -58,6 +59,30 @@ def test_carve_aspnet_viewstate():
 
     t = x.carve("INVALID")
     assert not t
+
+
+express_carve_sample_negative = """
+Academic direction for this University of London degree is from Royal Holloway, University of London, one of the UK’s <a href="https://eur03.safelinks.protection.outlook.com/?url=https%3A%2F%2Fwww.timeshighereducation.com%2Fworld-university-rankings%2Froyal-holloway-university-london%23%3A~%3Atext
+"""
+
+express_carve_sample_positive = """
+<html><body><p>s%3ABh8oG0qgMyJc4qq8A47I0MTwcNiu7ue8.hXhPs8q9AN4ATeh2KrjuzvSbJA7cqbkP5cUUT34bZKA</p></body></html>
+"""
+
+
+def test_carve_express_es_positive():
+    x = Express_SignedCookies_ES()
+    r = x.carve(express_carve_sample_positive)
+    print(r)
+    assert r
+    assert r[0]["secret"] == "Shh, its a secret!"
+
+
+def test_carve_express_es_negative():
+    x = Express_SignedCookies_ES()
+    r = x.carve(express_carve_sample_negative)
+    print(r)
+    assert not r
 
 
 def test_carve_telerik():
