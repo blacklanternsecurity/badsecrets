@@ -2,11 +2,7 @@ import re
 import hmac
 import base64
 import binascii
-import json
-import marshal
 from badsecrets.base import BadsecretsBase
-from Crypto.Protocol.KDF import PBKDF2
-
 
 class RackSignedCookies(BadsecretsBase):
 
@@ -37,7 +33,7 @@ class RackSignedCookies(BadsecretsBase):
             else:
                 return {"Confirmed Ruby Serialized Object": False, "hash_algorithm": "SHA1"}
 
-        except (binascii.Error, ValueError, IndexError) as e:
+        except (binascii.Error, ValueError, IndexError):
             return None
 
     def check_secret(self, rack_cookie):
