@@ -4,6 +4,7 @@ import base64
 import binascii
 from badsecrets.base import BadsecretsBase
 
+
 class RackSignedCookies(BadsecretsBase):
 
     identify_regex = re.compile(r"^BAh[\.a-zA-z-0-9\%=]{32,}--[\.a-zA-z-0-9%=]{16,}$")
