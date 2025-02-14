@@ -16,12 +16,12 @@ poetry-dynamic-versioning = {extras = ["plugin"], version = "^1.7.1"}
 
 [tool.poetry.dependencies]
 python = "^3.9"
-pycryptodome = "^3.15.0"
+pycryptodome = "^3.21.0"
 viewstate = ">=0.5.3,<0.7.0"
-flask-unsign = "^1.2.0"
+flask-unsign = "^1.2.1"
 Django = "^4.1.2"
 pyjwt = {extras = ["crypto"], version = "^2.6.0"}
-requests = "^2.28.1"
+requests = "^2.32.3"
 colorama = "^0.4.6"
 
 [tool.poetry.scripts]
