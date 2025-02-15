@@ -5,12 +5,12 @@
 
 from badsecrets.base import check_all_modules, carve_all_modules, hashcat_all_modules
 from badsecrets.helpers import print_status
-from importlib.metadata import version, PackageNotFoundError
 import requests
 import argparse
 import sys
 import os
 import re
+from pathlib import Path
 
 
 from urllib3.exceptions import InsecureRequestWarning
@@ -31,11 +31,12 @@ ____/  \__,_| \__,_| ____/ \___| \___| _|    \___| \__| ____/
 
 def print_version():
     try:
-        dist_version = version("badsecrets")
-    except PackageNotFoundError:
-        dist_version = "ersion Unknown (Running w/poetry?)"
-
-    print(f"v{dist_version}\n")
+        base = Path(__file__).parent.parent
+        dist_info = next(base.glob("badsecrets-*.dist-info"))
+        version_str = dist_info.name.replace(".dist-info", "").split("-", 1)[1]
+    except StopIteration:
+        version_str = "Unknown (Running w/poetry?)"
+    print(f"Version - {version_str}\n")
 
 
 class CustomArgumentParser(argparse.ArgumentParser):
