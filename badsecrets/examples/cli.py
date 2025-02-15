@@ -32,8 +32,7 @@ ____/  \__,_| \__,_| ____/ \___| \___| _|    \___| \__| ____/
 def print_version():
     try:
         base = Path(__file__).parent.parent
-        dist_info = next(base.glob("badsecrets-*.dist-info"))
-        version_str = dist_info.name.replace(".dist-info", "").split("-", 1)[1]
+        version_str = next(base.glob("badsecrets-*.dist-info")).name.replace(".dist-info", "").split("-", 1)[1]
     except StopIteration:
         version_str = "Unknown (Running w/poetry?)"
     print(f"Version - {version_str}\n")
