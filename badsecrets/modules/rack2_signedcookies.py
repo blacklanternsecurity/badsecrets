@@ -18,25 +18,22 @@ class RackSignedCookies(BadsecretsBase):
         return re.compile(r"session=(BAh[\.a-zA-z-0-9\%=]{32,}--[\.a-zA-z-0-9%=]{16,})")
 
     def rack2(self, rack_cookie, secret_key):
-        try:
-            # Split the cookie into data and signature
-            data, signature = rack_cookie.rsplit("--", 1)
+        # Split the cookie into data and signature
+        data, signature = rack_cookie.rsplit("--", 1)
 
-            # Create the HMAC using the secret key
-            h = hmac.new(secret_key.encode(), data.encode(), digestmod="sha1")
+        # Create the HMAC using the secret key
+        h = hmac.new(secret_key.encode(), data.encode(), digestmod="sha1")
 
-            # Verify the signature
-            if h.hexdigest() != signature:
-                return None
-
-            # Decode the data from base64
-            decoded_data = base64.b64decode(data)
-
-            if decoded_data.startswith(b"\x04\x08"):
-                return {"hash_algorithm": "SHA1"}
-
-        except (binascii.Error, ValueError, IndexError):
+        # Verify the signature
+        if h.hexdigest() != signature:
             return None
+
+        # Decode the data from base64
+        decoded_data = base64.b64decode(data)
+
+        if decoded_data.startswith(b"\x04\x08"):
+            return {"hash_algorithm": "SHA1"}
+
 
     def check_secret(self, rack_cookie):
         if not self.identify(rack_cookie):
