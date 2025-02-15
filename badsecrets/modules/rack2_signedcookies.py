@@ -8,7 +8,7 @@ from badsecrets.base import BadsecretsBase
 class RackSignedCookies(BadsecretsBase):
 
     identify_regex = re.compile(r"^BAh[\.a-zA-z-0-9\%=]{32,}--[\.a-zA-z-0-9%=]{16,}$")
-    description = {"product": "Rack 2.x Signed Cookie", "secret": "Rack 2.x secret key", "severity": "HIGH"}
+    description = {"product": "Rack 2.x Signed Cookie (Ruby Serialized Object)", "secret": "Rack 2.x secret key", "severity": "HIGH"}
 
     def carve_regex(self):
         return re.compile(r"session=(BAh[\.a-zA-z-0-9\%=]{32,}--[\.a-zA-z-0-9%=]{16,})")
@@ -28,11 +28,8 @@ class RackSignedCookies(BadsecretsBase):
             # Decode the data from base64
             decoded_data = base64.b64decode(data)
 
-            # Check for Ruby Marshal header
             if decoded_data.startswith(b"\x04\x08"):
-                return {"Confirmed Ruby Serialized Object": True, "hash_algorithm": "SHA1"}
-            else:
-                return {"Confirmed Ruby Serialized Object": False, "hash_algorithm": "SHA1"}
+                return {"hash_algorithm": "SHA1"}
 
         except (binascii.Error, ValueError, IndexError):
             return None
