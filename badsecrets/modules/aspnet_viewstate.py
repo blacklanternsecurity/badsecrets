@@ -100,6 +100,7 @@ class ASPNET_Viewstate(BadsecretsBase):
             candidate_hash_algs = list(self.hash_sizes.keys())
         else:
             vs = ViewState(viewstate_B64)
+            vs.decode()
             signature_len = len(vs.signature)
             candidate_hash_algs = self.search_dict(self.hash_sizes, signature_len)
 
