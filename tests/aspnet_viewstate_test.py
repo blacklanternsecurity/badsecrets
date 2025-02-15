@@ -271,3 +271,13 @@ def test_viewstate_dotnet45_HMACSHA256():
         == "validationKey: F5144F1A581A57BA3B60311AF7562A855998F7DD203CD8A71405599B980D8694B5C986C888BE4FC0E6571C2CE600D58CE82B8FA13106B17D77EA4CECDDBBEC1B validationAlgo: SHA256 encryptionKey: B47D3CD1E780CF30C739A080995B9B10B64354AA135A2D78 encryptionAlgo: AES"
     )
     assert found_key["details"] == "Mode [DOTNET45]"
+
+
+def test_viewstate_exception_handling():
+    x = ASPNETViewstate()
+
+    # Base64-encoded string that passes the preamble check but is invalid for decoding
+    malformed_viewstate = "/wGZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZk="
+
+    result = x.check_secret(malformed_viewstate, "00000000")
+    assert result is None
