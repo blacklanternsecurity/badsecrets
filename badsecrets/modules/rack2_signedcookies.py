@@ -8,7 +8,11 @@ from badsecrets.base import BadsecretsBase
 class RackSignedCookies(BadsecretsBase):
 
     identify_regex = re.compile(r"^BAh[\.a-zA-z-0-9\%=]{32,}--[\.a-zA-z-0-9%=]{16,}$")
-    description = {"product": "Rack 2.x Signed Cookie (Ruby Serialized Object)", "secret": "Rack 2.x secret key", "severity": "HIGH"}
+    description = {
+        "product": "Rack 2.x Signed Cookie (Ruby Serialized Object)",
+        "secret": "Rack 2.x secret key",
+        "severity": "HIGH",
+    }
 
     def carve_regex(self):
         return re.compile(r"session=(BAh[\.a-zA-z-0-9\%=]{32,}--[\.a-zA-z-0-9%=]{16,})")
