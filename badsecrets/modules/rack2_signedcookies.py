@@ -4,7 +4,7 @@ import base64
 from badsecrets.base import BadsecretsBase
 
 
-class RackSignedCookies(BadsecretsBase):
+class Rack2_SignedCookies(BadsecretsBase):
 
     identify_regex = re.compile(r"^BAh[\.a-zA-z-0-9\%=]{32,}--[\.a-zA-z-0-9%=]{16,}$")
     description = {
