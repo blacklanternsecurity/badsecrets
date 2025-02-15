@@ -34,7 +34,6 @@ class RackSignedCookies(BadsecretsBase):
         if decoded_data.startswith(b"\x04\x08"):
             return {"hash_algorithm": "SHA1"}
 
-
     def check_secret(self, rack_cookie):
         if not self.identify(rack_cookie):
             return None
