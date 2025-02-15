@@ -1,7 +1,6 @@
 import re
 import hmac
 import base64
-import binascii
 from badsecrets.base import BadsecretsBase
 
 
