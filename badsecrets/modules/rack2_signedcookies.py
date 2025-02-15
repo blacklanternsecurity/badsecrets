@@ -2,6 +2,7 @@ import re
 import hmac
 import base64
 from badsecrets.base import BadsecretsBase
+from urllib.parse import unquote
 
 
 class Rack2_SignedCookies(BadsecretsBase):
@@ -47,10 +48,15 @@ class Rack2_SignedCookies(BadsecretsBase):
         return None
 
     def get_hashcat_commands(self, rack_cookie, *args):
+        if isinstance(rack_cookie, re.Match):
+            rack_cookie_split = rack_cookie.groups(1)[0].rsplit("--", 1)
+        else:
+            rack_cookie_split = rack_cookie.rsplit("--", 1)
+        print("rack_cookie")
+        print(rack_cookie_split)
         return [
             {
-                "command": f"hashcat -m 18500 -a 0 {rack_cookie} <dictionary_file>",
-                "description": "Rack 2.x Signed Cookie",
-                "severity": "HIGH",
+                "command": f"hashcat -m 150 -a 0 {rack_cookie_split[1]}:{base64.b64decode(unquote(rack_cookie_split[0])).hex()} --hex-salt  <dictionary_file>",
+                "description": "Rack 2.x Signed Cookie (HMAC-SHA1)",
             }
         ]
