@@ -240,6 +240,30 @@ def test_example_cli_identifyonly_hashcat(monkeypatch, capsys):
         assert "JSON Web Token (JWT) Algorithm: HS256 Command: [hashcat -m 16500" in captured.out
 
 
+def test_example_cli_identifyonly_hashcat_rack2(monkeypatch, capsys):
+    with requests_mock.Mocker() as m:
+        m.get(
+            f"http://example.com/identifyonly.html",
+            status_code=200,
+            text=base_identifyonly_page,
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "python",
+                "BAh7B0kiD3Nlc3Npb25faWQGOgZFVG86HVJhY2s6OlNlc3Npb246OlNlc3Npb25JZAY6D0BwdWJsaWNfaWRJIkU5YmI3ZDUyODUyNTAwMDYzMGE2NjMxYTA5MjBlMjYzMzFmOGE0MjBhNTdhYWIxNzVkZTFmM2FjMDQ3NmI1NDQzBjsARkkiCmNvdW50BjsARmkG--2a983fbc58911c5266d7748a6a55165f74d412f4",
+            ],  # intentionally bad signature to test hashcat function
+        )
+        cli.main()
+        captured = capsys.readouterr()
+        print(captured)
+
+        assert "No secrets found :(" in captured.out
+        assert "[Rack2_SignedCookies] Rack 2.x Signed Cookie" in captured.out
+        assert "Potential matching hashcat commands" in captured.out
+
+
 def test_example_cli_hashcat_omittedonmatch(monkeypatch, capsys):
     # Check Vulnerable JWT
     monkeypatch.setattr(

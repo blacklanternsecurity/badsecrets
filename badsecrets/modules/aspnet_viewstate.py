@@ -100,10 +100,7 @@ class ASPNET_Viewstate(BadsecretsBase):
             candidate_hash_algs = list(self.hash_sizes.keys())
         else:
             vs = ViewState(viewstate_B64)
-            try:
-                vs.decode()
-            except ViewStateException:
-                return None
+            vs.decode()
             signature_len = len(vs.signature)
             candidate_hash_algs = self.search_dict(self.hash_sizes, signature_len)
 
@@ -166,6 +163,11 @@ class ASPNET_Viewstate(BadsecretsBase):
 
         if self.valid_preamble(base64.b64decode(viewstate_B64)):
             encrypted = False
+            try:
+                vs = ViewState(viewstate_B64)
+                vs.decode()
+            except ViewStateException:
+                return None
         else:
             encrypted = True
 
