@@ -48,10 +48,7 @@ class Rack2_SignedCookies(BadsecretsBase):
         return None
 
     def get_hashcat_commands(self, rack_cookie, *args):
-        if isinstance(rack_cookie, re.Match):
-            rack_cookie_split = rack_cookie.groups(1)[0].rsplit("--", 1)
-        else:
-            rack_cookie_split = rack_cookie.rsplit("--", 1)
+        rack_cookie_split = rack_cookie.rsplit("--", 1)
         print("rack_cookie")
         print(rack_cookie_split)
         return [
