@@ -118,7 +118,7 @@ jobs:
 
       - name: Publish PyPi package
         if: github.ref == 'refs/heads/main' && env.VERSION_CHANGE == 'true'
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@release/v1.12
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
 
