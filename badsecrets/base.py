@@ -129,7 +129,7 @@ class BadsecretsBase:
                         # the carve regex hit but no secret was found
                         else:
                             r = {"type": "IdentifyOnly"}
-                            r["hashcat"] = self.get_hashcat_commands(s)
+                            r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
                         if "product" not in r.keys():
                             r["product"] = self.get_product_from_carve(s)
                         r["location"] = "headers"
