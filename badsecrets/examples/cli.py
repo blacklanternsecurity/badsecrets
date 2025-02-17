@@ -10,7 +10,7 @@ import argparse
 import sys
 import os
 import re
-from pathlib import Path
+from importlib.metadata import version, PackageNotFoundError
 
 
 from urllib3.exceptions import InsecureRequestWarning
@@ -31,9 +31,8 @@ ____/  \__,_| \__,_| ____/ \___| \___| _|    \___| \__| ____/
 
 def print_version():
     try:
-        base = Path(__file__).parent.parent
-        version_str = next(base.glob("badsecrets-*.dist-info")).name.replace(".dist-info", "").split("-", 1)[1]
-    except StopIteration:
+        version_str = version("badsecrets")
+    except PackageNotFoundError:
         version_str = "Unknown (Running w/poetry?)"
     print(f"Version - {version_str}\n")
 
