@@ -8,7 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dev-dependencies]
 requests-mock = "^1.10.0"
-pytest = "^8.3.4"
+pytest = "^8.3.5"
 pytest-cov = "^6.0.0"
 mock = "^5.1.0"
 pytest-mock = "^3.10.0"
