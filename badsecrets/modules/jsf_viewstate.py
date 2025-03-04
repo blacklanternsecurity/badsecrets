@@ -85,7 +85,7 @@ class Jsf_viewstate(BadsecretsBase):
 
         if b"java." in decrypted:
             # instead of b64 encoding and looking for rO0, stay in bytes and look for as many as you can
-            if b"\xAC\xED\x00\x05" in decrypted and ord(bytes([decrypted[4]])) in list(range(112, 126)):
+            if b"\xac\xed\x00\x05" in decrypted and ord(bytes([decrypted[4]])) in list(range(112, 126)):
                 return (True, True, uncompressed)
             else:
                 return (True, False, uncompressed)
@@ -134,7 +134,7 @@ class Jsf_viewstate(BadsecretsBase):
                             iv_guesses.append(password_bytes[:16])
 
                         iv_guesses.append(dec_algo.block_size * b"\x00")
-                        iv_guesses.append(dec_algo.block_size * b"\xFF")
+                        iv_guesses.append(dec_algo.block_size * b"\xff")
                         iv_guesses.append(dec_algo.block_size * b"\x61")
                         iv_guesses.append(dec_algo.block_size * b"\x41")
                         iv_guesses.append(dec_algo.block_size * b"\x30")
