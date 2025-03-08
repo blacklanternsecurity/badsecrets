@@ -13,6 +13,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write  # Required for tagging releases and publishing packages
+  pull-requests: read  # Required to read PR metadata
+
 jobs:
   lint:
     runs-on: ubuntu-latest
