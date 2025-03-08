@@ -49,8 +49,6 @@ class Rack2_SignedCookies(BadsecretsBase):
 
     def get_hashcat_commands(self, rack_cookie, *args):
         rack_cookie_split = rack_cookie.rsplit("--", 1)
-        print("rack_cookie")
-        print(rack_cookie_split)
         return [
             {
                 "command": f"hashcat -m 150 -a 0 {rack_cookie_split[1]}:{base64.b64decode(unquote(rack_cookie_split[0])).hex()} --hex-salt  <dictionary_file>",
