@@ -9,7 +9,7 @@ readme = "README.md"
 [tool.poetry.dev-dependencies]
 requests-mock = "^1.10.0"
 pytest = "^8.3.4"
-pytest-cov = "^6.0.0"
+pytest-cov = "^6.1.0"
 mock = "^5.1.0"
 pytest-mock = "^3.10.0"
 poetry-dynamic-versioning = {extras = ["plugin"], version = "^1.7.1"}
