@@ -2,9 +2,7 @@
 
 import re
 from badsecrets.base import BadsecretsBase
-import base64
 import hmac
-import json
 from hashlib import sha256
 from urllib.parse import unquote
 
