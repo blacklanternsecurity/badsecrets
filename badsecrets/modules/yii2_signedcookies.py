@@ -26,7 +26,6 @@ class Yii2_SignedCookies(BadsecretsBase):
         expected_signature = mac.hexdigest()
         return signature.lower() == expected_signature.lower()
 
-
     def check_secret(self, yii2_cookie):
         if not self.identify(yii2_cookie):
             return None
