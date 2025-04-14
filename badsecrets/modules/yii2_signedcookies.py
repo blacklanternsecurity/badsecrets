@@ -13,22 +13,19 @@ class Yii2_SignedCookies(BadsecretsBase):
     description = {"product": "Yii2 Signed Cookie", "secret": "Yii2 cookieValidationKey", "severity": "HIGH"}
 
     def verify_yii2_cookie(self, cookie_value, validation_key):
-        try:
-            # URL decode the whole value first
-            decoded_cookie = unquote(cookie_value)
 
-            # Split decoded value into signature and data
-            signature = decoded_cookie[:64]
-            data = decoded_cookie[64:].encode("utf-8")
+        # URL decode the whole value first
+        decoded_cookie = unquote(cookie_value)
 
-            # Calculate HMAC-SHA256 using raw key
-            mac = hmac.new(validation_key.encode("utf-8"), data, sha256)
-            expected_signature = mac.hexdigest()
+        # Split decoded value into signature and data
+        signature = decoded_cookie[:64]
+        data = decoded_cookie[64:].encode("utf-8")
 
-            return signature.lower() == expected_signature.lower()
-        except Exception as e:
-            print(f"Error: {str(e)}")
-            return False
+        # Calculate HMAC-SHA256 using raw key
+        mac = hmac.new(validation_key.encode("utf-8"), data, sha256)
+        expected_signature = mac.hexdigest()
+        return signature.lower() == expected_signature.lower()
+
 
     def check_secret(self, yii2_cookie):
         if not self.identify(yii2_cookie):
