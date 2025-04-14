@@ -3,6 +3,7 @@ import sys
 import tempfile
 import requests_mock
 from mock import patch
+from importlib.metadata import PackageNotFoundError
 
 from badsecrets.modules.generic_jwt import Generic_JWT
 
@@ -892,3 +893,27 @@ def test_example_cli_jsfviewstate_serverside(monkeypatch, capsys):
         captured = capsys.readouterr()
         assert "Cryptographic Product Identified (no vulnerability)" in captured.out
         assert not "Potential matching hashcat commands:" in captured.out
+
+
+def test_example_cli_no_args(monkeypatch, capsys):
+    with patch("sys.exit") as exit_mock:
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python"],  # No arguments provided
+        )
+        cli.main()
+        assert exit_mock.called
+        captured = capsys.readouterr()
+        assert "Either supply the product as a positional argument" in captured.out
+
+
+def test_example_cli_version_not_found(monkeypatch, capsys):
+    with patch('badsecrets.examples.cli.version') as mock_version:  # Updated patch path
+        mock_version.side_effect = PackageNotFoundError()
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "test"],
+        )
+        cli.main()
+        captured = capsys.readouterr()
+        assert "Version - Unknown (Running w/poetry?)" in captured.out
