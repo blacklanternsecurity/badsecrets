@@ -908,7 +908,7 @@ def test_example_cli_no_args(monkeypatch, capsys):
 
 
 def test_example_cli_version_not_found(monkeypatch, capsys):
-    with patch('badsecrets.examples.cli.version') as mock_version:  # Updated patch path
+    with patch("badsecrets.examples.cli.version") as mock_version:  # Updated patch path
         mock_version.side_effect = PackageNotFoundError()
         monkeypatch.setattr(
             "sys.argv",
