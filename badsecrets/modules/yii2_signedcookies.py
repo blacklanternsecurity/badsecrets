@@ -35,7 +35,6 @@ class Yii2_SignedCookies(BadsecretsBase):
             password = password.rstrip()
             if self.verify_yii2_cookie(yii2_cookie, password):
                 return {"secret": password, "details": "Valid cookieValidationKey found"}
-        return None
 
     def get_hashcat_commands(self, yii2_cookie, *args):
         return [
