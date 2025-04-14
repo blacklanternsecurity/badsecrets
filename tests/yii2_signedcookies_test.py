@@ -30,3 +30,20 @@ def test_yii2_carve():
     assert len(results) > 0
     assert results[0]["type"] == "SecretFound"
     assert results[0]["secret"] == yii2_tests[0][0]
+
+
+def test_yii2_verify_exception():
+    x = Yii2_SignedCookies()
+    # Test with malformed cookie that will cause exception in verify
+    result = x.verify_yii2_cookie("invalid_cookie", "secret")
+    assert result == False
+
+
+def test_yii2_hashcat():
+    x = Yii2_SignedCookies()
+    cookie = "0bb72f36d041a3a022f231eebe114889ee442092ee350242ffb2d4bb53887a81a%3A2%3A%7Bi%3A0%3Bs%3A4%3A%22lang%22%3Bi%3A1%3Bs%3A7%3A%22English%22%3B%7D"
+    commands = x.get_hashcat_commands(cookie)
+    assert len(commands) == 1
+    assert commands[0]["command"] == f"hashcat -m 19700 -a 0 {cookie} <dictionary_file>"
+    assert commands[0]["description"] == "Yii2 Cookie Validation Key"
+    assert commands[0]["severity"] == "HIGH"
