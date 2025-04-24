@@ -36,7 +36,7 @@ Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a de
 | Laravel_SignedCookies | Checks 'laravel_session' cookies for known laravel 'APP_KEY' |
 | ASPNET_Vstate      | Checks for a once popular custom compressed Viewstate [code snippet](https://blog.sorcery.ie/posts/higherlogic_rce/) vulnerable to RCE|
 | Rack2_SignedCookies | Checks Rack 2.x signed cookies for known secret keys |
-| Yii2_SignedCookies | Checks Yii2 framework's cookie validation keys for known secrets |
+| Yii2_SignedCookies | Checks Yii2 framework signed cookies for known cookie validation keys |
 
 ## Installation
 
