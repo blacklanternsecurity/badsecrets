@@ -6,7 +6,7 @@ authors = ["A library for detecting known or weak secrets on across many platfor
 license = "GPL-3.0"
 readme = "README.md"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 requests-mock = "^1.10.0"
 pytest = "^8.3.4"
 pytest-cov = "^6.1.1"
