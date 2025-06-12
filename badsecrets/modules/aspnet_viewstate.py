@@ -25,17 +25,17 @@ class ASPNET_Viewstate(BadsecretsBase):
             r"<input.+__VIEWSTATE\"\svalue=\"(.+)\"[\S\s]+<input.+__VIEWSTATEGENERATOR\"\svalue=\"(\w+)\""
         )
 
-    def carve_to_check_secret(self, s, url=None, requests_response=None, **kwargs):
+    def carve_to_check_secret(self, s, url=None, **kwargs):
         if len(s.groups()) == 2:
             viewstate = s.groups()[0]
             generator = s.groups()[1]
 
             possible_userkey_cookies = ["ASP.NET_SessionId", "__AntiXsrfToken", "ASPSESSIONID"]
 
-            if requests_response and hasattr(requests_response, "cookies"):
+            if kwargs.get("cookies") and hasattr(kwargs.get("cookies"), "get"):
                 for cookie_name in possible_userkey_cookies:
-                    if cookie_name in requests_response.cookies:
-                        cookie_value = requests_response.cookies.get(cookie_name)
+                    if cookie_name in kwargs.get("cookies"):
+                        cookie_value = kwargs.get("cookies").get(cookie_name)
                         r = self.check_secret(viewstate, generator, url, cookie_value)
                         if r:
                             return r
