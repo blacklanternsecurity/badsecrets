@@ -25,10 +25,22 @@ class ASPNET_Viewstate(BadsecretsBase):
             r"<input.+__VIEWSTATE\"\svalue=\"(.+)\"[\S\s]+<input.+__VIEWSTATEGENERATOR\"\svalue=\"(\w+)\""
         )
 
-    def carve_to_check_secret(self, s, url=None):
+    def carve_to_check_secret(self, s, url=None, requests_response=None, **kwargs):
         if len(s.groups()) == 2:
-            r = self.check_secret(s.groups()[0], s.groups()[1], url)
-            return r
+            viewstate = s.groups()[0]
+            generator = s.groups()[1]
+
+            possible_userkey_cookies = ["ASP.NET_SessionId", "__AntiXsrfToken", "ASPSESSIONID"]
+
+            if requests_response and hasattr(requests_response, "cookies"):
+                for cookie_name in possible_userkey_cookies:
+                    if cookie_name in requests_response.cookies:
+                        cookie_value = requests_response.cookies.get(cookie_name)
+                        r = self.check_secret(viewstate, generator, url, cookie_value)
+                        if r:
+                            return r
+
+            return self.check_secret(viewstate, generator, url)
 
     @staticmethod
     def valid_preamble(sourcebytes):
@@ -92,7 +104,8 @@ class ASPNET_Viewstate(BadsecretsBase):
                     else:
                         continue
 
-    def viewstate_validate(self, vkey_bytes, encrypted, viewstate_B64, generator, url, mode):
+    def viewstate_validate(self, vkey_bytes, encrypted, viewstate_B64, generator, url, mode, viewstate_userkey=None):
+
         original_vkey_bytes = vkey_bytes
         viewstate_bytes = base64.b64decode(viewstate_B64)
 
@@ -104,19 +117,32 @@ class ASPNET_Viewstate(BadsecretsBase):
             signature_len = len(vs.signature)
             candidate_hash_algs = self.search_dict(self.hash_sizes, signature_len)
 
+        modifier_bytes = b"\x00" * 4
+        if viewstate_userkey and viewstate_userkey.strip():
+            modifier_bytes += viewstate_userkey.encode("utf-16le")
         for hash_alg in candidate_hash_algs:
             vkey_bytes = original_vkey_bytes
             viewstate_data = viewstate_bytes[: -self.hash_sizes[hash_alg]]
             signature = viewstate_bytes[-self.hash_sizes[hash_alg] :]
             if hash_alg == "MD5":
-                md5_bytes = viewstate_data + vkey_bytes
                 if not encrypted:
-                    md5_bytes += b"\x00" * 4
+                    if viewstate_userkey and viewstate_userkey.strip():
+                        md5_bytes = b"will not work, sorry"
+                        # MD5 + ViewStateUserKey is a horrible edge case that may NEVER work. We will not match on it, currently.
+                        # Last attempt:
+                        # md5_bytes = viewstate_data + vkey_bytes + page_hash_bytes + viewstate_userkey.encode('utf-16le')
+                        # But page_hash_bytes is apparently NOT the generator and my have to be brute-forced.
+                        # Probably not worth it for the 3 servers in the entire world probably using these settings in the wild.
+                    else:
+                        md5_bytes = viewstate_data + vkey_bytes + modifier_bytes
+                else:
+                    md5_bytes = viewstate_data + vkey_bytes
                 h = hashlib.md5(md5_bytes)
             else:
                 vs_data_bytes = viewstate_data
                 if not encrypted:
                     vs_data_bytes += generator
+                    vs_data_bytes += modifier_bytes[4:]
                 if mode == "DOTNET45" and url:
                     s = Simulate_dotnet45_kdf_context_parameters(url)
                     label, context = sp800_108_get_key_derivation_parameters(
@@ -129,7 +155,9 @@ class ASPNET_Viewstate(BadsecretsBase):
                     self.hash_algs[hash_alg],
                 )
 
-            if h.digest() == signature:
+            computed_hash = h.digest()
+
+            if computed_hash == signature:
                 return hash_alg
 
         return None
@@ -139,6 +167,7 @@ class ASPNET_Viewstate(BadsecretsBase):
         generator_pattern = re.compile(r"^[A-F0-9]{8}$")
 
         url = None
+        viewstate_userkey = None
         generator = "0000"
 
         for arg in args:
@@ -147,14 +176,15 @@ class ASPNET_Viewstate(BadsecretsBase):
                     generator = arg
                 elif url_pattern.match(arg):
                     url = arg
-
+                else:
+                    viewstate_userkey = arg
         # Remove query string from the URL, if any
         if url:
             url = urlsplit(url)._replace(query="").geturl()
-        return generator, url
+        return generator, url, viewstate_userkey
 
     def check_secret(self, viewstate_B64, *args):
-        generator, url = self.resolve_args(args)
+        generator, url, viewstate_userkey = self.resolve_args(args)
 
         if not self.identify(viewstate_B64):
             return None
@@ -182,7 +212,7 @@ class ASPNET_Viewstate(BadsecretsBase):
 
                 for mode in ["DOTNET40", "DOTNET45"]:
                     validationAlgo = self.viewstate_validate(
-                        binascii.unhexlify(vkey), encrypted, viewstate_B64, generator, url, mode
+                        binascii.unhexlify(vkey), encrypted, viewstate_B64, generator, url, mode, viewstate_userkey
                     )
                     if validationAlgo:
                         if encrypted:
@@ -201,6 +231,8 @@ class ASPNET_Viewstate(BadsecretsBase):
                         product_string = f"Viewstate: {viewstate_B64}"
                         if generator != "0000":
                             product_string += f" Generator: {generator[::-1].hex().upper()}"
+                        if viewstate_userkey:
+                            product_string += f" ViewStateUserKey: {viewstate_userkey}"
                         return {"secret": result, "product": product_string, "details": f"Mode [{mode}]"}
         return None
 
