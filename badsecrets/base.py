@@ -142,7 +142,9 @@ class BadsecretsBase:
             if self.carve_regex():
                 s = re.search(self.carve_regex(), body)
                 if s:
-                    r = self.carve_to_check_secret(s, url=kwargs.get("url", None), body=body, cookies=cookies, headers=headers)
+                    r = self.carve_to_check_secret(
+                        s, url=kwargs.get("url", None), body=body, cookies=cookies, headers=headers
+                    )
                     if r:
                         r["type"] = "SecretFound"
                     else:
