@@ -659,17 +659,12 @@ class DialogHandler:
         baseline_size = self.probe_version_baseline()
 
         versions = []
-        # If version specified, only test that version
-        if hasattr(self, "version") and self.version:
-            versions = [self.version]
-        else:
-            # Otherwise test all versions
-            for v in telerik_versions + telerik_versions_patched:
-                versions.append(v)
-            undotted_versions = []
-            for v in telerik_versions:
-                undotted_versions.append(re.sub(r"\.(?=\d+$)", "", v))
-            versions += undotted_versions
+        for v in telerik_versions + telerik_versions_patched:
+            versions.append(v)
+        undotted_versions = []
+        for v in telerik_versions:
+            undotted_versions.append(re.sub(r"\.(?=\d+$)", "", v))
+        versions += undotted_versions
 
         for version in versions:
             dialog_parameters = self.probe_version(version, baseline_size)
