@@ -93,9 +93,15 @@ class BadsecretsBase:
                 raise badsecrets.errors.CarveException("Body/cookies/headers and requests_response cannot both be set")
 
             if type(requests_response) == requests.models.Response:
-                body = requests_response.text
-                cookies = dict(requests_response.cookies)
-                headers = requests_response.headers
+                if not cookies:
+                    try:
+                        cookies = {cookie.name: cookie.value for cookie in requests_response.cookies}
+                    except (AttributeError, KeyError):
+                        cookies = {}
+                if not headers:
+                    headers = requests_response.headers
+                if not body and hasattr(requests_response, "text"):
+                    body = requests_response.text
             else:
                 raise badsecrets.errors.CarveException("requests_response must be a requests.models.Response object")
 
@@ -142,7 +148,9 @@ class BadsecretsBase:
             if self.carve_regex():
                 s = re.search(self.carve_regex(), body)
                 if s:
-                    r = self.carve_to_check_secret(s, url=kwargs.get("url", None))
+                    r = self.carve_to_check_secret(
+                        s, url=kwargs.get("url", None), body=body, cookies=cookies, headers=headers
+                    )
                     if r:
                         r["type"] = "SecretFound"
                     else:

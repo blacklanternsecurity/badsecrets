@@ -281,3 +281,26 @@ def test_viewstate_exception_handling():
 
     result = x.check_secret(malformed_viewstate, "00000000")
     assert result is None
+
+
+def test_viewstate_with_userkey():
+    x = ASPNETViewstate()
+
+    # Test ViewState with ViewStateUserKey
+    viewstate = "/wEPDwUJODExMDE5NzY5ZGTX0g6r3svRDbR+eCZDnrj4MT4/FA=="
+    generator = "DEE4EE34"
+    userkey = "xwrpnizumzekndin03addnmm"
+    userkey_validation_key = "007B3C9F433AB43A1B9BD2C300491C77B9A8D90D0268B9B60BD72D9143DF02F884F81B6E6119B737EBC1A3A9A98526FD2691BF9FD9B3CD188A2FBDF569C13FFD"
+
+    found_key = x.check_secret(viewstate, generator, userkey)
+    assert found_key
+    assert userkey_validation_key in found_key["secret"]
+    assert "ViewStateUserKey: xwrpnizumzekndin03addnmm" in found_key["product"]
+
+    # Test that same ViewState fails without the correct userkey
+    found_key_no_userkey = x.check_secret(viewstate, generator)
+    assert not found_key_no_userkey
+
+    # Test that same ViewState fails with wrong userkey
+    found_key_wrong_userkey = x.check_secret(viewstate, generator, "wronguserkey")
+    assert not found_key_wrong_userkey
