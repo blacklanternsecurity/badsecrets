@@ -29,7 +29,6 @@ class ASPNET_Viewstate(BadsecretsBase):
         if len(s.groups()) == 2:
             viewstate = s.groups()[0]
             generator = s.groups()[1]
-
             possible_userkey_cookies = ["ASP.NET_SessionId", "__AntiXsrfToken", "ASPSESSIONID"]
 
             if kwargs.get("cookies") and hasattr(kwargs.get("cookies"), "get"):
@@ -39,7 +38,6 @@ class ASPNET_Viewstate(BadsecretsBase):
                         r = self.check_secret(viewstate, generator, url, cookie_value)
                         if r:
                             return r
-
             return self.check_secret(viewstate, generator, url)
 
     @staticmethod
@@ -126,15 +124,14 @@ class ASPNET_Viewstate(BadsecretsBase):
             signature = viewstate_bytes[-self.hash_sizes[hash_alg] :]
             if hash_alg == "MD5":
                 if not encrypted:
-                    if viewstate_userkey and viewstate_userkey.strip():
-                        md5_bytes = b"will not work, sorry"
-                        # MD5 + ViewStateUserKey is a horrible edge case that may NEVER work. We will not match on it, currently.
-                        # Last attempt:
-                        # md5_bytes = viewstate_data + vkey_bytes + page_hash_bytes + viewstate_userkey.encode('utf-16le')
-                        # But page_hash_bytes is apparently NOT the generator and my have to be brute-forced.
-                        # Probably not worth it for the 3 servers in the entire world probably using these settings in the wild.
-                    else:
-                        md5_bytes = viewstate_data + vkey_bytes + modifier_bytes
+                    # if viewstate_userkey and viewstate_userkey.strip():
+                    #    md5_bytes = b"will not work, sorry"
+                    # MD5 + ViewStateUserKey is a horrible edge case that may NEVER work. We will not match on it, currently.
+                    # Last attempt:
+                    # md5_bytes = viewstate_data + vkey_bytes + page_hash_bytes + viewstate_userkey.encode('utf-16le')
+                    # But page_hash_bytes is apparently NOT the generator and my have to be brute-forced.
+                    # Probably not worth it for the 3 servers in the entire world probably using these settings in the wild.
+                    md5_bytes = viewstate_data + vkey_bytes + modifier_bytes
                 else:
                     md5_bytes = viewstate_data + vkey_bytes
                 h = hashlib.md5(md5_bytes)
