@@ -441,7 +441,9 @@ class DialogHandler:
                 title = f" {title_match.group(1).strip()}"
 
         if hasattr(self, "debug") and self.debug:
-            print(f"Attempting to probe version: {version}. Got response code [{r.status_code}] with size {len(r.text)} {title}")
+            print(
+                f"Attempting to probe version: {version}. Got response code [{r.status_code}] with size {len(r.text)} {title}"
+            )
         if baseline_size and abs(len(r.text) - baseline_size) > 10:
             return dialog_parameters
         return None
@@ -499,8 +501,6 @@ class DialogHandler:
                     print(f"\n[DEBUG] Testing hash key #{hashkey_counter}: {hash_key}")
                     print(f"[DEBUG] Sending request to: {self.url}")
 
-
-                
                 resp_body = urllib.parse.unquote(res.text)
                 if hasattr(self, "debug") and self.debug:
                     print(f"[DEBUG] Response status: {res.status_code}")
@@ -575,7 +575,6 @@ class DialogHandler:
             baseline_res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
             baseline_size = len(baseline_res.text)
             baseline_status = baseline_res.status_code
-
 
             if hasattr(self, "debug") and self.debug:
                 print(f"\n[DEBUG] Baseline response size: {baseline_size} bytes")
@@ -827,7 +826,11 @@ def main():
             print(f"Confirmed target is Telerik UI DialogHandler")
 
         dh = DialogHandler(
-            args.url, modern_dialog_params=args.modern_dialog_params, proxies=proxies, headers=headers, include_machinekeys_bool=include_machinekeys_bool
+            args.url,
+            modern_dialog_params=args.modern_dialog_params,
+            proxies=proxies,
+            headers=headers,
+            include_machinekeys_bool=include_machinekeys_bool,
         )
         if args.custom_keys:
             try:
