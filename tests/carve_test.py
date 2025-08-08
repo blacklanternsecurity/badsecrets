@@ -467,7 +467,7 @@ def test_cookie_dict():
 def test_carve_aspnet_viewstate_userkey():
     x = ASPNET_Viewstate()
 
-    # Test carving ViewState with ViewStateUserKey from HTML
+    # Test carving ViewState with ViewStateUserKey from HTML and cookies
     html = """<!DOCTYPE html>
 <html>
 <body>
@@ -485,7 +485,11 @@ def test_carve_aspnet_viewstate_userkey():
 </body>
 </html>"""
 
-    r = x.carve(body=html)
+    # Supply the expected ViewStateUserKey via one of the cookies inspected by carve_to_check_secret
+    cookies = {"ASP.NET_SessionId": "xwrpnizumzekndin03addnmm"}
+
+    r = x.carve(body=html, cookies=cookies)
     assert r
     assert len(r) == 1
+    assert r[0]["type"] == "SecretFound"
     assert "/wEPDwUJODExMDE5NzY5ZGTX0g6r3svRDbR+eCZDnrj4MT4/FA==" in r[0]["product"]
