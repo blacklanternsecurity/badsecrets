@@ -303,6 +303,7 @@ def test_fullrun_PBKDF2(monkeypatch, capsys, mocker):
         assert "Found encryption key: [d2a312d9-7af4-43de-be5a-ae717b46cea6]" in captured.out
         assert "SUCCESS! Found encryption key: [d2a312d9-7af4-43de-be5a-ae717b46cea6]" in captured.out
         assert ("SUCCESS! Found working version: 2018.1.117") in captured.out
+        assert ("MBwZBxq7tU8LbyDrVRfXwt4B9fxAttnMAgpTz528XyLuMPROH1oCkBRMe4q4SUJsZke0M3w1bE5BWE3y0OPU66TKqoF2Dm8XeQZZpiXyWvuyI0hDMf2sumJmZjfOF1X5M1DgjwJgMtMxhH8ByYJewviZu8r9wmHDxNN%2Fodxs%2FxaZgBrRX9GOn8kHShCC2ULYl277e5Y4rN0wLIFAqGzUMenabT%2BgoNVseQNd6EKmsU54bFTHdOwaqZ3SI1RGHwn%2BIceurXPqimLyE8PbUhhI6sUESpfQKQp7tONweTMGUb%2FO5Ci8lC%2Ff7sZNLQ%2Fjlp4BgICsN%2BdnA0e1RKd5OMwjJQiLB2eU3vgGzVyV3htI8qSG3NnXb7ucQdKEupEdji6NrxglvgDiYuHWmoGpQdgTg%2BzX2G5ULRs%2FHfbIHycjMppyZAklXfqWLtQWcmfqNC%2BaeUKtLY9U9u2fOfUAwOWwtjru8Wn4qgmuXQKY%2FTsm28gpFJYBt0LjIllkBtLJcpcM711e9cOe1zNsR%2Ftb53NmoB3lxRB%2FtCUMu8JlwnZU9k7nOVGEfkL6dTm1IxKLq%2BRxtvYXtQR9YcWliEzr4dZ6qfUMxkhrsFrV1mqmEcSqND3mUlB9GEuanqPb9K9UNSuPBXVdTFIQ50jw%2FccBWXuxiGkXybV7wtKc2esto4im%2BL92sJQ5Aq42FMvIKUte9ms5lwJiVZ772ITLGsDB1KfyII3twYSNnrHMKXDl16b9lGtWPsfIm4NKbMXjCG5G6i9GkvzoMCixnYriMXq2BDTTcRmMHbKVx9Z%2BMfG23L8Oqs8fh4EAvru77JbtRnFz2IYassRBzGSuxvx5DxgNiYl3fbP7CHFiTzNVOAvO7twhhfYl9rVtL0g8JdeZFcHhUHSvbeagWVQWChLODbvOKivweBmVriGu%2BjHh0QJYaEBZYPS%2F0oSVmXnDo9uuSpvNshYv5zuFdpEnjDcAJVz7%2FW8MejeJZBZ%2F2ROB6Jn8MXUhxZSRobTfcAYZSDRHVz5OsX64ZsEGD49sXgmlTZSz%2BnwgEbRtFW0ha%2FmbX5g6qOIwWlYoNIrO9pOcVTLAfoWZDIuezhypPmTLddwNe%2B5du8hm7slyEnAJ232SCFd2C5yUyJIvJFsGnh0Tfl9Po%2FsvBu1Eo11nOsy1IHJwsBSmoaGfmloh3vUrZbfou1i2x4rVlItWvgQEXTiY45aZWCl7zt6bdiVjqPLVO6mpS%2BbPyc2XiYIFdZVwuYWGen%2BO8bBDFJpTQ%2BUxvZzKbhocIwQlT%2BX9XtgKV4%2F3BtyZzKxAz74tboXIVLS32aRescEmzgLfMWaorpzLHzbLBFQFh%2B0rX3t1GSzZYSayye%2BMXz2ADLuKLlssbQNquweprBccABy3nkDSS68KP323XEIEo%2FbIBe65X%2FHgQoIAoJIpl07tis7UtR0fmxgGbzJhGxPO4f4%2BXDFkdO0dQoVnOo00FDeUJP8fBzkf82xpRq4AFbazN1HQOIa2RedLrwmUa53id5OaFUmoSnhfFAk4i4G0jHz8RAheYsnZnsSUJYZ8FMTN0ZNpA74OTBrm9%2FFA5S8jyKZcJU9AQBmMGCZ6TPJgLIESqIVGIt1p92Lgwxbiwcdpl28JS0a6wemxif0SCnGaX7D7DjXp%2F%2BLHP7Bv887OEpUiy1MwbYzdEhRcHApfw%2FvXMTXNB3N%2FrmTYgSkwIpdTaNoucAXcrVZtnuYbb03fRKRiYnpgOyyfC4LaoqZZnjdLsTc5oOzpEKfDWY1%2B321JZ5W%2FOKG%2FLLSp%2FeVRPIhLx7e5zOgOLGmVO%2FPh%2BF8oDriOZHEEAfrlQBMOswCtF6IM1ptocwU5JyRZu6JQ9qH040WZwkhT%2FUHCiRa5cKq7pTuKZmwNVXr%2FhVJwU3%2BHzXH4C3yVioLDjcXxHEjp6Bp1epKGK89ZOiW11RB3a6N7B68aozvdpd93ceY3Iz1eOJpHPUpEoqvUY%2Fgec%2BERQJMtfZ1cOGd7a3deE3Bfe%2BFWBHAlHy2A2ENhk8RryElH%2BvNm5ElBCiR4gT73HeuY638xx6551K30ml0q%2FLsv6CZPm8pTNIPMnjpgte3aqFQu2GMyX0%2Fkb%2FIWJzu3xUsBMyyB%2F7stvMl3K6n1o1Q7vlfB7TdRse0iPdIBJ3%2BbIHYfvhN8Q0J6ENlSaMMLau%2BzNkLm2SrWsPLT0MrOW%2BCcYIFi6z6ZyROHQcprX13ZRYmqGnc2kApYVFMx2%2B8PK6plvsC4egrYHGFWlaqmnDwZgv%2BQaxSxR3sGdsX2P5%2FrCfqR4Qu2jT8XmCeNg5SW4VNccMrxeAJlnkUcMZTw7ygc33UlWO%2Bq5LI3H5yZJM25Z7Rl97TFLm65XpWLt7wIlH9JjnSg5nQ%2BNC9Le5Hu0ZCXdZ1aWBV7hUAn7sPpRDd%2FMJnRCvEodNqdvcJIbwc2SxIh8z40vRzXdDLCnpVAV9N1ZBw9deZ2K8yeOPG4ZwxuoQlkzn%2FdlNYgOsGU8vdMlpdtL4zmQQOI%2BIamn5mUbrn3TenxMvKYGig%2BfHLbe%2BMcJNjaOTSlp8cXSeI870pLM9h4E2GC6NDDVZu0HYJTjsBCZYJM94vivJj15zlnUxm3QJ9GTmhJTAHZ0Hyjaaic8Bt8LW2Rri1wzoZqjRB%2Bhk5inC4gGiFPGNQfssy%2BiNd68AOFiOctn8Z2hslUImgz5VkqF%2FsuSZChy%2FraDWsJAFRxl6CpE1B0nappvUDKFTC%2BcVwxXZ530Z%2FXDms%3D" in captured.out)
         print(captured.out)
 
 
@@ -321,12 +322,21 @@ def test_nomatch_PBKDF2(monkeypatch, capsys, mocker):
 
     with requests_mock.Mocker() as m:
         # Basic Probe Detects Telerik
+       # Basic Probe Detects Telerik
         m.get(
             f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", status_code=200, text=partial_dialog_page
         )
 
         m.post(
             f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_found_key_matcher,
+            status_code=200,
+            text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array",
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_found_key_matcher_negative,
             status_code=200,
             text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>",
         )
@@ -341,7 +351,8 @@ def test_nomatch_PBKDF2(monkeypatch, capsys, mocker):
         m.post(
             f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
             additional_matcher=PBKDF2_version_probe_matcher_incorrect,
-            status_code=500,
+            status_code=200,
+            text="Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)"
         )
 
         monkeypatch.setattr(
@@ -353,7 +364,7 @@ def test_nomatch_PBKDF2(monkeypatch, capsys, mocker):
         print(captured.out)
         assert "Target is a newer version of Telerik UI" in captured.out
         assert (
-            "Warning: MachineKeys inclusion mode is enabled, which affects this Telerik version particularly dramatically. Brute Forcing will be VERY SLOW"
+            "WARNING: MachineKeys inclusion mode is enabled, which affects this Telerik version particularly dramatically. Brute Forcing will be VERY SLOW"
             in captured.out
         )
         print(captured.out)
@@ -412,7 +423,9 @@ def test_fullrun_PBKDF1_MS(monkeypatch, capsys, mocker):
         m.post(
             f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
             additional_matcher=PBKDF1_MS_version_probe_matcher_incorrect,
-            status_code=500,
+            status_code=200,
+            text="Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)"
+
         )
 
         monkeypatch.setattr(

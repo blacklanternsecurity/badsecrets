@@ -498,6 +498,13 @@ class DialogHandler:
                 dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params(hash_key_probe, dummy_encrypted)
                 data = {"dialogParametersHolder": dialog_parameters}
                 res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
+                print("!!!!!!!!!!!!!")
+                print("trying hash key: ", hash_key)
+                print(f"Response status: {res.status_code}")
+               # print(f"Response text: {res.text}")
+                print(f"Response headers: {res.headers}")
+                print(f"Response url: {res.url}")
+             #   print(f"Response request: {res.request.body}")
                 if hasattr(self, "debug") and self.debug:
                     print(f"\n[DEBUG] Testing hash key #{hashkey_counter}: {hash_key}")
                     print(f"[DEBUG] Sending request to: {self.url}")
@@ -754,14 +761,10 @@ def main():
         print("Will show detailed information about each request and key combination being tested")
         print("This will generate a lot of output!\n")
 
-
     if args.proxy:
         proxies = {"http": args.proxy, "https": args.proxy}
     else:
         proxies = {}
-
-
-
 
     include_machinekeys_bool = False
     if args.machine_keys:
