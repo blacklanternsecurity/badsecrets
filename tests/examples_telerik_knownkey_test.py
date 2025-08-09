@@ -359,7 +359,13 @@ def test_nomatch_PBKDF2(monkeypatch, capsys, mocker):
 
         monkeypatch.setattr(
             "sys.argv",
-            ["python", "--url", "http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--machine-keys"],
+            [
+                "python",
+                "--url",
+                "http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+                "--machine-keys",
+                "--debug",
+            ],
         )
         telerik_knownkey.main()
         captured = capsys.readouterr()
@@ -431,7 +437,7 @@ def test_fullrun_PBKDF1_MS(monkeypatch, capsys, mocker):
 
         monkeypatch.setattr(
             "sys.argv",
-            ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx"],
+            ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--debug"],
         )
         telerik_knownkey.main()
         captured = capsys.readouterr()
@@ -515,7 +521,7 @@ def test_misctest_PBKDF1_MS(monkeypatch, capsys, mocker):
 
         monkeypatch.setattr(
             "sys.argv",
-            ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx"],
+            ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--debug"],
         )
         telerik_knownkey.main()
         captured = capsys.readouterr()
@@ -563,7 +569,7 @@ def test_nomatch_PBKDF1_MS(monkeypatch, capsys, mocker):
 
         monkeypatch.setattr(
             "sys.argv",
-            ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx"],
+            ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--debug"],
         )
         telerik_knownkey.main()
         captured = capsys.readouterr()
@@ -607,7 +613,7 @@ def test_badoutput_PBKDF1_MS(monkeypatch, capsys, mocker):
 
             monkeypatch.setattr(
                 "sys.argv",
-                ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx"],
+                ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--debug"],
             )
             telerik_knownkey.main()
             captured = capsys.readouterr()
@@ -653,7 +659,7 @@ def test_fullrun_asyncupload_earlydetection(monkeypatch, capsys, mocker):
 
         monkeypatch.setattr(
             "sys.argv",
-            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force"],
+            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force", "--debug"],
         )
         telerik_knownkey.main()
         captured = capsys.readouterr()
@@ -701,7 +707,7 @@ def test_fullrun_asyncupload_success(monkeypatch, capsys, mocker):
 
         monkeypatch.setattr(
             "sys.argv",
-            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force"],
+            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force", "--debug"],
         )
         telerik_knownkey.main()
         captured = capsys.readouterr()
@@ -737,7 +743,7 @@ def test_fullrun_asyncupload_PBKDF1_MS(monkeypatch, capsys, mocker):
 
         monkeypatch.setattr(
             "sys.argv",
-            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force"],
+            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force", "--debug"],
         )
         telerik_knownkey.main()
         captured = capsys.readouterr()
@@ -773,7 +779,7 @@ def test_verbose_error_parsing_PBKDF1_MS(monkeypatch, capsys, mocker):
 
         monkeypatch.setattr(
             "sys.argv",
-            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force"],
+            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force", "--debug"],
         )
         telerik_knownkey.main()
         captured = capsys.readouterr()
@@ -809,7 +815,7 @@ def test_verbose_error_parsing_notdetermined_PBKDF1_MS(monkeypatch, capsys, mock
 
         monkeypatch.setattr(
             "sys.argv",
-            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force"],
+            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force", "--debug"],
         )
         telerik_knownkey.main()
         captured = capsys.readouterr()
@@ -843,7 +849,7 @@ def test_verbose_error_parsing_PBKDF2(monkeypatch, capsys, mocker):
 
         monkeypatch.setattr(
             "sys.argv",
-            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force"],
+            ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force", "--debug"],
         )
         telerik_knownkey.main()
         captured = capsys.readouterr()
