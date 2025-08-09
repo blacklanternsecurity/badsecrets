@@ -428,7 +428,6 @@ class DialogHandler:
             verify=False,
             proxies=self.proxies,
         )
-
         # Extract title if it exists
         title = ""
         if r.text:

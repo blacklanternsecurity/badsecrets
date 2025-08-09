@@ -139,6 +139,27 @@ def PBKDF2_version_probe_matcher_incorrect(request):
         return True
     return False
 
+def PBKDF2_version_probe_matcher_modern(request):
+    if (
+        request.body
+        == "dialogParametersHolder=%2Bv%2BRs6kf9lDUYnqqYk32Vg84DkpdruQOKGZRmm6RMkaYuxNmvg5Ca5cT%2F74qkOozHIKkG1ovf6XBsjlp4kgO8BJ6KgNcT78BExQZfT1mN5rMO8kcLDRdffFhFXmvAr0o%2F4x%2B9VoRJVaOyGLXk2nhX4OMP%2BjGP2C96Fa6LyfGWHlk1CF0E5mAPeQ6CLbycR88WU5hlmUUqniXC2UdeYd6HO9RFnISEnhq72MkdiEfvNsqAhr2XaCX2%2BQxFXfCLi2%2Fc%2Bn2NmUiFRdhCLutnVxILEnYiRmU5eHJdB2IOTtoc2XZ3NUdZJwrwOswjzCkk7LOwt2bddTvOXdfWtRrbNz1GDNXlPz1cXotgAhucxLLsknNDbeeboMbL%2Bk3tIeervi7oI%2FRQn6Ml3ffUAfcqHzwcXSXq6ey16mT7GUJbst%2BCQnfUQu5gqzYBOwSmvNPc9AtoVWV%2F5dfO1uPm%2F%2FfLxuOXoxO5v7UIJNIX1KUEuFcysdbBSkZHdCqSRasDt63Li1lZEqHBCuHSNj%2BcEcRGx841w%2BCN%2BWrJyanc%2F3OOP%2BNWRYRstLeKZVf3aRHhKYNp4Q%2B%2BSEQxIVpv9UxWpkOSs%2Bbckk36t3N6DCcKGB1z9lelAGTDzlOLPUh9GhikJAESqLytLBC0CXn40%2BI%2BlBRZ44m4TX53YDcKBPOfiP880p3%2BfnIOY1X6p7HMNoi5jcUlphEQv5aN60B7TkYzZVRQS6xX0gq8r1La9iEUeE4t8378DhGQ8qkcHv1JkJM4WBgQaFzfWxj5Dg%2BL7USGaCKNH4W0kzeBSNrRW5ETwJDrDh683%2BzOJCEqh5Wlqjswo4986yHARJEJzRgJC2O4EbGcGyBtiaNioPFUyyX87ovcxMqIdMEyfZpo5QeWd4s0Sufx4vICyl%2BkGtzo0f7xIhIeuJRsbXvKmHxx0wwVJZsOFR5SBYrd7%2Bs6TM8waDsXr5pC%2FdTT3pBCh%2BWPS%2Fy%2FMgHjh75q6lWy4UTygpb6brMqiW%2F%2F1NXRLLHqqweT8xy5N0x7ck8bspjo7yF1rNn%2FixyuQ7HLZsEiXEbwBCBGGnTF2P4geoz9t7y7wUdoRw5SDyhSqoS2X5Urwou8KNAN4kY20JNgoM8L3ef8TcHctE2vwQ0jvCLxec%2FC3hr61NyO8QVxi8KzJvjRaHqkDkzJ5GQ3N1JLfA7Mdg%2FZTRzu2C7v5ubmJPR%2BiA24xOoKUvsYJQ0KiXRkWdGG5bprG4DjFWgkrGVh0yH4lj5R97BQ0uIIZehSQXibhI9RiANf459jDJN3eTQ6mcpYkvz%2FW0GnHKRgjcqRFqXnqsUdEHnuUkmZvdhbyRdPrkHvn99RhVmX4QXHYO0ehZVXknk42D5euG0acZMSyygTXrZZNu6e%2BriIrlmMGQgKuwN%2FNVz%2Bocl987zG%2Fmf7r%2FRz1ZSXkNtixN7LQwpZ%2BCM7zP64ugTT%2FWoo76hZgf5PjlW3C9k8tIPXEVT6HKIzteaP6YrviJCuy8VAybH5t1aDY%2FGl5MXiFjfGZNf3921yvTlwmWOi0oUFky5460M1RYwt4UHkwmFIAIJF4TN5kIu%2FaJxYHTCG%2BC14r7TjVPJuy%2FI2iYEJOA58G9yOevW6ixm650ELGqXXgbRRUH3hec6j%2FrRdrNdPU7isX%2FBBicEACDS97uvz62YkJwwJ5AUEnfuV%2FhnlJzIjNC%2Fq7xAb2sXuv6HTdtJYaJbe5%2BXWwq0AppO5NV9oU2cD%2F%2F1JhRN6GZ3myMGYGwDRYdPIqJ0l9PUCetBrSQR7830WkfGJ%2FHfuIWH%2F45zGsixZXYwHfE90rVvCisAjJ%2BBsjYX%2BKSx3PXAg2%2BKzybzyd6m%2B6ArimL%2FwWXF4t6eEFOrzKL8zYzNMDlKab6rgFhXPYw%2Bseulb9lwi90MlPoBmDjuEDJxtD7tNYMd3yWBIYyVN3Pv6adra6cKizf8zGBTl3ofs%2Fj5v2wjb1Dp33tbcASpHAL0rfyns7O%2Bm%2BZRAtn1tr5JRFSseu%2BqNXCiFCr2Oc3%2FCseGewyQhMqBkcPDOxfRvPMNdQhR4e92EDnFV1a%2FzJKSf%2BvqBzDiAeqBojmIjUppKBPtDTs0J%2B6UIPzkO8z5Ff%2BstJwF%2FplkftFk6CpAvDITRDgKgbMJ%2BVB8CqeOF2%2FS3Q4LEcLxxUUTgUvEQb9OxVWzd7YDTSAvcCvc3y9T3d0bJxJ0%2BGjZO2ZbnB7tDgBmC4clqtwp3m2JyFWOWzzkmLx16bfgA259Piju0qHZKFtQaASrFTy2QxM0MmyXpgcBWZgiubyta4%2B6d9YkgMQp4tcsL6k1HLYGRHujkaixzdVgjvXwsQ0EqYeX5RM2vzWaPhxSK%2BnsjxgiURZbj5wWvVQPml9RHnTdyYRvELRAqxPCFhYFQ%2BpEIwUHwEuvgkvgmyHjN3ZspADp%2BcO9B9VoAFmLg74jkcifZJqy2WpIPTL6JASkn9A2UgmmnAAqmu%2BwEayHVtrBGrpswqeKT3q7JttEn5YbbWYN%2FLyOtVG5VCBoxjP3XFTcLV0wcXHSrm6EMPkzi%2Bqv%2BYHUBJQ43YycfduyjZuWw9jmU4wm8O%2BIFVsaSxmmxnsQ2jAotpr%2BxUZXTjInv8TvHuO4xaLqyifS%2B7Ht1wAwrXtcfseEkkCVwRLib5F%2FEMIWWDrYpKWx5fYZjBNlhMb21WvehQkeVu71jK%2FUdqV%2BBVfT8yjHbk7vaxxxiewLXV7LP3D56LPD8koeIwptkJ62JHFBjnlvR9XHZowkiPZZ3X7BV3S6S6t5TIjDHVeuO3PZnSv9ic0BGb8Srbq2eABgsmOXPKTHgaTAFzUTa8axECwKYWQfZvJRnDrvP8qt34C2Y9tDa1THJqdtb3x3Qco6exHd5WpH2LcR0j1fc4ZJDocOXnZaQKyvDlMTZIfA4O2WzeECxHIJIe2ulebZpJHCX3bFtBrlmy45z4pwbl%2BcUBzLLpzn8Ro7g5427G3aj%2Ftn5s1K42yMbrcNCbaSPK4SnCAA9%2BkKqwcoatuiyi3fy7vhOAgP0BNNFRO8LjLsJth%2BfRRQDTNLD0jUKPtS7DtAKck3h30%2FRFJj4QYLYeQ%3D"
+    ):
+        return True
+    return False
+
+
+def PBKDF2_version_probe_matcher_incorrect_modern(request):
+    if (
+        request.body != "dialogParametersHolder=AAAA"
+        and request.body
+        != "dialogParametersHolder=%2Bv%2BRs6kf9lDUYnqqYk32Vg84DkpdruQOKGZRmm6RMkaYuxNmvg5Ca5cT%2F74qkOozHIKkG1ovf6XBsjlp4kgO8BJ6KgNcT78BExQZfT1mN5rMO8kcLDRdffFhFXmvAr0o%2F4x%2B9VoRJVaOyGLXk2nhX4OMP%2BjGP2C96Fa6LyfGWHlk1CF0E5mAPeQ6CLbycR88WU5hlmUUqniXC2UdeYd6HO9RFnISEnhq72MkdiEfvNsqAhr2XaCX2%2BQxFXfCLi2%2Fc%2Bn2NmUiFRdhCLutnVxILEnYiRmU5eHJdB2IOTtoc2XZ3NUdZJwrwOswjzCkk7LOwt2bddTvOXdfWtRrbNz1GDNXlPz1cXotgAhucxLLsknNDbeeboMbL%2Bk3tIeervi7oI%2FRQn6Ml3ffUAfcqHzwcXSXq6ey16mT7GUJbst%2BCQnfUQu5gqzYBOwSmvNPc9AtoVWV%2F5dfO1uPm%2F%2FfLxuOXoxO5v7UIJNIX1KUEuFcysdbBSkZHdCqSRasDt63Li1lZEqHBCuHSNj%2BcEcRGx841w%2BCN%2BWrJyanc%2F3OOP%2BNWRYRstLeKZVf3aRHhKYNp4Q%2B%2BSEQxIVpv9UxWpkOSs%2Bbckk36t3N6DCcKGB1z9lelAGTDzlOLPUh9GhikJAESqLytLBC0CXn40%2BI%2BlBRZ44m4TX53YDcKBPOfiP880p3%2BfnIOY1X6p7HMNoi5jcUlphEQv5aN60B7TkYzZVRQS6xX0gq8r1La9iEUeE4t8378DhGQ8qkcHv1JkJM4WBgQaFzfWxj5Dg%2BL7USGaCKNH4W0kzeBSNrRW5ETwJDrDh683%2BzOJCEqh5Wlqjswo4986yHARJEJzRgJC2O4EbGcGyBtiaNioPFUyyX87ovcxMqIdMEyfZpo5QeWd4s0Sufx4vICyl%2BkGtzo0f7xIhIeuJRsbXvKmHxx0wwVJZsOFR5SBYrd7%2Bs6TM8waDsXr5pC%2FdTT3pBCh%2BWPS%2Fy%2FMgHjh75q6lWy4UTygpb6brMqiW%2F%2F1NXRLLHqqweT8xy5N0x7ck8bspjo7yF1rNn%2FixyuQ7HLZsEiXEbwBCBGGnTF2P4geoz9t7y7wUdoRw5SDyhSqoS2X5Urwou8KNAN4kY20JNgoM8L3ef8TcHctE2vwQ0jvCLxec%2FC3hr61NyO8QVxi8KzJvjRaHqkDkzJ5GQ3N1JLfA7Mdg%2FZTRzu2C7v5ubmJPR%2BiA24xOoKUvsYJQ0KiXRkWdGG5bprG4DjFWgkrGVh0yH4lj5R97BQ0uIIZehSQXibhI9RiANf459jDJN3eTQ6mcpYkvz%2FW0GnHKRgjcqRFqXnqsUdEHnuUkmZvdhbyRdPrkHvn99RhVmX4QXHYO0ehZVXknk42D5euG0acZMSyygTXrZZNu6e%2BriIrlmMGQgKuwN%2FNVz%2Bocl987zG%2Fmf7r%2FRz1ZSXkNtixN7LQwpZ%2BCM7zP64ugTT%2FWoo76hZgf5PjlW3C9k8tIPXEVT6HKIzteaP6YrviJCuy8VAybH5t1aDY%2FGl5MXiFjfGZNf3921yvTlwmWOi0oUFky5460M1RYwt4UHkwmFIAIJF4TN5kIu%2FaJxYHTCG%2BC14r7TjVPJuy%2FI2iYEJOA58G9yOevW6ixm650ELGqXXgbRRUH3hec6j%2FrRdrNdPU7isX%2FBBicEACDS97uvz62YkJwwJ5AUEnfuV%2FhnlJzIjNC%2Fq7xAb2sXuv6HTdtJYaJbe5%2BXWwq0AppO5NV9oU2cD%2F%2F1JhRN6GZ3myMGYGwDRYdPIqJ0l9PUCetBrSQR7830WkfGJ%2FHfuIWH%2F45zGsixZXYwHfE90rVvCisAjJ%2BBsjYX%2BKSx3PXAg2%2BKzybzyd6m%2B6ArimL%2FwWXF4t6eEFOrzKL8zYzNMDlKab6rgFhXPYw%2Bseulb9lwi90MlPoBmDjuEDJxtD7tNYMd3yWBIYyVN3Pv6adra6cKizf8zGBTl3ofs%2Fj5v2wjb1Dp33tbcASpHAL0rfyns7O%2Bm%2BZRAtn1tr5JRFSseu%2BqNXCiFCr2Oc3%2FCseGewyQhMqBkcPDOxfRvPMNdQhR4e92EDnFV1a%2FzJKSf%2BvqBzDiAeqBojmIjUppKBPtDTs0J%2B6UIPzkO8z5Ff%2BstJwF%2FplkftFk6CpAvDITRDgKgbMJ%2BVB8CqeOF2%2FS3Q4LEcLxxUUTgUvEQb9OxVWzd7YDTSAvcCvc3y9T3d0bJxJ0%2BGjZO2ZbnB7tDgBmC4clqtwp3m2JyFWOWzzkmLx16bfgA259Piju0qHZKFtQaASrFTy2QxM0MmyXpgcBWZgiubyta4%2B6d9YkgMQp4tcsL6k1HLYGRHujkaixzdVgjvXwsQ0EqYeX5RM2vzWaPhxSK%2BnsjxgiURZbj5wWvVQPml9RHnTdyYRvELRAqxPCFhYFQ%2BpEIwUHwEuvgkvgmyHjN3ZspADp%2BcO9B9VoAFmLg74jkcifZJqy2WpIPTL6JASkn9A2UgmmnAAqmu%2BwEayHVtrBGrpswqeKT3q7JttEn5YbbWYN%2FLyOtVG5VCBoxjP3XFTcLV0wcXHSrm6EMPkzi%2Bqv%2BYHUBJQ43YycfduyjZuWw9jmU4wm8O%2BIFVsaSxmmxnsQ2jAotpr%2BxUZXTjInv8TvHuO4xaLqyifS%2B7Ht1wAwrXtcfseEkkCVwRLib5F%2FEMIWWDrYpKWx5fYZjBNlhMb21WvehQkeVu71jK%2FUdqV%2BBVfT8yjHbk7vaxxxiewLXV7LP3D56LPD8koeIwptkJ62JHFBjnlvR9XHZowkiPZZ3X7BV3S6S6t5TIjDHVeuO3PZnSv9ic0BGb8Srbq2eABgsmOXPKTHgaTAFzUTa8axECwKYWQfZvJRnDrvP8qt34C2Y9tDa1THJqdtb3x3Qco6exHd5WpH2LcR0j1fc4ZJDocOXnZaQKyvDlMTZIfA4O2WzeECxHIJIe2ulebZpJHCX3bFtBrlmy45z4pwbl%2BcUBzLLpzn8Ro7g5427G3aj%2Ftn5s1K42yMbrcNCbaSPK4SnCAA9%2BkKqwcoatuiyi3fy7vhOAgP0BNNFRO8LjLsJth%2BfRRQDTNLD0jUKPtS7DtAKck3h30%2FRFJj4QYLYeQ%3D"
+        and request.body
+        != "dialogParametersHolder=%2Bv%2BRs6kf9lDUYnqqYk32Vg84DkpdruQOKGZRmm6RMkaYuxNmvg5Ca5cT%2F74qkOozHIKkG1ovf6XBsjlp4kgO8BJ6KgNcT78BExQZfT1mN5rFGZylxNlfmCxZEQFLAyV2xh%2FkGVb%2Bk95TQYnppybCMfuwinH7NDbVXKO7qr3kTNUCkgUUdFGWw6%2BoM49hkD%2BwQN%2F62S%2F%2BfVkxGJeRQEKHakLELFYpjwgW6UsXXDGmQilTdKx4iZ1MlO3JsD%2FWMUF94bACEiq26YUKhW7j0MEChv4regUuWBhAvrq0WKEdRbk%3D"
+    ):
+        return True
+    return False
+
+
 
 def PBKDF1_MS_found_key_matcher(request):
     if (
@@ -377,6 +398,70 @@ def test_fullrun_PBKDF2_version_customkeys(monkeypatch, capsys, mocker):
         assert ("SUCCESS! Found working version: 2018.1.117") in captured.out
         assert (
             "%2Bv%2BRs6kf9lDUYnqqYk32Vg84DkpdruQOKGZRmm6RMkaYuxNmvg5Ca5cT%2F74qkOozHIKkG1ovf6XBsjlp4kgO8BJ6KgNcT78BExQZfT1mN5rMO8kcLDRdffFhFXmvAr0o%2F4x%2B9VoRJVaOyGLXk2nhX4OMP%2BjGP2C96Fa6LyfGWHlk1CF0E5mAPeQ6CLbycR88WU5hlmUUqniXC2UdeYd6HO9RFnISEnhq72MkdiEfvNsqAhr2XaCX2%2BQxFXfCLi2%2Fc%2Bn2NmUiFRdhCLutnVxILEnYiRmU5eHJdB2IOTtoc2XZ3NUdZJwrwOswjzCkk7LOwt2bddTvOXdfWtRrbNz1GDNXlPz1cXotgAhucxLLsknNDbeeboMbL%2Bk3tIeervi7oI%2FRQn6Ml3ffUAfcqHzwcZCEIlQXh%2FBEIKHAY9fGKs5JSdtRbREDI0rh9sH%2B0TmYv444WQyqYpa8pOqtxgC1QRRcsNQcVGFzpyNL2SfKSlLTZi5Q7bo8XMTfLG6jg60csDEDiJ7MwJBGIm1iYzt%2FP9JEKkZujTMyHoBI0RESNpux7BeanEIDsfDmfwbcUo%2B2%2BkoHkCE4zXWBdW3lqssk4GwSbc0mbmf3U79rsQdNEqIOL87evE1U6tGB5PuXgwAIj9sKdyffd8%2B%2Bz1CCffFovLM72ilbCmSljAJ%2BvVBfNpTiL7RV7j3XGygljzi4NL8yXJuCLYiNxmqPMdV8DahLed0jSe2mkU1u6rx4yS3dcWEfwMWjI5tVrfnbqtdInC8TliXkTZ919CtORoydmIXGL1u3kdBIq8EZcjRMa4bN4VTvUlbqeIe8p8QYEQwAi7vXiZCKS6R6dmJfQv%2B%2FqBHXWSFuglLYde019GNtNdGQfEnY31zT0Q86ieDYn4k55LbYq5lK8PNjg50gdJxn9fNtHTQ7frKP9vRM4cImRSvDBTATVw1PDzMqn0exo3xciYd5%2BXYAxlFoqwFMDz40w2xR4OWwoPsixpVjR2DYiqYiZrYytFMjziRCLQhkVuJpED8nB9CTlo05WBKN%2Bb4UBHBg%2FkCkHXJxNakIX7UbAjDcqzrNCGhjrgehCGA81uOf0Ppfswda0ZHMi8g9W6Y7uwWmn7Ux7xBMgDCUNIi8I3UvLGXdKnuB8YHX8TLC1z2%2Fm3ip797Pix1ya2sBsbw9KgOJ7PBT0u9W0puchi7zpT%2FzFe3V2HbV0ottDethRJhzaN856VgvjyNhbbmA04gnal%2Fq01j7LNWxEwTjNPyHORI1l9jztvYqItLei7YQYg2pFhmvuv0Od8DPfH40Y1m3mL2F2d%2FAy3ImzFI%2BKQB6mnGPvRcDIS1j7zPhciKRuLfu3dCxhIH7ojo83rhQus3SyXdyZ5cjkFKcG3H7WmBBMOFs2o5xjWcdLARevRbNbqwRfATerc5GuJxy1Qb8RJvOqhDcS5YAHyxVMx2QYU3yMhg0tCpy4wW%2FHsa33feu3NeBu9lRI38ojJNM7o6xYRoSTQu4tYadB4Yh4w60e%2FsttnecOC5plZrLw6BYN2piqvUD07BnO4yTvrpdBDXR%2BMFDchnFh2YK9JtvvtAISvpoSOJojOhwRKuafCwEJn0GB1dsdmOOxxaFHkPXQ7789eCxlTL5mkVf3ktzmHQdDyBxBlDLFWSjmFIBHp%2BPobFdDOmv5p6J3%2F%2FM23PMgGDLRMrj5LVZV3trGV1ZaJHEFIGmVwW0tN4426Q4rCdcxT4ju%2B%2FNhcq90e8crWw9nrF2rPTzW1YM7VqWWwhLj8MtVtGZFa3N%2FxdjEys8FWyT8VqAbC4IltuT5lW1ou1SXsA96h%2F9y3vzJADbm4Lv624OGnh6M%2FCmR930i6YeUlWWmMw1%2FpcZ5werHPm9v0OWulNmGfbNEoKuThz2sSCZ8FLNVToygv1VXPXnur4dJnoCkwBP2%2BQQ6%2FHlyFRXnrrGsiDJE3qtRXgECIhc2zpuC5HAz9FhIfC9VZZ5nxRMbhA6W%2Fz%2BjPpKLCBpmLqHJfy8%2B%2FausiZJv7d9yQ0SvHtq0y%2FSY04hOgZTJul6IIYpObD6s%2FqrGy2nMmY3%2FtEn830%2F%2BFERnXMeBsj%2B%2F5ZSewYe4xBnub1wvSbsA3qjoU5gq7fhDJOhmMQXkbas%2FRholsU9CNKNXpSyqVarqAc8XwaG34JmdG3wjQXd6p%2Bz2jZLew5ja8nelvVdIeN%2F9ejCNOoXcPApYLHyxslcrEuJrSHlAMR4FbonfrFhYYTR%2B8pdxRGYGpVUDxlIRvayztxVhLnSpRwg5uIXktoMwJ%2FSaF8x29hA9LIyUqAu4%2FR2hQW%2B4SImPpsXXpqtiGkjfub23eHBh6%2BtPfI7KNBt0Sz%2F3IcUvQk%2BWZYFfPMd8cXJdempaxEs%2BWRlN16p%2BjqhLiVh2A8iaZ4WvdHZmEP7slp3BgAJHjnl7C9sEWeDqCEwe%2FjIDLeJ1X%2FDjBXwflC7CNUtfL5Xw3En%2FArqlvVhUGhwvFy6lQocBfs6%2BLYvOaWiwZ37DX8rkRZlWpkY2rpapUrmnba7Ly%2FoLx924DzkK78M%2BzFL0ra5b1t6Rgv5zuibZAhF47t1EdOxpWIlBlf3zB9gg2M5Rk%2F9IMH%2BzrDHou9o9uO%2BDC6WFddIOuEWc1nrjSenwFkvqgNVdc9CtdiVDWnFLKJh70er5L8AlH7uCb4iXrYljyCSAeyr0DiKz6T8ox10NRGPI6iJbYf%2FIr3IuZE1oJgqcvn7tKhQBOq4jemlZpbeQgPy0FxO0%2BDxeqI%3D"
+            in captured.out
+        )
+
+
+def test_fullrun_PBKDF2_modern_dialog_params(monkeypatch, capsys, mocker):
+
+    def generate_keylist_enc(include_machinekeys):
+        return iter(
+            ["Not_The_Real_Encryption_Key", "d2a312d9-7af4-43de-be5a-ae717b46cea6", "another_fake_encryption_key"]
+        )
+
+    def generate_keylist_hash(include_machinekeys):
+        return iter(["Not_The_Real_HaSh_Key", "YOUR_ENCRYPTION_KEY_TO_GO_HERE", "Y3t_anoth3r_f@k3_key"])
+
+    mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
+    mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
+
+    with requests_mock.Mocker() as m:
+        # Basic Probe Detects Telerik
+        m.get(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", status_code=200, text=partial_dialog_page
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_found_key_matcher,
+            status_code=200,
+            text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array",
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_found_key_matcher_negative,
+            status_code=200,
+            text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>",
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_version_probe_matcher_modern,
+            status_code=200,
+            text="DoesntMatter",
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_version_probe_matcher_incorrect_modern,
+            status_code=200,
+            text="Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--version", "2018.1.117", "--modern-dialog-params"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert "Target is a newer version of Telerik UI" in captured.out
+        assert "Found encryption key: [d2a312d9-7af4-43de-be5a-ae717b46cea6]" in captured.out
+        assert "SUCCESS! Found encryption key: [d2a312d9-7af4-43de-be5a-ae717b46cea6]" in captured.out
+        assert ("SUCCESS! Found working version: 2018.1.117") in captured.out
+        assert (
+            "%2Bv%2BRs6kf9lDUYnqqYk32Vg84DkpdruQOKGZRmm6RMkaYuxNmvg5Ca5cT%2F74qkOozHIKkG1ovf6XBsjlp4kgO8BJ6KgNcT78BExQZfT1mN5rMO8kcLDRdffFhFXmvAr0o%2F4x%2B9VoRJVaOyGLXk2nhX4OMP%2BjGP2C96Fa6LyfGWHlk1CF0E5mAPeQ6CLbycR88WU5hlmUUqniXC2UdeYd6HO9RFnISEnhq72MkdiEfvNsqAhr2XaCX2%2BQxFXfCLi2%2Fc%2Bn2NmUiFRdhCLutnVxILEnYiRmU5eHJdB2IOTtoc2XZ3NUdZJwrwOswjzCkk7LOwt2bddTvOXdfWtRrbNz1GDNXlPz1cXotgAhucxLLsknNDbeeboMbL%2Bk3tIeervi7oI%2FRQn6Ml3ffUAfcqHzwcXSXq6ey16mT7GUJbst%2BCQnfUQu5gqzYBOwSmvNPc9AtoVWV%2F5dfO1uPm%2F%2FfLxuOXoxO5v7UIJNIX1KUEuFcysdbBSkZHdCqSRasDt63Li1lZEqHBCuHSNj%2BcEcRGx841w%2BCN%2BWrJyanc%2F3OOP%2BNWRYRstLeKZVf3aRHhKYNp4Q%2B%2BSEQxIVpv9UxWpkOSs%2Bbckk36t3N6DCcKGB1z9lelAGTDzlOLPUh9GhikJAESqLytLBC0CXn40%2BI%2BlBRZ44m4TX53YDcKBPOfiP880p3%2BfnIOY1X6p7HMNoi5jcUlphEQv5aN60B7TkYzZVRQS6xX0gq8r1La9iEUeE4t8378DhGQ8qkcHv1JkJM4WBgQaFzfWxj5Dg%2BL7USGaCKNH4W0kzeBSNrRW5ETwJDrDh683%2BzOJCEqh5Wlqjswo4986yHARJEJzRgJC2O4EbGcGyBtiaNioPFUyyX87ovcxMqIdMEyfZpo5QeWd4s0Sufx4vICyl%2BkGtzo0f7xIhIeuJRsbXvKmHxx0wwVJZsOFR5SBYrd7%2Bs6TM8waDsXr5pC%2FdTT3pBCh%2BWPS%2Fy%2FMgHjh75q6lWy4UTygpb6brMqiW%2F%2F1NXRLLHqqweT8xy5N0x7ck8bspjo7yF1rNn%2FixyuQ7HLZsEiXEbwBCBGGnTF2P4geoz9t7y7wUdoRw5SDyhSqoS2X5Urwou8KNAN4kY20JNgoM8L3ef8TcHctE2vwQ0jvCLxec%2FC3hr61NyO8QVxi8KzJvjRaHqkDkzJ5GQ3N1JLfA7Mdg%2FZTRzu2C7v5ubmJPR%2BiA24xOoKUvsYJQ0KiXRkWdGG5bprG4DjFWgkrGVh0yH4lj5R97BQ0uIIZehSQXibhI9RiANf459jDJN3eTQ6mcpYkvz%2FW0GnHKRgjcqRFqXnqsUdEHnuUkmZvdhbyRdPrkHvn99RhVmX4QXHYO0ehZVXknk42D5euG0acZMSyygTXrZZNu6e%2BriIrlmMGQgKuwN%2FNVz%2Bocl987zG%2Fmf7r%2FRz1ZSXkNtixN7LQwpZ%2BCM7zP64ugTT%2FWoo76hZgf5PjlW3C9k8tIPXEVT6HKIzteaP6YrviJCuy8VAybH5t1aDY%2FGl5MXiFjfGZNf3921yvTlwmWOi0oUFky5460M1RYwt4UHkwmFIAIJF4TN5kIu%2FaJxYHTCG%2BC14r7TjVPJuy%2FI2iYEJOA58G9yOevW6ixm650ELGqXXgbRRUH3hec6j%2FrRdrNdPU7isX%2FBBicEACDS97uvz62YkJwwJ5AUEnfuV%2FhnlJzIjNC%2Fq7xAb2sXuv6HTdtJYaJbe5%2BXWwq0AppO5NV9oU2cD%2F%2F1JhRN6GZ3myMGYGwDRYdPIqJ0l9PUCetBrSQR7830WkfGJ%2FHfuIWH%2F45zGsixZXYwHfE90rVvCisAjJ%2BBsjYX%2BKSx3PXAg2%2BKzybzyd6m%2B6ArimL%2FwWXF4t6eEFOrzKL8zYzNMDlKab6rgFhXPYw%2Bseulb9lwi90MlPoBmDjuEDJxtD7tNYMd3yWBIYyVN3Pv6adra6cKizf8zGBTl3ofs%2Fj5v2wjb1Dp33tbcASpHAL0rfyns7O%2Bm%2BZRAtn1tr5JRFSseu%2BqNXCiFCr2Oc3%2FCseGewyQhMqBkcPDOxfRvPMNdQhR4e92EDnFV1a%2FzJKSf%2BvqBzDiAeqBojmIjUppKBPtDTs0J%2B6UIPzkO8z5Ff%2BstJwF%2FplkftFk6CpAvDITRDgKgbMJ%2BVB8CqeOF2%2FS3Q4LEcLxxUUTgUvEQb9OxVWzd7YDTSAvcCvc3y9T3d0bJxJ0%2BGjZO2ZbnB7tDgBmC4clqtwp3m2JyFWOWzzkmLx16bfgA259Piju0qHZKFtQaASrFTy2QxM0MmyXpgcBWZgiubyta4%2B6d9YkgMQp4tcsL6k1HLYGRHujkaixzdVgjvXwsQ0EqYeX5RM2vzWaPhxSK%2BnsjxgiURZbj5wWvVQPml9RHnTdyYRvELRAqxPCFhYFQ%2BpEIwUHwEuvgkvgmyHjN3ZspADp%2BcO9B9VoAFmLg74jkcifZJqy2WpIPTL6JASkn9A2UgmmnAAqmu%2BwEayHVtrBGrpswqeKT3q7JttEn5YbbWYN%2FLyOtVG5VCBoxjP3XFTcLV0wcXHSrm6EMPkzi%2Bqv%2BYHUBJQ43YycfduyjZuWw9jmU4wm8O%2BIFVsaSxmmxnsQ2jAotpr%2BxUZXTjInv8TvHuO4xaLqyifS%2B7Ht1wAwrXtcfseEkkCVwRLib5F%2FEMIWWDrYpKWx5fYZjBNlhMb21WvehQkeVu71jK%2FUdqV%2BBVfT8yjHbk7vaxxxiewLXV7LP3D56LPD8koeIwptkJ62JHFBjnlvR9XHZowkiPZZ3X7BV3S6S6t5TIjDHVeuO3PZnSv9ic0BGb8Srbq2eABgsmOXPKTHgaTAFzUTa8axECwKYWQfZvJRnDrvP8qt34C2Y9tDa1THJqdtb3x3Qco6exHd5WpH2LcR0j1fc4ZJDocOXnZaQKyvDlMTZIfA4O2WzeECxHIJIe2ulebZpJHCX3bFtBrlmy45z4pwbl%2BcUBzLLpzn8Ro7g5427G3aj%2Ftn5s1K42yMbrcNCbaSPK4SnCAA9%2BkKqwcoatuiyi3fy7vhOAgP0BNNFRO8LjLsJth%2BfRRQDTNLD0jUKPtS7DtAKck3h30%2FRFJj4QYLYeQ%3D"
             in captured.out
         )
 
