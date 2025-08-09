@@ -470,6 +470,7 @@ def test_carve_aspnet_viewstate_userkey():
     # Test carving ViewState with ViewStateUserKey from HTML and cookies
     html = """<!DOCTYPE html>
 <html>
+<title>Test title</title>
 <body>
     <form method="post" action="./testvsuk2.aspx" id="form1">
         <div class="aspNetHidden">
