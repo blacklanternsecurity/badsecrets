@@ -95,9 +95,7 @@ class BadsecretsBase:
             if type(requests_response) == requests.models.Response:
                 if not cookies:
                     cookies = (
-                        requests_response.cookies.get_dict()
-                        if hasattr(requests_response.cookies, "get_dict")
-                        else {}
+                        requests_response.cookies.get_dict() if hasattr(requests_response.cookies, "get_dict") else {}
                     )
                 if not headers:
                     headers = requests_response.headers
