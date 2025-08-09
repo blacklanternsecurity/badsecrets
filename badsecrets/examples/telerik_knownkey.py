@@ -195,8 +195,6 @@ class AsyncUpload:
     def __init__(self, url, include_machinekeys_bool=False, proxies={}, headers=None):
         self.url = url
         self.asyncupload_key = None
-        if proxies == None:
-            proxies = {}
         self.proxies = proxies
         self.headers = headers
         self.include_machinekeys_bool = include_machinekeys_bool
@@ -377,8 +375,6 @@ class DialogHandler:
         self.telerik_encryptionkey = Telerik_EncryptionKey()
         self.encryption_key = None
         self.hash_key = None
-        if proxies == None:
-            proxies = {}
         self.proxies = proxies
         self.headers = headers
         self.include_machinekeys_bool = include_machinekeys_bool
