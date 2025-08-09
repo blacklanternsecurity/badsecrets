@@ -139,6 +139,7 @@ def PBKDF2_version_probe_matcher_incorrect(request):
         return True
     return False
 
+
 def PBKDF2_version_probe_matcher_modern(request):
     if (
         request.body
@@ -158,7 +159,6 @@ def PBKDF2_version_probe_matcher_incorrect_modern(request):
     ):
         return True
     return False
-
 
 
 def PBKDF1_MS_found_key_matcher(request):
@@ -451,7 +451,14 @@ def test_fullrun_PBKDF2_modern_dialog_params(monkeypatch, capsys, mocker):
 
         monkeypatch.setattr(
             "sys.argv",
-            ["python", "--url", "http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--version", "2018.1.117", "--modern-dialog-params"],
+            [
+                "python",
+                "--url",
+                "http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+                "--version",
+                "2018.1.117",
+                "--modern-dialog-params",
+            ],
         )
         telerik_knownkey.main()
         captured = capsys.readouterr()
