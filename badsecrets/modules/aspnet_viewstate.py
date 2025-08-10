@@ -152,9 +152,7 @@ class ASPNET_Viewstate(BadsecretsBase):
                     self.hash_algs[hash_alg],
                 )
 
-            computed_hash = h.digest()
-
-            if computed_hash == signature:
+            if signature == h.digest():
                 return hash_alg
 
         return None
