@@ -1074,3 +1074,205 @@ def test_verbose_error_parsing_PBKDF2(monkeypatch, capsys, mocker):
         print(captured.out)
         assert "Verbose Errors are enabled!" in captured.out
         assert "Version is Post-2020 (Encrypt-Then-Mac Enabled, with Generic Crypto Failure Message)" in captured.out
+
+
+
+def test_fullrun_PBKDF2_onlyhashkeyfound(monkeypatch, capsys, mocker):
+
+    def generate_keylist_enc(include_machinekeys):
+        return iter(
+            ["Not_The_Real_Encryption_Key", "d2a312d9-7af4-43de-be5a-ae717b46cea6", "another_fake_encryption_key"]
+        )
+
+    def generate_keylist_hash(include_machinekeys):
+        return iter(["Not_The_Real_HaSh_Key", "Y3t_anoth3r_f@k3_key"])
+
+    mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
+    mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
+
+    with requests_mock.Mocker() as m:
+        # Basic Probe Detects Telerik
+        m.get(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", status_code=200, text=partial_dialog_page
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_found_key_matcher,
+            status_code=200,
+            text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array",
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_found_key_matcher_negative,
+            status_code=200,
+            text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>",
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_version_probe_matcher,
+            status_code=200,
+            text="DoesntMatter",
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_version_probe_matcher_incorrect,
+            status_code=200,
+            text="Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert "Target is a newer version of Telerik UI" in captured.out
+        assert "Did not find hashkey / encryption key. Exiting." in captured.out
+
+
+def test_fullrun_PBKDF1_MS_customkeys(monkeypatch, capsys, mocker):
+    mocker.patch.object(
+        Telerik_EncryptionKey,
+        "prepare_keylist",
+        return_value=iter(
+            ["Not_The_Real_Encryption_Key", "another_fake_encryption_key"]
+        ),
+    )
+    mocker.patch.object(
+        Telerik_HashKey,
+        "prepare_keylist",
+        return_value=iter(["Not_The_Real_HaSh_Key", "Y3t_anoth3r_f@k3_key"]),
+    )
+
+    with requests_mock.Mocker() as m:
+        # Basic Probe Detects Telerik
+        m.get(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            status_code=200,
+            text=partial_dialog_page,
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_found_key_matcher,
+            status_code=200,
+            text="<div>Error Message:The input data is not a complete block.</div>",
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_found_key_matcher_negative,
+            status_code=200,
+            text="<div>Error Message:The hash is not valid!</div>",
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_probe_matcher,
+            status_code=200,
+            text="Error Message:Length cannot be less than zero",
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_encryption_probe_matcher,
+            status_code=200,
+            text="<div>Error Message:Index was outside the bounds of the array.</div>",
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_version_probe_matcher_incorrect,
+            status_code=200,
+            text="Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--debug", "--custom-keys", "d2a312d9-7af4-43de-be5a-ae717b46cea6,YOUR_ENCRYPTION_KEY_TO_GO_HERE"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert "Target is a valid DialogHandler endpoint. Brute forcing Telerik Hash Key" in captured.out
+        assert "Found matching hashkey: [YOUR_ENCRYPTION_KEY_TO_GO_HERE]" in captured.out
+        assert "Found encryption key: [d2a312d9-7af4-43de-be5a-ae717b46cea6]" in captured.out
+        assert "Found Telerik Version! [2018.1.117]" in captured.out
+        assert (
+            "gRRgyE4BOGtN%2FLtBxeEeJDuLj%2FUwIG4oBhO5rCDfPjeH10P8Y02mDK3B%2FtsdOIrwILK7XjQiuTlTZMgHckSyb518JPAo6evNlVTPWD5AZX5l4UIUkfdJvq28UHyeBA4eC58PfA6nG7V2Q97Qwqef6cpbM6t88zvE0wJt8uUKji4ZfyBif4du8JgpDzzdSi%2BlWYd3YhzNbbfKVH%2F0sfraIHOsRvwNwrVc0V%2Fnmn%2BGlqm1rheswSONIo7BzKo04RLb232aDuWcluEWDMFdNJpzpdgcq96mWrs9KttFyRjUZ%2FhUi8ZQi0R4GXCrfHRTAYOq%2B2TNdECbAEfmA4n9Pb0BDDGDfghLV6h%2FbLrUaMWZCx6U5zCQfymn96h1t5acGgfxYMCS%2FYS7WRPytc759VdSM2KhGVmuGlupbxVz5gVOWffo5rTDQxwiPhcWYHTJlN%2FawmJfHJsJV0WvTBaW9nEPL0QeeUEu3jc7OPW9CbVufHb7Rfg7RQ%2F6Gjz5TBlzfY32lcFTsyRolWjxU3%2FVBb09tcN2EJGBnjZxpl6eFsYOvexTx0ykt0PCQagdR0DPFLPsdj7kDMrdDhpMDjsqQA0W06ULEtlR8unWsjavyK0%2B8CuTN%2BkuMzFrH10Wvqb5j3SYwANq3pyEuf3OScByrY8NVz7EzX%2BYQb5%2FByHmXi99NCHbO6ZQyHnM%2BPWYwinlnFrU6f%2BvI2ruMl35dZ%2BWWSGnEdv0DVxiedxWgqDlov31JoGaaffpBs8OO3LhtYqIixQPFbjq2wPrEcHPLgM40eYtJfduPI6exc%2BkKlxFGOyB44XjDuC4VHBPmCCFH%2FguBAatG%2FSZU1z%2Fj%2FJ0YDIVedDDdPg2NtQXjjjidSW8ISbfOk1SoLSFz04F9BmmMnPVsg9Dvtbbf%2Bz%2FhudrAo9Ys%2Fa6OzksFXxwQ%2FcSIDYVAsYkRjDMcgRv6erm8bBqgABiSF7SwBLkL75mI18fA3qCxgYDrcXZJYCIbS%2BQg9QiROf7PnRBcrnAg0G2ArfRY5gQE69DA4hvUFuXZvCbVbqQGZs7TrKNqBH40DzPqKFqhBKawuCF84zc08QzWVdbl92rAUl%2FbGi6RYzgx27pPzu7LbYLl4G8a5vtVZjuK7SchY0B7FfMvF3uQA%2FY4G%2FjqDGqGshadxalKPmwfUNbDSaatepav%2Bx4zfzQhn6cV2r8t1qz1TfHypR%2BCaAEVhEa36reVmWrAKXjr0JFOSSAQJTti%2BKhNRhaVPTgVI%2BsX%2F0pf8Fn0Zvv%2FbPL9C9L1pEAco%2FGIOV9AHNoh5E18zHcmINA2HmoZWha91ONomoIGvWnlM5USb%2FYSrXZuJDsSFFU9oal%2F45NDUNWlNVsXD%2B8RvuVsl1DY7i9iftU%2FtZpskuIldUFYmXWgMWCwk6sQAaARQoQKBEvCL6OV8UcD3bsde0ubcUG9oH140jsAW6Yh7okoKYZlL2xtp4ba7o8CS3R%2FduPuJLFY6fUexkHpvKj1Nn%2B31oQSjRywNhDdNvlczG4Z2LI73TdsZuCKnSPHNF7DNtOxmeGKZl9z9utufWZIb1FetBPy97bOOVKx69nZYTjmfv7hzBuEd5SweBD9QA2WspaycH9H01R4IXXcnrWKHkkaaVS3jDR%2F%2Bll4S0yGKlVT8EiRqLcZVX6mP2C7tmpbTE1tE%2F5ydEXkHMQ4Q75MDhO6F24ahX2rF%2FyfzuAMnR784wtXAM2E3hvVbCzu1rS9Xy1O7uSL%2Fzw1PxRlBZ%2FTwP00bUw22fQfnye%2Fb5s1NmvpWcrSX6tUNlK%2BrCHlfKSxWVhMWiZOqjMq9chUja87UzhcVXYBWZqhfuGsbRIoDQ40P6k7LDTuuzR7UuMU0nPFvGXsfwyu4UQzQppBmjwdQQlpo9GK2XAR7M2Wj5XNB5yZ3n8uMfW%2BktjiC0yW9bo0BVtvvmEOayXYwXyndHauAcJ0HpHnRLtnzNKnTKI3IY%2Fl4kYFS%2BiYUk6n0nd2eVKroYdrMjKZehZmpwmXfU3%2FWpwmt6HK%2FWKAWZzjlEUaN5zDbG%2BtGNxrjYaVvJuDn2uVtmozVU8dbCdz82O6sukqV5QZ86FFImnlZPOKcSHIFq%2F%2B1AdBG%2FUEKZ28aaadpm11H4ovyjAawjFwoWhtDsJB%2F1YbGDIqlKJ40ZOav8gu1Q%2Bv9UtpaQsDfm84FjlzlmwRQn2LF%2FBZLNmAjc8uug0sItSc2bX9d7gR9EWc3KML3PiBecc%2B6LfUkd5WyqHKPP%2FHDETbor16YGv%2Bt3d6KNtQgY3p%2B2Y8kVRCqtngKNzuid%2FXOmNTpwgKgj69id3uo8asDGcs%2B%2FVu5WjbkDNF%2FJlg2TWyTzwpr53wOKmm6tsWwf2FYScCHzXvfWjxHIR9qyGtIOembCqhaK%2Bv7NYDhaI8dAOtvz2su0yzecbzGa65MlwPIyRmv458OLvCMd1BLubANPxC3YfpMHm7x0JllAwNm4K%2BfM73Qkk6jsLwAr28YC1rvMCRONv4Q0sqEpuXfGbS212hv2LeVMq9wrORW353yq2MeRDxFnc2v0oTtVL9D7nlAlBXotJu4rT%2FzhFkH%2Be%2Fbmcbe1sgbaR4BIqrp65Nwq7RjjbB8FX8fi3xA%2BVE68b9DwmAMsub7oVbmI%2B09Wf85hjYjV5fS1xHdKqT6GRTqF9HhkiRxSIDKXzMM7pBXvzwuG%2BOWTVEBOgctSA2alhhyKvUBizsrW6TO%2FSPoX8n%2Fg3qUfufYGrb05PuoeDayC9iZEzmYc%3D"
+            in captured.out
+        )
+
+
+def test_fullrun_PBKDF1_MS_customkeys_onlyhashkeyfound(monkeypatch, capsys, mocker):
+    mocker.patch.object(
+        Telerik_EncryptionKey,
+        "prepare_keylist",
+        return_value=iter(
+            ["Not_The_Real_Encryption_Key", "another_fake_encryption_key"]
+        ),
+    )
+    mocker.patch.object(
+        Telerik_HashKey,
+        "prepare_keylist",
+        return_value=iter(["Not_The_Real_HaSh_Key", "Y3t_anoth3r_f@k3_key"]),
+    )
+
+    with requests_mock.Mocker() as m:
+        # Basic Probe Detects Telerik
+        m.get(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            status_code=200,
+            text=partial_dialog_page,
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_found_key_matcher,
+            status_code=200,
+            text="<div>Error Message:The input data is not a complete block.</div>",
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_found_key_matcher_negative,
+            status_code=200,
+            text="<div>Error Message:The hash is not valid!</div>",
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_probe_matcher,
+            status_code=200,
+            text="Error Message:Length cannot be less than zero",
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_encryption_probe_matcher,
+            status_code=200,
+            text="<div>Error Message:Index was outside the bounds of the array.</div>",
+        )
+
+        m.post(
+            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF1_MS_version_probe_matcher_incorrect,
+            status_code=200,
+            text="Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--debug", "--custom-keys", "NOPENOPENOPENOPE,YOUR_ENCRYPTION_KEY_TO_GO_HERE"],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert "Target is a valid DialogHandler endpoint. Brute forcing Telerik Hash Key" in captured.out
+        assert "Found matching hashkey: [YOUR_ENCRYPTION_KEY_TO_GO_HERE]" in captured.out
+        assert "FAILED: Could not identify encryption key." in captured.out
