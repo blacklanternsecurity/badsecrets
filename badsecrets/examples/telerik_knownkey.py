@@ -733,7 +733,7 @@ def main():
 
     parser.add_argument(
         "--modern-dialog-params",
-        help="Use modern dialog parameters format (for newer Telerik versions 2018+)",
+        help="Use modern dialog parameters format (may work betterfor newer Telerik versions 2018+)",
         action="store_true",
     )
 
