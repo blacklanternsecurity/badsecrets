@@ -1076,7 +1076,6 @@ def test_verbose_error_parsing_PBKDF2(monkeypatch, capsys, mocker):
         assert "Version is Post-2020 (Encrypt-Then-Mac Enabled, with Generic Crypto Failure Message)" in captured.out
 
 
-
 def test_fullrun_PBKDF2_onlyhashkeyfound(monkeypatch, capsys, mocker):
 
     def generate_keylist_enc(include_machinekeys):
@@ -1139,9 +1138,7 @@ def test_fullrun_PBKDF1_MS_customkeys(monkeypatch, capsys, mocker):
     mocker.patch.object(
         Telerik_EncryptionKey,
         "prepare_keylist",
-        return_value=iter(
-            ["Not_The_Real_Encryption_Key", "another_fake_encryption_key"]
-        ),
+        return_value=iter(["Not_The_Real_Encryption_Key", "another_fake_encryption_key"]),
     )
     mocker.patch.object(
         Telerik_HashKey,
@@ -1194,7 +1191,14 @@ def test_fullrun_PBKDF1_MS_customkeys(monkeypatch, capsys, mocker):
 
         monkeypatch.setattr(
             "sys.argv",
-            ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--debug", "--custom-keys", "d2a312d9-7af4-43de-be5a-ae717b46cea6,YOUR_ENCRYPTION_KEY_TO_GO_HERE"],
+            [
+                "python",
+                "--url",
+                "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+                "--debug",
+                "--custom-keys",
+                "d2a312d9-7af4-43de-be5a-ae717b46cea6,YOUR_ENCRYPTION_KEY_TO_GO_HERE",
+            ],
         )
         telerik_knownkey.main()
         captured = capsys.readouterr()
@@ -1213,9 +1217,7 @@ def test_fullrun_PBKDF1_MS_customkeys_onlyhashkeyfound(monkeypatch, capsys, mock
     mocker.patch.object(
         Telerik_EncryptionKey,
         "prepare_keylist",
-        return_value=iter(
-            ["Not_The_Real_Encryption_Key", "another_fake_encryption_key"]
-        ),
+        return_value=iter(["Not_The_Real_Encryption_Key", "another_fake_encryption_key"]),
     )
     mocker.patch.object(
         Telerik_HashKey,
@@ -1268,7 +1270,14 @@ def test_fullrun_PBKDF1_MS_customkeys_onlyhashkeyfound(monkeypatch, capsys, mock
 
         monkeypatch.setattr(
             "sys.argv",
-            ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--debug", "--custom-keys", "NOPENOPENOPENOPE,YOUR_ENCRYPTION_KEY_TO_GO_HERE"],
+            [
+                "python",
+                "--url",
+                "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+                "--debug",
+                "--custom-keys",
+                "NOPENOPENOPENOPE,YOUR_ENCRYPTION_KEY_TO_GO_HERE",
+            ],
         )
         telerik_knownkey.main()
         captured = capsys.readouterr()

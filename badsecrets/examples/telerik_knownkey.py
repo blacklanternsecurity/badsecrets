@@ -523,7 +523,10 @@ class DialogHandler:
                 else:
                     custom_keys = None
                 encryptionkey_generator = self.telerik_encryptionkey.encryptionkey_probe_generator(
-                    hash_key, self.key_derive_mode, include_machinekeys=self.include_machinekeys_bool, custom_keys=custom_keys
+                    hash_key,
+                    self.key_derive_mode,
+                    include_machinekeys=self.include_machinekeys_bool,
+                    custom_keys=custom_keys,
                 )
 
                 for encryption_key_probe, encryption_key in encryptionkey_generator:
@@ -592,7 +595,10 @@ class DialogHandler:
                     custom_keys = None
 
                 encryptionkey_generator = self.telerik_encryptionkey.encryptionkey_probe_generator(
-                    hash_key, self.key_derive_mode, include_machinekeys=self.include_machinekeys_bool, custom_keys=custom_keys
+                    hash_key,
+                    self.key_derive_mode,
+                    include_machinekeys=self.include_machinekeys_bool,
+                    custom_keys=custom_keys,
                 )
 
                 for encryption_key_probe, encryption_key in encryptionkey_generator:
