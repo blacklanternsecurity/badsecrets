@@ -195,8 +195,6 @@ class AsyncUpload:
     def __init__(self, url, include_machinekeys_bool=False, proxies={}, headers=None):
         self.url = url
         self.asyncupload_key = None
-        if proxies == None:
-            proxies = {}
         self.proxies = proxies
         self.headers = headers
         self.include_machinekeys_bool = include_machinekeys_bool
@@ -302,8 +300,6 @@ class AsyncUpload:
         for telerik_version in versions_to_test:
             if hasattr(self, "debug") and self.debug:
                 print(f"\n[DEBUG] Testing Telerik version: {telerik_version}")
-            else:
-                print(telerik_version)
 
             # If custom keys are provided, use only those
             if hasattr(self.telerik_hashkey, "custom_keys"):
@@ -377,8 +373,6 @@ class DialogHandler:
         self.telerik_encryptionkey = Telerik_EncryptionKey()
         self.encryption_key = None
         self.hash_key = None
-        if proxies == None:
-            proxies = {}
         self.proxies = proxies
         self.headers = headers
         self.include_machinekeys_bool = include_machinekeys_bool
@@ -432,7 +426,6 @@ class DialogHandler:
             verify=False,
             proxies=self.proxies,
         )
-
         # Extract title if it exists
         title = ""
         if r.text:
@@ -485,13 +478,15 @@ class DialogHandler:
         # PBKDF1_MS MODE
         if self.key_derive_mode == "PBKDF1_MS":
             hashkey_counter = 0
+
             # If custom keys are provided, use only those
             if hasattr(self.telerik_hashkey, "custom_keys"):
-                hashkey_generator = [(self.telerik_hashkey.custom_keys[1], self.telerik_hashkey.custom_keys[1])]
+                custom_keys = self.telerik_hashkey.custom_keys
             else:
-                hashkey_generator = self.telerik_hashkey.hashkey_probe_generator(
-                    include_machinekeys=self.include_machinekeys_bool
-                )
+                custom_keys = None
+            hashkey_generator = self.telerik_hashkey.hashkey_probe_generator(
+                include_machinekeys=self.include_machinekeys_bool, custom_keys=custom_keys
+            )
 
             for hash_key_probe, hash_key in hashkey_generator:
                 hashkey_counter += 1
@@ -522,13 +517,15 @@ class DialogHandler:
                 encryptionkey_counter = 0
                 # If custom keys are provided, use only those
                 if hasattr(self.telerik_encryptionkey, "custom_keys"):
-                    encryptionkey_generator = [
-                        (self.telerik_encryptionkey.custom_keys[0], self.telerik_encryptionkey.custom_keys[0])
-                    ]
+                    custom_keys = self.telerik_encryptionkey.custom_keys
                 else:
-                    encryptionkey_generator = self.telerik_encryptionkey.encryptionkey_probe_generator(
-                        hash_key, self.key_derive_mode, include_machinekeys=self.include_machinekeys_bool
-                    )
+                    custom_keys = None
+                encryptionkey_generator = self.telerik_encryptionkey.encryptionkey_probe_generator(
+                    hash_key,
+                    self.key_derive_mode,
+                    include_machinekeys=self.include_machinekeys_bool,
+                    custom_keys=custom_keys,
+                )
 
                 for encryption_key_probe, encryption_key in encryptionkey_generator:
                     encryptionkey_counter += 1
@@ -591,13 +588,16 @@ class DialogHandler:
             for hash_key in hashkeys:
                 # If custom keys are provided, use only those
                 if hasattr(self.telerik_encryptionkey, "custom_keys"):
-                    encryptionkey_generator = [
-                        (self.telerik_encryptionkey.custom_keys[0], self.telerik_encryptionkey.custom_keys[0])
-                    ]
+                    custom_keys = self.telerik_encryptionkey.custom_keys
                 else:
-                    encryptionkey_generator = self.telerik_encryptionkey.encryptionkey_probe_generator(
-                        hash_key, self.key_derive_mode, include_machinekeys=self.include_machinekeys_bool
-                    )
+                    custom_keys = None
+
+                encryptionkey_generator = self.telerik_encryptionkey.encryptionkey_probe_generator(
+                    hash_key,
+                    self.key_derive_mode,
+                    include_machinekeys=self.include_machinekeys_bool,
+                    custom_keys=custom_keys,
+                )
 
                 for encryption_key_probe, encryption_key in encryptionkey_generator:
                     count += 1

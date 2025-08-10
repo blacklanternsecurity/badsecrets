@@ -114,11 +114,11 @@ class Telerik_EncryptionKey(BadsecretsBase):
                     }
         return None
 
-    def encryptionkey_probe_generator(self, hash_key, key_derive_mode, include_machinekeys=False):
+    def encryptionkey_probe_generator(self, hash_key, key_derive_mode, include_machinekeys=False, custom_keys=None):
         test_string = b"AAAAAAAAAAAAAAAAAAAA"
         dp_enc = base64.b64encode(test_string).decode()
 
-        for ekey in self.prepare_keylist(include_machinekeys=include_machinekeys):
+        for ekey in custom_keys if custom_keys else self.prepare_keylist(include_machinekeys=include_machinekeys):
             derivedKey, derivedIV = self.telerik_derivekeys(ekey, key_derive_mode)
             ct = self.telerik_encrypt(derivedKey, derivedIV, dp_enc)
             h = hmac.new(hash_key.encode(), ct.encode(), self.hash_algs["SHA256"])
