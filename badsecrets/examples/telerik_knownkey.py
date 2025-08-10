@@ -300,8 +300,6 @@ class AsyncUpload:
         for telerik_version in versions_to_test:
             if hasattr(self, "debug") and self.debug:
                 print(f"\n[DEBUG] Testing Telerik version: {telerik_version}")
-            else:
-                print(telerik_version)
 
             # If custom keys are provided, use only those
             if hasattr(self.telerik_hashkey, "custom_keys"):

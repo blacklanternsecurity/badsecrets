@@ -373,7 +373,7 @@ def test_fullrun_PBKDF2_version_customkeys(monkeypatch, capsys, mocker):
             f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
             additional_matcher=PBKDF2_version_probe_matcher_incorrect,
             status_code=200,
-            text="Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+            text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
         )
 
         monkeypatch.setattr(
@@ -445,7 +445,7 @@ def test_fullrun_PBKDF2_modern_dialog_params(monkeypatch, capsys, mocker):
             f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
             additional_matcher=PBKDF2_version_probe_matcher_incorrect_modern,
             status_code=200,
-            text="Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+            text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
         )
 
         monkeypatch.setattr(
@@ -516,7 +516,7 @@ def test_nomatch_PBKDF2(monkeypatch, capsys, mocker):
             f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
             additional_matcher=PBKDF2_version_probe_matcher_incorrect,
             status_code=200,
-            text="Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+            text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
         )
 
         monkeypatch.setattr(
@@ -594,7 +594,7 @@ def test_fullrun_PBKDF1_MS(monkeypatch, capsys, mocker):
             f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
             additional_matcher=PBKDF1_MS_version_probe_matcher_incorrect,
             status_code=200,
-            text="Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+            text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
         )
 
         monkeypatch.setattr(
@@ -810,7 +810,7 @@ def test_fullrun_asyncupload_earlydetection(monkeypatch, capsys, mocker):
             f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
             additional_matcher=asyncupload_early_result_matcher,
             status_code=500,
-            text="<b> Exception Details: </b>System.IO.FileLoadException: Could not load file or assembly 'Telerik.Web.UI, Version=2022.3.1109, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)<br><br>",
+            text="<title>telerik</title><b> Exception Details: </b>System.IO.FileLoadException: Could not load file or assembly 'Telerik.Web.UI, Version=2022.3.1109, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)<br><br>",
         )
 
         m.post(
@@ -1120,7 +1120,7 @@ def test_fullrun_PBKDF2_onlyhashkeyfound(monkeypatch, capsys, mocker):
             f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
             additional_matcher=PBKDF2_version_probe_matcher_incorrect,
             status_code=200,
-            text="Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+            text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
         )
 
         monkeypatch.setattr(
@@ -1186,7 +1186,7 @@ def test_fullrun_PBKDF1_MS_customkeys(monkeypatch, capsys, mocker):
             f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
             additional_matcher=PBKDF1_MS_version_probe_matcher_incorrect,
             status_code=200,
-            text="Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+            text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
         )
 
         monkeypatch.setattr(
@@ -1265,7 +1265,7 @@ def test_fullrun_PBKDF1_MS_customkeys_onlyhashkeyfound(monkeypatch, capsys, mock
             f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
             additional_matcher=PBKDF1_MS_version_probe_matcher_incorrect,
             status_code=200,
-            text="Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+            text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
         )
 
         monkeypatch.setattr(
@@ -1285,3 +1285,69 @@ def test_fullrun_PBKDF1_MS_customkeys_onlyhashkeyfound(monkeypatch, capsys, mock
         assert "Target is a valid DialogHandler endpoint. Brute forcing Telerik Hash Key" in captured.out
         assert "Found matching hashkey: [YOUR_ENCRYPTION_KEY_TO_GO_HERE]" in captured.out
         assert "FAILED: Could not identify encryption key." in captured.out
+
+
+def test_fullrun_PBKDF2_version_customkeys_nogoodversion(monkeypatch, capsys, mocker):
+
+    def generate_keylist_enc(include_machinekeys):
+        return iter(["Not_The_Real_Encryption_Key", "another_fake_encryption_key"])
+
+    def generate_keylist_hash(include_machinekeys):
+        return iter(["Not_The_Real_HaSh_Key", "Y3t_anoth3r_f@k3_key"])
+
+    mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
+    mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
+
+    with requests_mock.Mocker() as m:
+        # Basic Probe Detects Telerik
+        m.get(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", status_code=200, text=partial_dialog_page
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_found_key_matcher,
+            status_code=200,
+            text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array",
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_found_key_matcher_negative,
+            status_code=200,
+            text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>",
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_version_probe_matcher,
+            status_code=200,
+            text="DoesntMatter",
+        )
+
+        m.post(
+            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+            additional_matcher=PBKDF2_version_probe_matcher_incorrect,
+            status_code=200,
+            text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "python",
+                "--url",
+                "http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
+                "--version",
+                "1944.6.6",
+                "--custom-keys",
+                "d2a312d9-7af4-43de-be5a-ae717b46cea6,YOUR_ENCRYPTION_KEY_TO_GO_HERE",
+            ],
+        )
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert "Target is a newer version of Telerik UI" in captured.out
+        assert "Found encryption key: [d2a312d9-7af4-43de-be5a-ae717b46cea6]" in captured.out
+        assert "SUCCESS! Found encryption key: [d2a312d9-7af4-43de-be5a-ae717b46cea6]" in captured.out
+        assert "FAILED: Could not find a working version despite having valid keys." in captured.out
