@@ -235,7 +235,7 @@ options:
                         Specify custom keys in format 'encryptionkey,hashkey'. When provided, only these keys will be tested.
   -d, --debug           Enable debug mode to show detailed request information
   --modern-dialog-params
-                        Use modern dialog parameters format (for newer Telerik versions 2018+)
+                        Use modern dialog parameters format (may work better for newer Telerik versions 2018+)
 
 ```
 
