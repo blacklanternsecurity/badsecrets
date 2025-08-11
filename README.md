@@ -215,6 +215,30 @@ python ./badsecrets/examples/blacklist3r.py --viewstate /wEPDwUJODExMDE5NzY5ZGQM
 
 ### telerik_knownkey.py
 
+```bash
+badsecrets - Telerik UI known key exploitation tool
+
+usage: telerik_knownkey.py [-h] -u URL [-p PROXY] [-a USER_AGENT] [-m] [-f] [-v VERSION] [-c CUSTOM_KEYS] [-d] [--modern-dialog-params]
+
+options:
+  -h, --help            show this help message and exit
+  -u URL, --url URL     The URL of the page to access and attempt to pull viewstate and generator from
+  -p PROXY, --proxy PROXY
+                        Optionally specify an HTTP proxy
+  -a USER_AGENT, --user-agent USER_AGENT
+                        Optionally set a custom user-agent
+  -m, --machine-keys    Optionally include ASP.NET MachineKeys when loading keys
+  -f, --force           Force enumeration of vulnerable AsyncUpload endpoint without user confirmation
+  -v VERSION, --version VERSION
+                        Specify a custom Telerik version to test
+  -c CUSTOM_KEYS, --custom-keys CUSTOM_KEYS
+                        Specify custom keys in format 'encryptionkey,hashkey'. When provided, only these keys will be tested.
+  -d, --debug           Enable debug mode to show detailed request information
+  --modern-dialog-params
+                        Use modern dialog parameters format (may work better for newer Telerik versions 2018+)
+
+```
+
 Fully functional CLI example for identifying known Telerik Hash keys (`Telerik.Upload.ConfigurationHashKey`) and Encryption keys (`Telerik.Web.UI.DialogParametersEncryptionKey`) used with Telerik DialogHandler instances for Post-2017 versions (those patched for CVE-2017-9248), and brute-forcing version / generating exploitation DialogParameters values.
 
 Currently, this appears to be the only tool capable of building a working exploit URL for "patched" versions of Telerik.

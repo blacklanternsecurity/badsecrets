@@ -62,7 +62,7 @@ def test_carve_aspnet_viewstate():
 
 
 express_carve_sample_negative = """
-Academic direction for this University of London degree is from Royal Holloway, University of London, one of the UK’s <a href="https://eur03.safelinks.protection.outlook.com/?url=https%3A%2F%2Fwww.timeshighereducation.com%2Fworld-university-rankings%2Froyal-holloway-university-london%23%3A~%3Atext
+Academic direction for this University of London degree is from Royal Holloway, University of London, one of the UK's <a href="https://eur03.safelinks.protection.outlook.com/?url=https%3A%2F%2Fwww.timeshighereducation.com%2Fworld-university-rankings%2Froyal-holloway-university-london%23%3A~%3Atext
 """
 
 express_carve_sample_positive = """
@@ -462,3 +462,35 @@ def test_cookie_dict():
     assert r
     assert r[0]["secret"] == "1234"
     assert r[0]["type"] == "SecretFound"
+
+
+def test_carve_aspnet_viewstate_userkey():
+    x = ASPNET_Viewstate()
+
+    # Test carving ViewState with ViewStateUserKey from HTML and cookies
+    html = """<!DOCTYPE html>
+<html>
+<title>Test title</title>
+<body>
+    <form method="post" action="./testvsuk2.aspx" id="form1">
+        <div class="aspNetHidden">
+            <input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="/wEPDwUJODExMDE5NzY5ZGTX0g6r3svRDbR+eCZDnrj4MT4/FA==" />
+        </div>
+        <div class="aspNetHidden">
+            <input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="DEE4EE34" />
+        </div>
+        <div>
+            <p>placeholder</p>
+        </div>
+    </form>
+</body>
+</html>"""
+
+    # Supply the expected ViewStateUserKey via one of the cookies inspected by carve_to_check_secret
+    cookies = {"ASP.NET_SessionId": "xwrpnizumzekndin03addnmm"}
+
+    r = x.carve(body=html, cookies=cookies)
+    assert r
+    assert len(r) == 1
+    assert r[0]["type"] == "SecretFound"
+    assert "/wEPDwUJODExMDE5NzY5ZGTX0g6r3svRDbR+eCZDnrj4MT4/FA==" in r[0]["product"]
