@@ -164,4 +164,4 @@ def test_carve_empty_vstate():
         res = requests.get(f"http://emptyvstate.carve-all.badsecrets.com/")
         r_list = carve_all_modules(requests_response=res)
         assert r_list
-        assert r_list[0]["product"] == "EMPTY '__VSTATE' FORM FIELD"
+        assert r_list[0]["product"] == "empty Compressed Viewstate form field"

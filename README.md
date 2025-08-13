@@ -34,7 +34,7 @@ Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a de
 | Express_SignedCookies_ES | Checks express.js express-session middleware for signed cookies and session cookies for known 'session secret' |
 | Express_SignedCookies_CS | Checks express.js cookie-session middleware for signed cookies and session cookies for known secret |
 | Laravel_SignedCookies | Checks 'laravel_session' cookies for known laravel 'APP_KEY' |
-| ASPNET_Vstate      | Checks for a once popular custom compressed Viewstate [code snippet](https://blog.sorcery.ie/posts/higherlogic_rce/) vulnerable to RCE|
+| ASPNET_Compressedviewstate      | Checks for a once popular custom compressed Viewstate [code snippet](https://blog.sorcery.ie/posts/higherlogic_rce/) vulnerable to RCE|
 | Rack2_SignedCookies | Checks Rack 2.x signed cookies for known secret keys |
 | Yii2_SignedCookies | Checks Yii2 framework signed cookies for known cookie validation keys |
 
@@ -305,7 +305,7 @@ Symfony_SignedURL = modules_loaded["symfony_signedurl"]
 Express_SignedCookies_ES = modules_loaded["express_signedcookies_es"]
 Express_SignedCookies_CS = modules_loaded["express_signedcookies_cs"]
 Laravel_SignedCookies = modules_loaded["laravel_signedcookies"]
-ASPNET_Vstate = modules_loaded["aspnet_vstate"]
+ASPNET_Compressed_Viewstate = modules_loaded["aspnet_compressedvstate"]
 Rack2_SignedCookies = modules_loaded["rack2_signedcookies"]
 Yii2_SignedCookies = modules_loaded["yii2_signedcookies"]
 
@@ -419,7 +419,7 @@ else:
     print("KEY NOT FOUND :(")
 
 
-x = ASPNET_Vstate()
+x = ASPNET_Compressed_Viewstate()
 print(f"###{str(x.__class__.__name__)}###")
 r = x.check_secret("H4sIAAAAAAAEAPvPyJ/Cz8ppZGpgaWpgZmmYAgAAmCJNEQAAAA==")
 if r:
