@@ -145,3 +145,30 @@ def test_carve_multiple_vulns():
         res = requests.get(f"http://multiplevulns.carve-all.badsecrets.com/")
         r_list = carve_all_modules(requests_response=res)
         assert len(r_list) == 2
+
+
+def test_multiple_identify_only():
+    multiple_identify_only_html = """
+<html>
+Sys.Application.add_init(function() {
+    $create(Telerik.Web.UI.RadDialogOpener, {"_dialogDefinitions":{"ImageManager":{"SerializedParameters":"gu/9FdlxGQtp3wJ4VYsztVIo4pJdVfx+avM0aIZW/uTgJSZ5/AAxbU4GGUKRs215dF8p6TtngJtECy3LRMWPIu1P5McaaErOxD+by}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","Width":"770px","Height":"588px","Title":"Image Manager"}
+});
+</script>
+</form>
+</body>
+</html>
+"""
+    with requests_mock.Mocker() as m:
+        m.get(
+            f"http://multipleidentifyonly.carve-all.badsecrets.com/",
+            status_code=200,
+            text=multiple_identify_only_html,
+        )
+
+        res = requests.get(f"http://multipleidentifyonly.carve-all.badsecrets.com/")
+        r_list = carve_all_modules(requests_response=res)
+        assert len(r_list) == 2
+        assert r_list[0]["type"] == "IdentifyOnly"
+        assert r_list[1]["type"] == "IdentifyOnly"
+        assert r_list[0]["description"]["product"] in ["Telerik DialogParameters", "Telerik Hash Key Signature"]
+        assert r_list[1]["description"]["product"] in ["Telerik DialogParameters", "Telerik Hash Key Signature"]
