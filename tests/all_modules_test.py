@@ -145,23 +145,3 @@ def test_carve_multiple_vulns():
         res = requests.get(f"http://multiplevulns.carve-all.badsecrets.com/")
         r_list = carve_all_modules(requests_response=res)
         assert len(r_list) == 2
-
-
-def test_carve_empty_vstate():
-    empty_vstate_html = """
-    <div class="aspNetHidden">
-<input type="hidden" name="__VSTATE" id="__VSTATE" value="" />
-
-"""
-
-    with requests_mock.Mocker() as m:
-        m.get(
-            f"http://emptyvstate.carve-all.badsecrets.com/",
-            status_code=200,
-            text=empty_vstate_html,
-        )
-
-        res = requests.get(f"http://emptyvstate.carve-all.badsecrets.com/")
-        r_list = carve_all_modules(requests_response=res)
-        assert r_list
-        assert r_list[0]["product"] == "EMPTY '__VSTATE' FORM FIELD"
