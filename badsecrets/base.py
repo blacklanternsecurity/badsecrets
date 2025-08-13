@@ -130,19 +130,18 @@ class BadsecretsBase:
                 elif self.carve_regex():
                     s = re.search(self.carve_regex(), header_value)
                     if s:
-                        if self.validate_carve and not self.identify(s.groups()[0]):
-                            continue
-                        r = self.carve_to_check_secret(s)
-                        if r:
-                            r["type"] = "SecretFound"
-                        # the carve regex hit but no secret was found
-                        else:
-                            r = {"type": "IdentifyOnly"}
-                            r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
-                        if "product" not in r.keys():
-                            r["product"] = self.get_product_from_carve(s)
-                        r["location"] = "headers"
-                        results.append(r)
+                        if not self.validate_carve or self.identify(s.groups()[0]):
+                            r = self.carve_to_check_secret(s)
+                            if r:
+                                r["type"] = "SecretFound"
+                            # the carve regex hit but no secret was found
+                            else:
+                                r = {"type": "IdentifyOnly"}
+                                r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
+                            if "product" not in r.keys():
+                                r["product"] = self.get_product_from_carve(s)
+                            r["location"] = "headers"
+                            results.append(r)
 
         if body:
             if type(body) != str:
