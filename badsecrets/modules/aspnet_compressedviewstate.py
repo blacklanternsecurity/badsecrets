@@ -13,12 +13,6 @@ class ASPNET_compressedviewstate(BadsecretsBase):
     def carve_regex(self):
         return re.compile(r"<input[^>]+__(?:VIEWSTATE|VSTATE|COMPRESSEDVIEWSTATE)\"\s*value=\"(.*?)\"")
 
-    def get_product_from_carve(self, regex_search):
-        product = regex_search.groups()[0]
-        if len(product) == 0:
-            return "empty Compressed Viewstate form field"
-        return product
-
     def check_secret(self, compressed_viewstate):
         if not self.identify(compressed_viewstate):
             return None

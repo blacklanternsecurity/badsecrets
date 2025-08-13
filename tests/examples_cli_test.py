@@ -924,6 +924,7 @@ def test_example_cli_redirects_default(monkeypatch, capsys):
 serverside_jsfviewstate_html = '<input type="hidden" name="javax.faces.ViewState" id="javax.faces.ViewState" value="-7521159484971427124:9144573339387850859" autocomplete="off" /></form>'
 
 
+# We don't actually care at all about this if it has the server-side viewstate - its completely useless
 def test_example_cli_jsfviewstate_serverside(monkeypatch, capsys):
     with requests_mock.Mocker() as m:
 
@@ -936,7 +937,9 @@ def test_example_cli_jsfviewstate_serverside(monkeypatch, capsys):
         monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/serverside_jsfviewstate.html"])
         cli.main()
         captured = capsys.readouterr()
-        assert "Cryptographic Product Identified (no vulnerability)" in captured.out
+        assert (
+            not "Cryptographic Product Identified (no vulnerability)" in captured.out
+        )  # make sure we didn't report it at all
         assert not "Potential matching hashcat commands:" in captured.out
 
 

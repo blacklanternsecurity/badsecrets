@@ -23,6 +23,7 @@ class ExpressSignedCookies_CS(BadsecretsBase):
         "secret": "Express.js Secret (cookie-session)",
         "severity": "HIGH",
     }
+    validate_carve = False
 
     def carve_regex(self):
         return re.compile(r"(\w{1,64})=([^;]{4,512});.{0,100}?\1\.sig=([^;]{27,86})")
