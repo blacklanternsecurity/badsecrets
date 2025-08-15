@@ -22,7 +22,7 @@ class ASPNET_Viewstate(BadsecretsBase):
 
     def carve_regex(self):
         return re.compile(
-            r"<input.+__VIEWSTATE\"\svalue=\"(.+)\"[\S\s]+<input.+__VIEWSTATEGENERATOR\"\svalue=\"(\w+)\""
+            r"<input.+__VIEWSTATE\"\svalue=\"(.+?)\"[\S\s]+<input.+?__VIEWSTATEGENERATOR\"\svalue=\"(\w+)\""
         )
 
     def carve_to_check_secret(self, s, url=None, **kwargs):

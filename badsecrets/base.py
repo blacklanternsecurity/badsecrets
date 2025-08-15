@@ -29,6 +29,7 @@ class BadsecretsBase:
     }
 
     check_secret_args = 1
+    validate_carve = True
 
     def __init__(self, custom_resource=None, **kwargs):
         self.custom_resource = custom_resource
@@ -129,17 +130,18 @@ class BadsecretsBase:
                 elif self.carve_regex():
                     s = re.search(self.carve_regex(), header_value)
                     if s:
-                        r = self.carve_to_check_secret(s)
-                        if r:
-                            r["type"] = "SecretFound"
-                        # the carve regex hit but no secret was found
-                        else:
-                            r = {"type": "IdentifyOnly"}
-                            r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
-                        if "product" not in r.keys():
-                            r["product"] = self.get_product_from_carve(s)
-                        r["location"] = "headers"
-                        results.append(r)
+                        if not self.validate_carve or self.identify(s.groups()[0]):
+                            r = self.carve_to_check_secret(s)
+                            if r:
+                                r["type"] = "SecretFound"
+                            # the carve regex hit but no secret was found
+                            else:
+                                r = {"type": "IdentifyOnly"}
+                                r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
+                            if "product" not in r.keys():
+                                r["product"] = self.get_product_from_carve(s)
+                            r["location"] = "headers"
+                            results.append(r)
 
         if body:
             if type(body) != str:
@@ -147,18 +149,19 @@ class BadsecretsBase:
             if self.carve_regex():
                 s = re.search(self.carve_regex(), body)
                 if s:
-                    r = self.carve_to_check_secret(
-                        s, url=kwargs.get("url", None), body=body, cookies=cookies, headers=headers
-                    )
-                    if r:
-                        r["type"] = "SecretFound"
-                    else:
-                        r = {"type": "IdentifyOnly"}
-                        r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
-                    if "product" not in r.keys():
-                        r["product"] = self.get_product_from_carve(s)
-                    r["location"] = "body"
-                    results.append(r)
+                    if not self.validate_carve or self.identify(s.groups()[0]):
+                        r = self.carve_to_check_secret(
+                            s, url=kwargs.get("url", None), body=body, cookies=cookies, headers=headers
+                        )
+                        if r:
+                            r["type"] = "SecretFound"
+                        else:
+                            r = {"type": "IdentifyOnly"}
+                            r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
+                        if "product" not in r.keys():
+                            r["product"] = self.get_product_from_carve(s)
+                        r["location"] = "body"
+                        results.append(r)
 
         for r in results:
             r["description"] = self.get_description()

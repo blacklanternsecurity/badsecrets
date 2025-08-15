@@ -708,8 +708,8 @@ function __doPostBack(eventTarget, eventArgument) {
         assert ("Details: Mode [DOTNET45]") in captured.out
 
 
-def test_example_cli_aspnetvstate_url(monkeypatch, capsys):
-    base_vulnerable_page_aspnet_vstate = """
+def test_example_cli_aspnetcompressedviewstate_url(monkeypatch, capsys):
+    base_vulnerable_page_aspnet_compressedviewstate = """
          <!doctype html>
 
 <!--[if IE 9]> <html class="no-js lt-ie10" lang="en" xmlns:fb="http://ogp.me/ns/fb#"> <![endif]-->
@@ -738,7 +738,7 @@ def test_example_cli_aspnetvstate_url(monkeypatch, capsys):
         m.get(
             f"http://172.16.25.128/form.aspx",
             status_code=200,
-            text=base_vulnerable_page_aspnet_vstate,
+            text=base_vulnerable_page_aspnet_compressedviewstate,
         )
 
         monkeypatch.setattr(
@@ -753,7 +753,52 @@ def test_example_cli_aspnetvstate_url(monkeypatch, capsys):
         captured = capsys.readouterr()
         assert ("Known Secret Found!") in captured.out
         assert ("Product: H4sIAAAAAAAEAPvPyJ/Cz8ppZGpgaWpgZmmYAgAAmCJNEQAAAA==") in captured.out
-        assert ("ASP.NET Compressed Vstate") in captured.out
+        assert ("ASP.NET Compressed Viewstate") in captured.out
+
+
+def test_example_cli_aspnetcompressedviewstate_url_alternateparamname(monkeypatch, capsys):
+    base_vulnerable_page_aspnet_compressedviewstate = """
+         <!doctype html>
+
+<!--[if IE 9]> <html class="no-js lt-ie10" lang="en" xmlns:fb="http://ogp.me/ns/fb#"> <![endif]-->
+<!--[if gt IE 9]><!--> <html class="no-js" lang="en" xmlns:fb="http://ogp.me/ns/fb#"> <!--<![endif]-->
+<head> 
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ 
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" /> 
+
+</head>
+<body id="_body">
+  <a id="page_top" name="page_top"></a>
+    <form method="post" action="./default.aspx" id="form1">
+<div class="aspNetHidden">
+<input type="hidden" name="__COMPRESSEDVIEWSTATE" id="__COMPRESSEDVIEWSTATE" value="H4sIAAAAAAAEAPvPyJ/Cz8ppZGpgaWpgZmmYAgAAmCJNEQAAAA==" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="" />
+</div>   
+<p>content</p>
+</html>
+    """
+    with requests_mock.Mocker() as m:
+        m.get(
+            f"http://172.16.25.128/form.aspx",
+            status_code=200,
+            text=base_vulnerable_page_aspnet_compressedviewstate,
+        )
+
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "python",
+                "--url",
+                "http://172.16.25.128/form.aspx",
+            ],
+        )
+        cli.main()
+        captured = capsys.readouterr()
+        assert ("Known Secret Found!") in captured.out
+        assert ("Product: H4sIAAAAAAAEAPvPyJ/Cz8ppZGpgaWpgZmmYAgAAmCJNEQAAAA==") in captured.out
+        assert ("ASP.NET Compressed Viewstate") in captured.out
 
 
 def test_example_cli_dotnet45_manual(monkeypatch, capsys):
@@ -879,6 +924,7 @@ def test_example_cli_redirects_default(monkeypatch, capsys):
 serverside_jsfviewstate_html = '<input type="hidden" name="javax.faces.ViewState" id="javax.faces.ViewState" value="-7521159484971427124:9144573339387850859" autocomplete="off" /></form>'
 
 
+# We don't actually care at all about this if it has the server-side viewstate - its completely useless
 def test_example_cli_jsfviewstate_serverside(monkeypatch, capsys):
     with requests_mock.Mocker() as m:
 
@@ -891,7 +937,9 @@ def test_example_cli_jsfviewstate_serverside(monkeypatch, capsys):
         monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/serverside_jsfviewstate.html"])
         cli.main()
         captured = capsys.readouterr()
-        assert "Cryptographic Product Identified (no vulnerability)" in captured.out
+        assert (
+            not "Cryptographic Product Identified (no vulnerability)" in captured.out
+        )  # make sure we didn't report it at all
         assert not "Potential matching hashcat commands:" in captured.out
 
 
