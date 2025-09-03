@@ -334,7 +334,7 @@ class AsyncUpload:
                     derive_algos = self.select_derive_algos(telerik_version)
                     for derive_algo in derive_algos:
                         if hasattr(self, "debug") and self.debug:
-                            print(f"[DEBUG] Testing combination:")
+                            print("[DEBUG] Testing combination:")
                             print(f"  - Version: {telerik_version}")
                             print(f"  - Hash Key: {hashkey}")
                             print(f"  - Encryption Key: {key}")
@@ -368,7 +368,7 @@ class AsyncUpload:
                         if hasattr(self, "debug") and self.debug:
                             print(f"[DEBUG] Response status: {resp.status_code}")
                         if "Could not load file or assembly" in resp.text:
-                            if reported_early_indicator == False:
+                            if not reported_early_indicator:
                                 print(
                                     "Detected early signs that target is likely vulnerable! Continuing to find vulnerable version..."
                                 )
@@ -399,7 +399,7 @@ class DialogHandler:
 
     def probe_version_baseline(self):
         # Get baseline with bogus version
-        b64section_plain = f"Telerik.Web.UI.Editor.DialogControls.DocumentManagerDialog, Telerik.Web.UI, Version=9999.9.999, Culture=neutral, PublicKeyToken=121fae78165ba3d4"
+        b64section_plain = "Telerik.Web.UI.Editor.DialogControls.DocumentManagerDialog, Telerik.Web.UI, Version=9999.9.999, Culture=neutral, PublicKeyToken=121fae78165ba3d4"
         b64section = base64.b64encode(b64section_plain.encode()).decode()
 
         if hasattr(self, "modern_dialog_params") and self.modern_dialog_params:
@@ -427,22 +427,9 @@ class DialogHandler:
             MaxRetryError,
         ):
             if hasattr(self, "debug") and self.debug:
-                print(f"[DEBUG] Network error probing version, exiting")
+                print("[DEBUG] Network error probing version, exiting")
             sys.exit(1)
-        # Extract title if it exists
-        title = ""
-        if r.text:
-            title_match = re.search(r"<title>([^<]+)</title>", r.text, re.IGNORECASE)
-            if title_match:
-                title = f" {title_match.group(1).strip()}"
-
-        if hasattr(self, "debug") and self.debug:
-            print(
-                f"Attempting to probe version: {version}. Got response code [{r.status_code}] with size {len(r.text)} {title}"
-            )
-        if baseline_size and abs(len(r.text) - baseline_size) > 10:
-            return dialog_parameters
-        return None
+        return len(r.text)
 
     def probe_version(self, version, baseline_size=None):
         if hasattr(self, "debug") and self.debug:
@@ -477,7 +464,7 @@ class DialogHandler:
             MaxRetryError,
         ):
             if hasattr(self, "debug") and self.debug:
-                print(f"[DEBUG] Network error probing version, exiting")
+                print("[DEBUG] Network error probing version, exiting")
             sys.exit(1)
 
         # Extract title if it exists
@@ -633,7 +620,7 @@ class DialogHandler:
                         self.encryption_key = encryption_key
                         break
 
-                if self.encryption_key == None:
+                if self.encryption_key is None:
                     print("\nFAILED: Could not identify encryption key.")
                     return
             else:
@@ -889,7 +876,7 @@ def main():
             sys.exit(1)
         resp_body = urllib.parse.unquote(res.text)
         if "RadAsyncUpload handler is registered succesfully" not in resp_body:
-            print(f"URL does not appear to be a Telerik UI AsyncUpload Endpoint")
+            print("URL does not appear to be a Telerik UI AsyncUpload Endpoint")
             return
         else:
             print("Target is confirmed to be Telerik UI Async Upload Endpoint")
@@ -937,10 +924,10 @@ def main():
             sys.exit(1)
         resp_body = urllib.parse.unquote(res.text)
         if "Loading the dialog..." not in resp_body:
-            print(f"URL does not appear to be a Telerik UI DialogHandler")
+            print("URL does not appear to be a Telerik UI DialogHandler")
             return
         else:
-            print(f"Confirmed target is Telerik UI DialogHandler")
+            print("Confirmed target is Telerik UI DialogHandler")
 
         dh = DialogHandler(
             args.url,
