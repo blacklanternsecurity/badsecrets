@@ -1465,7 +1465,7 @@ def test_dialoghandler_probe_version_with_title(monkeypatch, capsys, mocker):
         m.post("http://test.com", text=response_with_title)
 
         # Call probe_version directly with a test version
-        result = dh.probe_version("2018.1.117", baseline_size=100)
+        dh.probe_version("2018.1.117", baseline_size=100)
         captured = capsys.readouterr()
         print(captured.out)
 
@@ -1716,7 +1716,6 @@ def test_argument_parsing_machine_keys_and_force(monkeypatch, capsys):
 
     # Test argument parsing directly instead of full execution
     import argparse
-    from badsecrets.examples.telerik_knownkey import main
 
     # Test that machine-keys flag is parsed correctly
     monkeypatch.setattr(
