@@ -521,6 +521,7 @@ class DialogHandler:
             return
         else:
             print(f"Unexpected response encountered: [{resp_body}] aborting.")
+            sys.exit(1)
 
         print("Target is a valid DialogHandler endpoint. Brute forcing Telerik Hash Key...")
 
@@ -874,6 +875,7 @@ def main():
         ):
             print(f"Network error connecting to URL: [{args.url}]. Please check the URL and network connectivity.")
             sys.exit(1)
+            return
         resp_body = urllib.parse.unquote(res.text)
         if "RadAsyncUpload handler is registered succesfully" not in resp_body:
             print("URL does not appear to be a Telerik UI AsyncUpload Endpoint")
@@ -922,6 +924,7 @@ def main():
         ):
             print(f"Network error connecting to URL: [{args.url}]. Please check the URL and network connectivity.")
             sys.exit(1)
+            return
         resp_body = urllib.parse.unquote(res.text)
         if "Loading the dialog..." not in resp_body:
             print("URL does not appear to be a Telerik UI DialogHandler")
