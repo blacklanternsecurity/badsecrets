@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "badsecrets"
-version = "0.12.0"
+version = "0.13.0"
 description = "About"
 authors = ["A library for detecting known or weak secrets on across many platforms"]
 license = "GPL-3.0"
@@ -39,4 +39,4 @@ build-backend = "poetry_dynamic_versioning.backend"
 [tool.poetry-dynamic-versioning]
 enable = true
 metadata = true
-format = 'v0.12.{distance}'
+format = 'v0.13.{distance}'
