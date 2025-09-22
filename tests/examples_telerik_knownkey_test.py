@@ -1711,37 +1711,405 @@ def test_dialoghandler_solve_key_failure_and_version_solve(monkeypatch, capsys, 
     assert "Keys found! Now attempting to find the exact Telerik UI version..." in captured.out
 
 
-def test_argument_parsing_machine_keys_and_force(monkeypatch, capsys):
+def test_argument_parsing_machine_keys_and_force(monkeypatch, capsys, mocker):
     """Test argument parser handling for machine-keys and force command line flags"""
 
-    # Test argument parsing directly instead of full execution
-    import argparse
-
-    # Test that machine-keys flag is parsed correctly
+    # Test machine-keys flag
     monkeypatch.setattr(
         "sys.argv",
-        ["python", "--url", "http://test.com", "--machine-keys", "--force"],
+        ["python", "--url", "http://test.com", "--machine-keys"],
     )
 
-    # Mock the main execution to just test argument parsing
-    def mock_main():
-        parser = argparse.ArgumentParser()
-        parser.add_argument("-u", "--url", required=True)
-        parser.add_argument("-m", "--machine-keys", action="store_true")
-        parser.add_argument("-f", "--force", action="store_true")
-        args = parser.parse_args()
+    # Mock requests to prevent actual network calls
+    with requests_mock.Mocker() as m:
+        m.get("http://test.com", status_code=200, text="Loading the dialog...")
+        m.post("http://test.com", status_code=200, text="Error Message:Length cannot be less than zero")
+        # Mock solve_key to prevent full execution
+        mocker.patch("badsecrets.examples.telerik_knownkey.DialogHandler.solve_key", return_value=False)
 
-        if args.machine_keys:
-            print("MachineKeys inclusion enabled. Bruteforcing will take SIGNIFICANTLY longer")
-        if args.force:
-            print("Force flag enabled")
-        return args
+        telerik_knownkey.main()
+        captured = capsys.readouterr()
+        assert "MachineKeys inclusion enabled. Bruteforcing will take SIGNIFICANTLY longer" in captured.out
 
-    args = mock_main()
+
+def test_asyncupload_no_keys_found_message(monkeypatch, capsys, mocker):
+    """Test AsyncUpload displays failure message when no keys are available to test"""
+
+    from badsecrets.examples.telerik_knownkey import AsyncUpload
+
+    # Create an AsyncUpload instance
+    au = AsyncUpload("http://test.com")
+    au.debug = False  # Keep debug off to avoid complex paths
+
+    # Mock the telerik modules to return empty iterators (no keys to test)
+    mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", return_value=iter([]))
+    mocker.patch.object(Telerik_HashKey, "prepare_keylist", return_value=iter([]))
+
+    # This should hit the "no keys found" path without network calls
+    result = au.solve_key()
     captured = capsys.readouterr()
 
-    # Verify the flags are parsed correctly
-    assert args.machine_keys == True
-    assert args.force == True
-    assert "MachineKeys inclusion enabled. Bruteforcing will take SIGNIFICANTLY longer" in captured.out
-    assert "Force flag enabled" in captured.out
+    # AsyncUpload.solve_key() doesn't return a value when no keys found, just prints message
+    assert result is None
+    assert "Key(s) not found :(" in captured.out
+
+
+def test_asyncupload_network_connection_error(monkeypatch, capsys, mocker):
+    """Test AsyncUpload handles network connection errors during key solving"""
+
+    from badsecrets.examples.telerik_knownkey import AsyncUpload
+
+    def generate_keylist_enc(include_machinekeys):
+        return iter(["test_key"])
+
+    def generate_keylist_hash(include_machinekeys):
+        return iter(["test_hash"])
+
+    mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
+    mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
+
+    # Create AsyncUpload directly and test solve_key method
+    au = AsyncUpload("http://test.com", headers={})
+    au.debug = True
+
+    # Mock version_probe to skip version checking
+    mocker.patch.object(au, "version_probe")
+
+    with requests_mock.Mocker() as m:
+        # Network error on POST request - this will trigger the exception handling
+        m.post("http://test.com", exc=requests.exceptions.ConnectionError("Connection failed"))
+
+        with patch("sys.exit") as exit_mock:
+            try:
+                au.solve_key()
+            except UnboundLocalError:
+                # Expected - happens after sys.exit(1) due to bug in original code
+                pass
+            captured = capsys.readouterr()
+            assert (
+                "Network error connecting to URL: [http://test.com]. Exiting due to connection failure."
+                in captured.out
+            )
+            assert exit_mock.called
+
+
+def test_dialoghandler_probe_version_baseline_network_error(monkeypatch, capsys, mocker):
+    """Test DialogHandler probe_version_baseline handles network errors"""
+
+    from badsecrets.examples.telerik_knownkey import DialogHandler
+
+    dh = DialogHandler("http://test.com")
+    dh.encryption_key = "test_key"
+    dh.hash_key = "test_hash"
+    dh.key_derive_mode = "PBKDF1_MS"
+    dh.debug = True
+
+    # Mock the telerik modules
+    dh.telerik_encryptionkey = mocker.Mock()
+    dh.telerik_encryptionkey.telerik_derivekeys.return_value = (b"test_key", b"test_iv")
+    dh.telerik_encryptionkey.telerik_encrypt.return_value = "encrypted_text"
+
+    dh.telerik_hashkey = mocker.Mock()
+    dh.telerik_hashkey.sign_enc_dialog_params.return_value = "signed_params"
+
+    # Mock requests.post to raise a connection error
+    with patch("requests.post", side_effect=requests.exceptions.ConnectionError("Connection failed")):
+        with patch("sys.exit") as exit_mock:
+            try:
+                dh.probe_version_baseline()
+            except UnboundLocalError:
+                # Expected - happens after sys.exit(1) due to bug in original code
+                pass
+            captured = capsys.readouterr()
+            assert "[DEBUG] Network error probing version, exiting" in captured.out
+            assert exit_mock.called
+
+
+def test_dialoghandler_probe_version_network_error(monkeypatch, capsys, mocker):
+    """Test DialogHandler probe_version handles network errors"""
+
+    from badsecrets.examples.telerik_knownkey import DialogHandler
+
+    dh = DialogHandler("http://test.com")
+    dh.encryption_key = "test_key"
+    dh.hash_key = "test_hash"
+    dh.key_derive_mode = "PBKDF1_MS"
+    dh.debug = True
+
+    # Mock the telerik modules
+    dh.telerik_encryptionkey = mocker.Mock()
+    dh.telerik_encryptionkey.telerik_derivekeys.return_value = (b"test_key", b"test_iv")
+    dh.telerik_encryptionkey.telerik_encrypt.return_value = "encrypted_text"
+
+    dh.telerik_hashkey = mocker.Mock()
+    dh.telerik_hashkey.sign_enc_dialog_params.return_value = "signed_params"
+
+    # Mock requests.post to raise a connection error
+    with patch("requests.post", side_effect=requests.exceptions.ConnectTimeout("Connection timeout")):
+        with patch("sys.exit") as exit_mock:
+            try:
+                dh.probe_version("2018.1.117", baseline_size=100)
+            except UnboundLocalError:
+                # Expected - happens after sys.exit(1) due to bug in original code
+                pass
+            captured = capsys.readouterr()
+            assert "[DEBUG] Network error probing version, exiting" in captured.out
+            assert exit_mock.called
+
+
+def test_dialoghandler_detect_derive_function_network_error(monkeypatch, capsys, mocker):
+    """Test DialogHandler detect_derive_function handles network errors"""
+
+    from badsecrets.examples.telerik_knownkey import DialogHandler
+
+    dh = DialogHandler("http://test.com")
+    dh.debug = True
+
+    # Mock requests.post to raise a TooManyRedirects error
+    with patch("requests.post", side_effect=requests.exceptions.TooManyRedirects("Too many redirects")):
+        with patch("sys.exit") as exit_mock:
+            try:
+                dh.detect_derive_function()
+            except UnboundLocalError:
+                # Expected - happens after sys.exit(1) due to bug in original code
+                pass
+            captured = capsys.readouterr()
+            assert (
+                "Network error connecting to URL: [http://test.com]. Cannot determine key derivation function."
+                in captured.out
+            )
+            assert exit_mock.called
+
+
+def test_dialoghandler_solve_key_pbkdf1_ms_network_error(monkeypatch, capsys, mocker):
+    """Test DialogHandler solve_key PBKDF1_MS handles network errors during hash key testing"""
+
+    from badsecrets.examples.telerik_knownkey import DialogHandler
+
+    dh = DialogHandler("http://test.com")
+    dh.key_derive_mode = "PBKDF1_MS"
+    dh.include_machinekeys_bool = False
+    dh.debug = True
+
+    # Mock the hash key generator to return one key
+    def mock_hashkey_probe_generator(include_machinekeys=False, custom_keys=None):
+        yield ("probe_data", "test_hash_key")
+
+    dh.telerik_hashkey = mocker.Mock()
+    dh.telerik_hashkey.hashkey_probe_generator = mock_hashkey_probe_generator
+
+    # Mock requests.post to raise a MaxRetryError
+    from urllib3.exceptions import MaxRetryError
+    from urllib3 import PoolManager
+
+    with patch("requests.post", side_effect=MaxRetryError(PoolManager(), "http://test.com", "Max retries exceeded")):
+        with patch("sys.exit") as exit_mock:
+            try:
+                dh.solve_key()
+            except UnboundLocalError:
+                # Expected - happens after sys.exit(1) due to bug in original code
+                pass
+            captured = capsys.readouterr()
+            assert (
+                "Network error connecting to URL: [http://test.com]. Exiting due to connection failure."
+                in captured.out
+            )
+            assert exit_mock.called
+
+
+def test_dialoghandler_solve_key_pbkdf1_ms_encryption_network_error(monkeypatch, capsys, mocker):
+    """Test DialogHandler solve_key PBKDF1_MS handles network errors during encryption key testing"""
+
+    from badsecrets.examples.telerik_knownkey import DialogHandler
+
+    dh = DialogHandler("http://test.com")
+    dh.key_derive_mode = "PBKDF1_MS"
+    dh.hash_key = "found_hash_key"  # Set hash key as already found
+    dh.include_machinekeys_bool = False
+    dh.debug = True
+
+    # Mock the encryption key generator to return one key
+    def mock_encryptionkey_probe_generator(hash_key, key_derive_mode, include_machinekeys=False, custom_keys=None):
+        yield ("probe_data", "test_encryption_key")
+
+    dh.telerik_encryptionkey = mocker.Mock()
+    dh.telerik_encryptionkey.encryptionkey_probe_generator = mock_encryptionkey_probe_generator
+
+    # Mock requests.post to raise a ConnectionError
+    with patch("requests.post", side_effect=requests.exceptions.ConnectionError("Connection failed")):
+        with patch("sys.exit") as exit_mock:
+            try:
+                dh.solve_key()
+            except UnboundLocalError:
+                # Expected - happens after sys.exit(1) due to bug in original code
+                pass
+            captured = capsys.readouterr()
+            assert (
+                "Network error connecting to URL: [http://test.com]. Exiting due to connection failure."
+                in captured.out
+            )
+            assert exit_mock.called
+
+
+def test_dialoghandler_solve_key_pbkdf2_network_error(monkeypatch, capsys, mocker):
+    """Test DialogHandler solve_key PBKDF2 handles network errors during baseline establishment"""
+
+    from badsecrets.examples.telerik_knownkey import DialogHandler
+
+    dh = DialogHandler("http://test.com")
+    dh.key_derive_mode = "PBKDF2"
+    dh.include_machinekeys_bool = False
+    dh.debug = True
+
+    # Mock the telerik modules for baseline request
+    dh.telerik_encryptionkey = mocker.Mock()
+    dh.telerik_encryptionkey.telerik_derivekeys.return_value = (b"test_key", b"test_iv")
+    dh.telerik_encryptionkey.telerik_encrypt.return_value = "encrypted_text"
+
+    dh.telerik_hashkey = mocker.Mock()
+    dh.telerik_hashkey.sign_enc_dialog_params.return_value = "signed_params"
+
+    # Mock requests.post to raise a ConnectTimeout on baseline request
+    with patch("requests.post", side_effect=requests.exceptions.ConnectTimeout("Connection timeout")):
+        with patch("sys.exit") as exit_mock:
+            try:
+                dh.solve_key()
+            except UnboundLocalError:
+                # Expected - happens after sys.exit(1) due to bug in original code
+                pass
+            captured = capsys.readouterr()
+            assert (
+                "Network error connecting to URL: [http://test.com]. Cannot establish baseline for testing."
+                in captured.out
+            )
+            assert exit_mock.called
+
+
+def test_dialoghandler_solve_key_pbkdf2_key_testing_network_error(monkeypatch, capsys, mocker):
+    """Test DialogHandler solve_key PBKDF2 handles network errors during key combination testing"""
+
+    from badsecrets.examples.telerik_knownkey import DialogHandler
+
+    dh = DialogHandler("http://test.com")
+    dh.key_derive_mode = "PBKDF2"
+    dh.include_machinekeys_bool = False
+    dh.debug = True
+
+    # Mock the telerik modules
+    dh.telerik_encryptionkey = mocker.Mock()
+    dh.telerik_encryptionkey.telerik_derivekeys.return_value = (b"test_key", b"test_iv")
+    dh.telerik_encryptionkey.telerik_encrypt.return_value = "encrypted_text"
+
+    dh.telerik_hashkey = mocker.Mock()
+    dh.telerik_hashkey.sign_enc_dialog_params.return_value = "signed_params"
+    dh.telerik_hashkey.prepare_keylist.return_value = iter(["test_hash"])
+
+    # Mock the encryption key generator
+    def mock_encryptionkey_probe_generator(hash_key, key_derive_mode, include_machinekeys=False, custom_keys=None):
+        yield ("probe_data", "test_encryption_key")
+
+    dh.telerik_encryptionkey.encryptionkey_probe_generator = mock_encryptionkey_probe_generator
+
+    # Ensure hasattr check returns False for custom_keys
+    del dh.telerik_hashkey.custom_keys
+    del dh.telerik_encryptionkey.custom_keys
+
+    call_count = 0
+
+    def mock_post(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            # First call is baseline - return success
+            response = mocker.Mock()
+            response.text = "baseline response"
+            response.status_code = 200
+            return response
+        else:
+            # Second call for key testing - raise error
+            raise requests.exceptions.TooManyRedirects("Too many redirects")
+
+    with patch("requests.post", side_effect=mock_post):
+        with patch("sys.exit") as exit_mock:
+            try:
+                dh.solve_key()
+            except (UnboundLocalError, TypeError):
+                # Expected - happens after sys.exit(1) due to bug in original code
+                pass
+            captured = capsys.readouterr()
+            assert (
+                "Network error connecting to URL: [http://test.com]. Exiting due to connection failure."
+                in captured.out
+            )
+            assert exit_mock.called
+
+
+def test_dialoghandler_pbkdf1_ms_encryption_key_final_network_error(monkeypatch, capsys, mocker):
+    """Test DialogHandler solve_key PBKDF1_MS encryption key testing network exception handling to achieve 100% coverage"""
+
+    from badsecrets.examples.telerik_knownkey import DialogHandler
+
+    # Create DialogHandler instance directly
+    dh = DialogHandler("http://test.com")
+    dh.debug = True
+    dh.key_derive_mode = "PBKDF1_MS"
+    dh.hash_key = "test_hash_key"  # Set hash key so we reach encryption key testing
+
+    # Mock the hash key generator to return quickly
+    def mock_hashkey_probe_generator(include_machinekeys=False, custom_keys=None):
+        # Return a single successful result to get past hash key testing
+        yield ("dummy_probe", "test_hash_key")
+
+    dh.telerik_hashkey.hashkey_probe_generator = mock_hashkey_probe_generator
+
+    # Mock the encryption key generator
+    def mock_encryptionkey_probe_generator(hash_key, key_derive_mode, include_machinekeys=False, custom_keys=None):
+        yield ("probe_data", "test_encryption_key")
+
+    dh.telerik_encryptionkey.encryptionkey_probe_generator = mock_encryptionkey_probe_generator
+
+    # Mock the initial hash key request to succeed
+    def mock_post_hash_key_success(*args, **kwargs):
+        response = mocker.Mock()
+        response.text = "The input data is not a complete block"  # Hash key success
+        response.status_code = 200
+        return response
+
+    # Mock the encryption key request to raise network exception
+    def mock_post_encryption_key_network_error(*args, **kwargs):
+        # Check if this is the encryption key testing request
+        if "dialogParametersHolder" in kwargs.get("data", {}):
+            # Raise network exception for encryption key testing
+            import requests.exceptions
+
+            raise requests.exceptions.ConnectionError("Network error during encryption key testing")
+        else:
+            # For other requests, return success
+            response = mocker.Mock()
+            response.text = "The input data is not a complete block"
+            response.status_code = 200
+            return response
+
+    # Set up the sequence: hash key success, then encryption key network error
+    call_count = [0]
+
+    def mock_post_sequence(*args, **kwargs):
+        call_count[0] += 1
+        if call_count[0] == 1:
+            # First call (hash key) succeeds
+            return mock_post_hash_key_success(*args, **kwargs)
+        else:
+            # Second call (encryption key) raises network error
+            return mock_post_encryption_key_network_error(*args, **kwargs)
+
+    # Mock sys.exit to prevent actual exit
+    mocker.patch("sys.exit")
+
+    # Apply the mock
+    mocker.patch("requests.post", side_effect=mock_post_sequence)
+
+    # Call solve_key - this should trigger the network exception in encryption key testing
+    dh.solve_key()
+
+    captured = capsys.readouterr()
+    assert "Network error connecting to URL: [http://test.com]. Exiting due to connection failure." in captured.out
