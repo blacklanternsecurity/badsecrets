@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "badsecrets"
-version = "0.12.0"
+version = "0.13.0"
 description = "About"
 authors = ["A library for detecting known or weak secrets on across many platforms"]
 license = "GPL-3.0"
@@ -9,7 +9,7 @@ readme = "README.md"
 [tool.poetry.group.dev.dependencies]
 requests-mock = "^1.10.0"
 pytest = "^8.3.4"
-pytest-cov = "^6.1.1"
+pytest-cov = ">=6.1.1,<8.0.0"
 mock = "^5.1.0"
 pytest-mock = "^3.10.0"
 poetry-dynamic-versioning = {extras = ["plugin"], version = "^1.8.2"}
@@ -39,4 +39,4 @@ build-backend = "poetry_dynamic_versioning.backend"
 [tool.poetry-dynamic-versioning]
 enable = true
 metadata = true
-format = 'v0.12.{distance}'
+format = 'v0.13.{distance}'
