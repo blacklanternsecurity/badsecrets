@@ -357,12 +357,7 @@ class AsyncUpload:
                             print(f"[DEBUG] Sending request to: {self.url}")
                         try:
                             resp = session.send(request, verify=False)
-                        except (
-                            requests.exceptions.ConnectionError,
-                            requests.exceptions.ConnectTimeout,
-                            requests.exceptions.TooManyRedirects,
-                            MaxRetryError,
-                        ):
+                        except (requests.exceptions.RequestException, MaxRetryError):
                             print(f"Network error connecting to URL: [{self.url}]. Exiting due to connection failure.")
                             sys.exit(1)
                         if hasattr(self, "debug") and self.debug:
@@ -420,12 +415,7 @@ class DialogHandler:
                 verify=False,
                 proxies=self.proxies,
             )
-        except (
-            requests.exceptions.ConnectionError,
-            requests.exceptions.ConnectTimeout,
-            requests.exceptions.TooManyRedirects,
-            MaxRetryError,
-        ):
+        except (requests.exceptions.RequestException, MaxRetryError):
             if hasattr(self, "debug") and self.debug:
                 print("[DEBUG] Network error probing version, exiting")
             sys.exit(1)
@@ -457,12 +447,7 @@ class DialogHandler:
                 verify=False,
                 proxies=self.proxies,
             )
-        except (
-            requests.exceptions.ConnectionError,
-            requests.exceptions.ConnectTimeout,
-            requests.exceptions.TooManyRedirects,
-            MaxRetryError,
-        ):
+        except (requests.exceptions.RequestException, MaxRetryError):
             if hasattr(self, "debug") and self.debug:
                 print("[DEBUG] Network error probing version, exiting")
             sys.exit(1)
@@ -492,12 +477,7 @@ class DialogHandler:
             res = requests.post(
                 self.url, data=KDF_probe_data, proxies=self.proxies, headers=self.headers, verify=False
             )
-        except (
-            requests.exceptions.ConnectionError,
-            requests.exceptions.ConnectTimeout,
-            requests.exceptions.TooManyRedirects,
-            MaxRetryError,
-        ):
+        except (requests.exceptions.RequestException, MaxRetryError):
             print(f"Network error connecting to URL: [{self.url}]. Cannot determine key derivation function.")
             sys.exit(1)
         resp_body = res.text
@@ -549,12 +529,7 @@ class DialogHandler:
 
                 try:
                     res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
-                except (
-                    requests.exceptions.ConnectionError,
-                    requests.exceptions.ConnectTimeout,
-                    requests.exceptions.TooManyRedirects,
-                    MaxRetryError,
-                ):
+                except (requests.exceptions.RequestException, MaxRetryError):
                     print(f"Network error connecting to URL: [{self.url}]. Exiting due to connection failure.")
                     sys.exit(1)
 
@@ -599,12 +574,7 @@ class DialogHandler:
                         res = requests.post(
                             self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False
                         )
-                    except (
-                        requests.exceptions.ConnectionError,
-                        requests.exceptions.ConnectTimeout,
-                        requests.exceptions.TooManyRedirects,
-                        MaxRetryError,
-                    ):
+                    except (requests.exceptions.RequestException, MaxRetryError):
                         print(f"Network error connecting to URL: [{self.url}]. Exiting due to connection failure.")
                         sys.exit(1)
                     if hasattr(self, "debug") and self.debug:
@@ -646,12 +616,7 @@ class DialogHandler:
                 baseline_res = requests.post(
                     self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False
                 )
-            except (
-                requests.exceptions.ConnectionError,
-                requests.exceptions.ConnectTimeout,
-                requests.exceptions.TooManyRedirects,
-                MaxRetryError,
-            ):
+            except (requests.exceptions.RequestException, MaxRetryError):
                 print(f"Network error connecting to URL: [{self.url}]. Cannot establish baseline for testing.")
                 sys.exit(1)
             baseline_size = len(baseline_res.text)
@@ -705,12 +670,7 @@ class DialogHandler:
                         res = requests.post(
                             self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False
                         )
-                    except (
-                        requests.exceptions.ConnectionError,
-                        requests.exceptions.ConnectTimeout,
-                        requests.exceptions.TooManyRedirects,
-                        MaxRetryError,
-                    ):
+                    except (requests.exceptions.RequestException, MaxRetryError):
                         print(f"Network error connecting to URL: [{self.url}]. Exiting due to connection failure.")
                         sys.exit(1)
 
@@ -867,12 +827,7 @@ def main():
         asyncupload_endpoint = args.url.split("?")[0] + "?type=RAU"
         try:
             res = requests.get(asyncupload_endpoint, proxies=proxies, headers=headers, verify=False, timeout=10)
-        except (
-            requests.exceptions.ConnectionError,
-            requests.exceptions.ConnectTimeout,
-            requests.exceptions.TooManyRedirects,
-            MaxRetryError,
-        ):
+        except (requests.exceptions.RequestException, MaxRetryError):
             print(f"Network error connecting to URL: [{args.url}]. Please check the URL and network connectivity.")
             sys.exit(1)
             return
@@ -916,12 +871,7 @@ def main():
         print("Assuming target is Telerik UI DialogHandler...")
         try:
             res = requests.get(args.url, proxies=proxies, headers=headers, verify=False)
-        except (
-            requests.exceptions.ConnectionError,
-            requests.exceptions.ConnectTimeout,
-            requests.exceptions.TooManyRedirects,
-            MaxRetryError,
-        ):
+        except (requests.exceptions.RequestException, MaxRetryError):
             print(f"Network error connecting to URL: [{args.url}]. Please check the URL and network connectivity.")
             sys.exit(1)
             return
