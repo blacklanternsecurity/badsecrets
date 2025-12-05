@@ -18,7 +18,7 @@ pycparser==2.22 ; python_version >= "3.9" and python_version < "4.0" and platfor
 pycryptodome==3.23.0 ; python_version >= "3.9" and python_version < "4.0"
 pyjwt[crypto]==2.10.1 ; python_version >= "3.9" and python_version < "4.0"
 requests==2.32.5 ; python_version >= "3.9" and python_version < "4.0"
-sqlparse==0.5.3 ; python_version >= "3.9" and python_version < "4.0"
+sqlparse==0.5.4 ; python_version >= "3.9" and python_version < "4.0"
 typing-extensions==4.15.0 ; python_version >= "3.9" and python_version < "3.11"
 tzdata==2025.1 ; python_version >= "3.9" and python_version < "4.0" and sys_platform == "win32"
 urllib3==2.5.0 ; python_version >= "3.9" and python_version < "4.0"
