@@ -22,19 +22,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: psf/black@stable
-        with:
-          options: "--check"
       - name: Install Python 3
         uses: actions/setup-python@v4
         with:
           python-version: 3.9
-      - name: Install dependencies
-        run: |
-          pip install flake8
-      - name: flake8
-        run: |
-          flake8 --select F,E722 --ignore F403,F405,F541
+      - name: Install Ruff
+        run: pip install ruff==0.15.2
+      - name: Ruff format check
+        run: ruff format --check .
+      - name: Ruff lint check
+        run: ruff check .
 
   test:
     runs-on: ubuntu-latest

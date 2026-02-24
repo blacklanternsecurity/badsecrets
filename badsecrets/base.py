@@ -116,7 +116,6 @@ class BadsecretsBase:
 
         if headers:
             for header_value in headers.values():
-
                 # Check if we have a match outright
                 r = self.check_secret(header_value)
                 if r:

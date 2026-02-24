@@ -209,9 +209,7 @@ def main():
             headers["User-agent"] = args.user_agent
 
         try:
-            res = httpx.get(
-                args.url, proxy=proxy, headers=headers, verify=False, follow_redirects=allow_redirects
-            )
+            res = httpx.get(args.url, proxy=proxy, headers=headers, verify=False, follow_redirects=allow_redirects)
         except (httpx.ConnectError, httpx.ConnectTimeout):
             print_status(f"Error connecting to URL: [{args.url}]", color="red")
             return

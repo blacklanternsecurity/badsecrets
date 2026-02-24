@@ -58,7 +58,7 @@ class Symfony_SignedURL(BadsecretsBase):
             return [
                 {
                     "command": f"hashcat -m {hashcat_mode} -a 0 {base64.b64decode(url_hash).hex()}:{url.encode().hex()} --hex-salt  <dictionary_file>",
-                    "description": f"Symfony Signed URL Algorithm: [{hash_algorithm_str }]",
+                    "description": f"Symfony Signed URL Algorithm: [{hash_algorithm_str}]",
                 }
             ]
 

@@ -13,7 +13,6 @@ class Yii2_SignedCookies(BadsecretsBase):
     description = {"product": "Yii2 Signed Cookie", "secret": "Yii2 cookieValidationKey", "severity": "HIGH"}
 
     def verify_yii2_cookie(self, cookie_value, validation_key):
-
         # URL decode the whole value first
         decoded_cookie = unquote(cookie_value)
 

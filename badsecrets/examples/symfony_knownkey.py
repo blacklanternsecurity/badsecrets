@@ -68,7 +68,9 @@ def main():
 
     fragment_test_url = f"{args.url.rstrip('/')}/_fragment"
     try:
-        res_fragment = httpx.get(f"{fragment_test_url}", proxy=proxy, headers=headers, verify=False, follow_redirects=True)
+        res_fragment = httpx.get(
+            f"{fragment_test_url}", proxy=proxy, headers=headers, verify=False, follow_redirects=True
+        )
     except (httpx.ConnectError, httpx.ConnectTimeout):
         print(f"Error connecting to URL: [{args.url}]")
         return
