@@ -1,7 +1,8 @@
 import httpx
 import respx
 
-from badsecrets.base import check_all_modules, carve_all_modules
+from badsecrets.base import check_all_modules, carve_all_modules, BadsecretsBase, yara_carve_scan
+import badsecrets.base
 
 tests = [
     "yJrdyJV6tkmHLII2uDq1Sl509UeDg9xGI4u3tb6dm9BQS4wD08KTkyXKST4PeQs00giqSA==",
@@ -162,3 +163,31 @@ Sys.Application.add_init(function() {
         assert r_list[1]["type"] == "IdentifyOnly"
         assert r_list[0]["description"]["product"] in ["Telerik DialogParameters", "Telerik Hash Key Signature"]
         assert r_list[1]["description"]["product"] in ["Telerik DialogParameters", "Telerik Hash Key Signature"]
+
+
+def test_yara_carve_coverage():
+    """Every module with a carve_regex must have a YARA carve pattern or rule."""
+    for cls in BadsecretsBase.__subclasses__():
+        if cls().carve_regex() is not None:
+            has_yara = getattr(cls, "yara_carve_pattern", None) or getattr(cls, "yara_carve_rule", None)
+            assert has_yara, f"{cls.__name__} has carve_regex() but no yara_carve_pattern or yara_carve_rule"
+
+
+def test_yara_carve_scan_no_rules():
+    """yara_carve_scan returns empty dict when no rules are compiled."""
+    saved = badsecrets.base._compiled_yara_carve_rules
+    try:
+        badsecrets.base._compiled_yara_carve_rules = None
+        # Temporarily clear all yara patterns so compilation produces no rules
+        patches = []
+        for cls in BadsecretsBase.__subclasses__():
+            patches.append((cls, getattr(cls, "yara_carve_pattern", None), getattr(cls, "yara_carve_rule", None)))
+            cls.yara_carve_pattern = None
+            cls.yara_carve_rule = None
+        result = yara_carve_scan("test body")
+        assert result == {}
+    finally:
+        badsecrets.base._compiled_yara_carve_rules = saved
+        for cls, pattern, rule in patches:
+            cls.yara_carve_pattern = pattern
+            cls.yara_carve_rule = rule

@@ -1,4 +1,5 @@
 import re
+import warnings
 import jwt as j
 import json
 import base64
@@ -24,6 +25,7 @@ XMLDSIG_table = {
 
 class Generic_JWT(BadsecretsBase):
     identify_regex = re.compile(r"eyJ(?:[\w-]*\.)(?:[\w-]*\.)[\w-]*")
+    yara_carve_pattern = r"eyJ[\w\-]+\.[\w\-]+\.[\w\-]+"
     description = {"product": "JSON Web Token (JWT)", "secret": "HMAC/RSA Key", "severity": "HIGH"}
 
     @staticmethod
@@ -42,7 +44,9 @@ class Generic_JWT(BadsecretsBase):
 
     def jwtVerify(self, JWT, key, algorithm):
         try:
-            r = j.decode(JWT, key, algorithms=[algorithm], options={"verify_exp": False})
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=j.warnings.InsecureKeyLengthWarning)
+                r = j.decode(JWT, key, algorithms=[algorithm], options={"verify_exp": False})
             return r
         except j.exceptions.InvalidSignatureError:
             return None

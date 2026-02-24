@@ -5,6 +5,7 @@ import base64
 import hashlib
 import binascii
 import httpx
+import yara
 import badsecrets.errors
 from abc import abstractmethod
 
@@ -15,6 +16,8 @@ generic_base64_regex = re.compile(
 
 class BadsecretsBase:
     identify_regex = re.compile(r".+")
+    yara_carve_pattern = None
+    yara_carve_rule = None  # Full custom YARA rule string for compound carve conditions
     description = {"product": "Undefined", "secret": "Undefined", "severity": "Undefined"}
 
     hash_sizes = {"SHA1": 20, "MD5": 16, "SHA256": 32, "SHA384": 48, "SHA512": 64}
@@ -83,7 +86,7 @@ class BadsecretsBase:
     def carve_regex(self):
         return None
 
-    def carve(self, body=None, cookies=None, headers=None, httpx_response=None, **kwargs):
+    def carve(self, body=None, cookies=None, headers=None, httpx_response=None, _yara_body_hit=None, **kwargs):
         results = []
 
         if not body and not cookies and not headers and httpx_response == None:
@@ -143,7 +146,9 @@ class BadsecretsBase:
         if body:
             if type(body) != str:
                 raise badsecrets.errors.CarveException("Body argument must be type str")
-            if self.carve_regex():
+            if _yara_body_hit is None:
+                _yara_body_hit = type(self).__name__ in yara_carve_scan(body)
+            if _yara_body_hit and self.carve_regex():
                 s = re.search(self.carve_regex(), body)
                 if s:
                     if not self.validate_carve or self.identify(s.groups()[0]):
@@ -178,6 +183,66 @@ class BadsecretsBase:
         items = [key for key, value in d.items() if query == value]
         if items:
             return items
+
+
+_compiled_yara_carve_rules = None
+
+
+def _compile_yara_carve_rules():
+    """Compile YARA rules from all loaded modules' yara_carve_pattern/yara_carve_rule attributes."""
+    global _compiled_yara_carve_rules
+    rules_parts = []
+    for cls in BadsecretsBase.__subclasses__():
+        custom_rule = getattr(cls, "yara_carve_rule", None)
+        if custom_rule:
+            rules_parts.append(custom_rule)
+        else:
+            pattern = getattr(cls, "yara_carve_pattern", None)
+            if pattern:
+                rule = f"rule {cls.__name__}_carve {{ strings: $carve = /{pattern}/ condition: $carve }}"
+                rules_parts.append(rule)
+
+    if rules_parts:
+        source = "\n".join(rules_parts)
+        _compiled_yara_carve_rules = yara.compile(source=source)
+    return _compiled_yara_carve_rules
+
+
+def get_yara_carve_rules():
+    """Get compiled YARA carve rules, compiling on first call."""
+    global _compiled_yara_carve_rules
+    if _compiled_yara_carve_rules is None:
+        _compile_yara_carve_rules()
+    return _compiled_yara_carve_rules
+
+
+def yara_carve_scan(text):
+    """Scan text against all YARA carve rules simultaneously.
+
+    Returns dict of {module_name: [{'offset': int, 'data': str}, ...]}
+    """
+    rules = get_yara_carve_rules()
+    if not rules:
+        return {}
+
+    data = text.encode("utf-8") if isinstance(text, str) else text
+    matches = rules.match(data=data)
+
+    result = {}
+    for match in matches:
+        # Strip _carve suffix from rule name to get module name
+        module_name = match.rule.removesuffix("_carve")
+        instances = []
+        for string_match in match.strings:
+            for instance in string_match.instances:
+                instances.append(
+                    {
+                        "offset": instance.offset,
+                        "data": instance.matched_data.decode("utf-8", errors="replace"),
+                    }
+                )
+        result[module_name] = instances
+    return result
 
 
 def hashcat_all_modules(product, detecting_module=None, *args):
@@ -216,9 +281,24 @@ def check_all_modules(*args, **kwargs):
 
 def carve_all_modules(**kwargs):
     results = []
+
+    # Determine body text for YARA pre-scanning
+    scan_body = kwargs.get("body", None)
+    httpx_resp = kwargs.get("httpx_response", None)
+    if not scan_body and httpx_resp is not None and isinstance(httpx_resp, httpx.Response):
+        scan_body = getattr(httpx_resp, "text", None)
+
+    # Run YARA pre-filter on body text (single pass, all rules)
+    yara_body_matches = set()
+    if scan_body:
+        yara_results = yara_carve_scan(scan_body)
+        yara_body_matches = set(yara_results.keys())
+
     for m in BadsecretsBase.__subclasses__():
         x = m(custom_resource=kwargs.get("custom_resource", None))
-        r_list = x.carve(**kwargs)
+
+        yara_hit = m.__name__ in yara_body_matches
+        r_list = x.carve(_yara_body_hit=yara_hit, **kwargs)
         if len(r_list) > 0:
             for r in r_list:
                 r["detecting_module"] = m.__name__
