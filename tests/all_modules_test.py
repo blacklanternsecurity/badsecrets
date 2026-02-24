@@ -1,7 +1,7 @@
 import httpx
 import respx
 
-from badsecrets.base import check_all_modules, carve_all_modules
+from badsecrets.base import check_all_modules, carve_all_modules, BadsecretsBase
 
 tests = [
     "yJrdyJV6tkmHLII2uDq1Sl509UeDg9xGI4u3tb6dm9BQS4wD08KTkyXKST4PeQs00giqSA==",
@@ -162,3 +162,11 @@ Sys.Application.add_init(function() {
         assert r_list[1]["type"] == "IdentifyOnly"
         assert r_list[0]["description"]["product"] in ["Telerik DialogParameters", "Telerik Hash Key Signature"]
         assert r_list[1]["description"]["product"] in ["Telerik DialogParameters", "Telerik Hash Key Signature"]
+
+
+def test_yara_carve_coverage():
+    """Every module with a carve_regex must have a YARA carve pattern or rule."""
+    for cls in BadsecretsBase.__subclasses__():
+        if cls().carve_regex() is not None:
+            has_yara = getattr(cls, "yara_carve_pattern", None) or getattr(cls, "yara_carve_rule", None)
+            assert has_yara, f"{cls.__name__} has carve_regex() but no yara_carve_pattern or yara_carve_rule"

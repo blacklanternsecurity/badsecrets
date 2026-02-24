@@ -17,6 +17,12 @@ def no_padding_urlsafe_base64_encode_es(enc):
 
 class ExpressSignedCookies_ES(BadsecretsBase):
     identify_regex = re.compile(r"^s%3[Aa][^\.]+\.(?!.*%20|.*%22)[a-zA-Z0-9%]{20,90}$")
+    yara_carve_rule = (
+        "rule ExpressSignedCookies_ES_carve {"
+        " strings: $carve = /s%3[Aa][^\\.]+\\.[a-zA-Z0-9%]{20,90}/"
+        ' $bad1 = "%20" $bad2 = "%22"'
+        " condition: $carve and not ($bad1 or $bad2) }"
+    )
     description = {
         "product": "Express.js Signed Cookie (express-session)",
         "secret": "Express.js SESSION_SECRET (express-session)",

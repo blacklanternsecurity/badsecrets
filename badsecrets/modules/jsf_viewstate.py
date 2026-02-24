@@ -17,6 +17,7 @@ class Jsf_viewstate(BadsecretsBase):
     identify_regex = re.compile(
         r"^(?:[%A-Za-z0-9+\/]{4}){8,}(?:[%A-Za-z0-9+\/]{4}|[%A-Za-z0-9+\/]{3}=|[%A-Za-z0-9+\/]{2}={2})$"
     )
+    yara_carve_pattern = r"javax\.faces\.ViewState"
     description = {
         "product": "Java Server Faces Viewstate",
         "secret": "com.sun.faces.ClientStateSavingPassword",

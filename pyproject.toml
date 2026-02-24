@@ -23,6 +23,7 @@ Django = "^4.1.2"
 pyjwt = {extras = ["crypto"], version = "^2.6.0"}
 httpx = ">=0.27,<1.0"
 colorama = "^0.4.6"
+yara-python = ">=4.2.0"
 
 [tool.poetry.scripts]
 badsecrets = 'badsecrets.examples.cli:main'

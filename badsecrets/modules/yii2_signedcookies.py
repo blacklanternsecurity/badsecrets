@@ -10,6 +10,7 @@ from urllib.parse import unquote
 class Yii2_SignedCookies(BadsecretsBase):
     # Match 64 hex chars (SHA256) followed by PHP serialized data
     identify_regex = re.compile(r"^[a-fA-F0-9]{64}a%3A[a-zA-Z0-9%]+$")
+    yara_carve_pattern = r"[a-fA-F0-9]{64}a%3A"
     description = {"product": "Yii2 Signed Cookie", "secret": "Yii2 cookieValidationKey", "severity": "HIGH"}
 
     def verify_yii2_cookie(self, cookie_value, validation_key):

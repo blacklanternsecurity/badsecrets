@@ -18,6 +18,12 @@ from badsecrets.base import BadsecretsBase, generic_base64_regex
 class ASPNET_Viewstate(BadsecretsBase):
     check_secret_args = 3
     identify_regex = generic_base64_regex
+    # Compound: both __VIEWSTATE and __VIEWSTATEGENERATOR must be present
+    yara_carve_rule = (
+        "rule ASPNET_Viewstate_carve {"
+        ' strings: $vs = "__VIEWSTATE" $gen = "__VIEWSTATEGENERATOR"'
+        " condition: $vs and $gen }"
+    )
     description = {"product": "ASP.NET Viewstate", "secret": "ASP.NET MachineKey", "severity": "CRITICAL"}
 
     def carve_regex(self):
