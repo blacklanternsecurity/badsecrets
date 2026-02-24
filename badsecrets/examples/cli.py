@@ -5,18 +5,12 @@
 
 from badsecrets.base import check_all_modules, carve_all_modules, hashcat_all_modules
 from badsecrets.helpers import print_status
-import requests
+import httpx
 import argparse
 import sys
 import os
 import re
 from importlib.metadata import version, PackageNotFoundError
-
-
-from urllib3.exceptions import InsecureRequestWarning
-
-# Suppress only the single warning from urllib3 needed.
-requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
@@ -200,9 +194,9 @@ def main():
     if args.allow_redirects:
         allow_redirects = True
 
-    proxies = None
+    proxy = None
     if args.proxy:
-        proxies = {"http": args.proxy, "https": args.proxy}
+        proxy = args.proxy
 
     custom_resource = None
     if args.custom_secrets:
@@ -215,14 +209,14 @@ def main():
             headers["User-agent"] = args.user_agent
 
         try:
-            res = requests.get(
-                args.url, proxies=proxies, headers=headers, verify=False, allow_redirects=allow_redirects
+            res = httpx.get(
+                args.url, proxy=proxy, headers=headers, verify=False, follow_redirects=allow_redirects
             )
-        except (requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout):
+        except (httpx.ConnectError, httpx.ConnectTimeout):
             print_status(f"Error connecting to URL: [{args.url}]", color="red")
             return
 
-        r_list = carve_all_modules(requests_response=res, custom_resource=custom_resource, url=args.url)
+        r_list = carve_all_modules(httpx_response=res, custom_resource=custom_resource, url=args.url)
         if r_list:
             for r in r_list:
                 if r["type"] == "SecretFound":

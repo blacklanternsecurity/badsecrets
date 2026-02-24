@@ -1,7 +1,7 @@
 import os
 import sys
 import tempfile
-import requests_mock
+import respx
 from mock import patch
 from importlib.metadata import PackageNotFoundError
 
@@ -122,9 +122,8 @@ def test_examples_cli_url_both_set(monkeypatch, capsys):
 
 
 def test_example_cli_vulnerable_url(monkeypatch, capsys):
-    with requests_mock.Mocker() as m:
-        m.get(
-            f"http://example.com/vulnerablejwt.html",
+    with respx.mock:
+        respx.get("http://example.com/vulnerablejwt.html").respond(
             status_code=200,
             text=base_vulnerable_page,
         )
@@ -136,9 +135,8 @@ def test_example_cli_vulnerable_url(monkeypatch, capsys):
 
 
 def test_example_cli_vulnerable_headers(monkeypatch, capsys):
-    with requests_mock.Mocker() as m:
-        m.get(
-            f"http://example.com/vulnerableexpress_cs.html",
+    with respx.mock:
+        respx.get("http://example.com/vulnerableexpress_cs.html").respond(
             status_code=200,
             text="<html><body>content</body></html>",
             headers={
@@ -162,9 +160,8 @@ def test_example_cli_vulnerable_headers(monkeypatch, capsys):
 
 
 def test_example_cli_vulnerable_headersidentifyonly(monkeypatch, capsys):
-    with requests_mock.Mocker() as m:
-        m.get(
-            f"http://example.com/vulnerableexpress_cs.html",
+    with respx.mock:
+        respx.get("http://example.com/vulnerableexpress_cs.html").respond(
             status_code=200,
             text="<html><body>content</body></html>",
             headers={
@@ -190,9 +187,8 @@ def test_example_cli_vulnerable_headersidentifyonly(monkeypatch, capsys):
 
 
 def test_example_cli_not_vulnerable_url(monkeypatch, capsys):
-    with requests_mock.Mocker() as m:
-        m.get(
-            f"http://example.com/notvulnerable.html",
+    with respx.mock:
+        respx.get("http://example.com/notvulnerable.html").respond(
             status_code=200,
             text=base_non_vulnerable_page,
         )
@@ -204,9 +200,8 @@ def test_example_cli_not_vulnerable_url(monkeypatch, capsys):
 
 
 def test_example_cli_identifyonly_url(monkeypatch, capsys):
-    with requests_mock.Mocker() as m:
-        m.get(
-            f"http://example.com/identifyonly.html",
+    with respx.mock:
+        respx.get("http://example.com/identifyonly.html").respond(
             status_code=200,
             text=base_identifyonly_page,
         )
@@ -219,9 +214,8 @@ def test_example_cli_identifyonly_url(monkeypatch, capsys):
 
 
 def test_example_cli_identifyonly_hashcat(monkeypatch, capsys):
-    with requests_mock.Mocker() as m:
-        m.get(
-            f"http://example.com/identifyonly.html",
+    with respx.mock:
+        respx.get("http://example.com/identifyonly.html").respond(
             status_code=200,
             text=base_identifyonly_page,
         )
@@ -242,9 +236,8 @@ def test_example_cli_identifyonly_hashcat(monkeypatch, capsys):
 
 
 def test_example_cli_identifyonly_hashcat_rack2(monkeypatch, capsys):
-    with requests_mock.Mocker() as m:
-        m.get(
-            f"http://example.com/identifyonly.html",
+    with respx.mock:
+        respx.get("http://example.com/identifyonly.html").respond(
             status_code=200,
             text=base_identifyonly_page,
         )
@@ -530,7 +523,7 @@ def test_example_cli_customsecrets_toolarge(monkeypatch, capsys):
 
 
 def test_example_cli_customsecrets_urlmode_expressbase64(monkeypatch, capsys):
-    base_vulnerable_page_jsf_custom = """  
+    base_vulnerable_page_jsf_custom = """
 <p><input type="hidden" name="javax.faces.ViewState" id="j_id__v_0:javax.faces.ViewState:1" value="AHo0wmLu5ceItIi+I7XkEi1GAb4h12WZ894pA+Z4OH7bco2jXEy1RSCWwjtJcZNbWPcvPqL5zzfl03DoeMZfGGX7a9PSv+fUT8MAeKNouAGj1dZuO8srXt8xZIGg+wPCWWCzcX6IhWOtgWUwiXeSojCDTKXklsYt+kzlVBk5wOsXvb2lTJoO0Q==" autocomplete="off" />
 """
 
@@ -538,9 +531,8 @@ def test_example_cli_customsecrets_urlmode_expressbase64(monkeypatch, capsys):
         f.write("base64:aGFja3RoZXBsYW5ldA==")
         f.flush()
 
-        with requests_mock.Mocker() as m:
-            m.get(
-                f"http://example.com/vulnerablejsf.html",
+        with respx.mock:
+            respx.get("http://example.com/vulnerablejsf.html").respond(
                 status_code=200,
                 text=base_vulnerable_page_jsf_custom,
             )
@@ -565,7 +557,7 @@ def test_example_cli_customsecrets_urlmode_expressbase64(monkeypatch, capsys):
 
 
 def test_example_cli_customsecrets_urlmode(monkeypatch, capsys):
-    base_vulnerable_page_aspnet_custom = """  
+    base_vulnerable_page_aspnet_custom = """
     <form method="post" action="./form.aspx" id="ctl00">
 <div class="aspNetHidden">
 <input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="" />
@@ -604,9 +596,8 @@ function __doPostBack(eventTarget, eventArgument) {
         )
         f.flush()
 
-        with requests_mock.Mocker() as m:
-            m.get(
-                f"http://example.com/vulnerableaspnet.html",
+        with respx.mock:
+            respx.get("http://example.com/vulnerableaspnet.html").respond(
                 status_code=200,
                 text=base_vulnerable_page_aspnet_custom,
             )
@@ -687,9 +678,8 @@ function __doPostBack(eventTarget, eventArgument) {
     <input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="1E02dhhNh5Elng+wXjTw6opqE8R/OdZddtcAL82qdZyIIRVQ8s97YQsJqECjV/OJQAu5ZySO9StoIr1X0S6NUbt/h4tCjnSvkgol4hnPb0DshxRmrMTYr/s+zlBn09dZFQ40HKbQeaRIxkww99sDGqnXdTyIOjVxrVW2FmKJSm8=" />
 </div>
     """
-    with requests_mock.Mocker() as m:
-        m.get(
-            f"http://172.16.25.128/form.aspx",
+    with respx.mock:
+        respx.get("http://172.16.25.128/form.aspx").respond(
             status_code=200,
             text=base_vulnerable_page_aspnet_dotnet45,
         )
@@ -714,11 +704,11 @@ def test_example_cli_aspnetcompressedviewstate_url(monkeypatch, capsys):
 
 <!--[if IE 9]> <html class="no-js lt-ie10" lang="en" xmlns:fb="http://ogp.me/ns/fb#"> <![endif]-->
 <!--[if gt IE 9]><!--> <html class="no-js" lang="en" xmlns:fb="http://ogp.me/ns/fb#"> <!--<![endif]-->
-<head> 
+<head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
- 
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" /> 
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
 </head>
 <body id="_body">
@@ -730,13 +720,12 @@ def test_example_cli_aspnetcompressedviewstate_url(monkeypatch, capsys):
 <input type="hidden" name="__VSTATEHOST" id="__VSTATEHOST" value="02" />
 <input type="hidden" name="__VSTATETIMESTAMP" id="__VSTATETIMESTAMP" value="7/29/2016 11:19:46 AM" />
 <input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="" />
-</div>   
+</div>
 <p>content</p>
 </html>
     """
-    with requests_mock.Mocker() as m:
-        m.get(
-            f"http://172.16.25.128/form.aspx",
+    with respx.mock:
+        respx.get("http://172.16.25.128/form.aspx").respond(
             status_code=200,
             text=base_vulnerable_page_aspnet_compressedviewstate,
         )
@@ -762,11 +751,11 @@ def test_example_cli_aspnetcompressedviewstate_url_alternateparamname(monkeypatc
 
 <!--[if IE 9]> <html class="no-js lt-ie10" lang="en" xmlns:fb="http://ogp.me/ns/fb#"> <![endif]-->
 <!--[if gt IE 9]><!--> <html class="no-js" lang="en" xmlns:fb="http://ogp.me/ns/fb#"> <!--<![endif]-->
-<head> 
+<head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
- 
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" /> 
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
 </head>
 <body id="_body">
@@ -775,13 +764,12 @@ def test_example_cli_aspnetcompressedviewstate_url_alternateparamname(monkeypatc
 <div class="aspNetHidden">
 <input type="hidden" name="__COMPRESSEDVIEWSTATE" id="__COMPRESSEDVIEWSTATE" value="H4sIAAAAAAAEAPvPyJ/Cz8ppZGpgaWpgZmmYAgAAmCJNEQAAAA==" />
 <input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="" />
-</div>   
+</div>
 <p>content</p>
 </html>
     """
-    with requests_mock.Mocker() as m:
-        m.get(
-            f"http://172.16.25.128/form.aspx",
+    with respx.mock:
+        respx.get("http://172.16.25.128/form.aspx").respond(
             status_code=200,
             text=base_vulnerable_page_aspnet_compressedviewstate,
         )
@@ -882,15 +870,14 @@ def test_examples_cli_colors_info(monkeypatch, capsys):
 
 
 def test_example_cli_redirects_allow(monkeypatch, capsys):
-    with requests_mock.Mocker() as m:
-        m.get(
-            f"http://example.com/vulnerablejwt.html",
+    with respx.mock:
+        respx.get("http://example.com/vulnerablejwt.html").respond(
             status_code=200,
             text=base_vulnerable_page,
         )
 
-        m.get(
-            f"http://example.com/vulnerablejwt-redir.html", status_code=302, headers={"Location": "vulnerablejwt.html"}
+        respx.get("http://example.com/vulnerablejwt-redir.html").respond(
+            status_code=302, headers={"Location": "vulnerablejwt.html"}
         )
 
         monkeypatch.setattr(
@@ -902,14 +889,12 @@ def test_example_cli_redirects_allow(monkeypatch, capsys):
 
 
 def test_example_cli_redirects_default(monkeypatch, capsys):
-    with requests_mock.Mocker() as m:
-        m.get(
-            f"http://example.com/vulnerablejwt.html",
+    with respx.mock:
+        respx.get("http://example.com/vulnerablejwt.html").respond(
             status_code=200,
         )
 
-        m.get(
-            f"http://example.com/vulnerablejwt-redir.html",
+        respx.get("http://example.com/vulnerablejwt-redir.html").respond(
             status_code=302,
             text=base_vulnerable_page,
             headers={"Location": "vulnerablejwt.html"},
@@ -926,10 +911,9 @@ serverside_jsfviewstate_html = '<input type="hidden" name="javax.faces.ViewState
 
 # We don't actually care at all about this if it has the server-side viewstate - its completely useless
 def test_example_cli_jsfviewstate_serverside(monkeypatch, capsys):
-    with requests_mock.Mocker() as m:
+    with respx.mock:
 
-        m.get(
-            f"http://example.com/serverside_jsfviewstate.html",
+        respx.get("http://example.com/serverside_jsfviewstate.html").respond(
             status_code=200,
             text=serverside_jsfviewstate_html,
         )
