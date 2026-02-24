@@ -912,7 +912,6 @@ serverside_jsfviewstate_html = '<input type="hidden" name="javax.faces.ViewState
 # We don't actually care at all about this if it has the server-side viewstate - its completely useless
 def test_example_cli_jsfviewstate_serverside(monkeypatch, capsys):
     with respx.mock:
-
         respx.get("http://example.com/serverside_jsfviewstate.html").respond(
             status_code=200,
             text=serverside_jsfviewstate_html,

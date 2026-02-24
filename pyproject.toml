@@ -29,8 +29,12 @@ badsecrets = 'badsecrets.examples.cli:main'
 telerik-knownkey = 'badsecrets.examples.telerik_knownkey:main'
 symfony-knownkey = 'badsecrets.examples.symfony_knownkey:main'
 
-[tool.black]
+[tool.ruff]
 line-length = 119
+
+[tool.ruff.lint]
+select = ["F", "E722"]
+ignore = ["F403", "F405", "F541"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]

@@ -259,7 +259,9 @@ def test_examples_telerik_knownkey_argparsing(monkeypatch, capsys):
 def test_non_telerik_ui(monkeypatch, capsys):
     # Non-Telerk UI is detected
     with respx.mock:
-        respx.get("http://nottelerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text="<html><p>Just a regular website</p></html>")
+        respx.get("http://nottelerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(
+            status_code=200, text="<html><p>Just a regular website</p></html>"
+        )
         monkeypatch.setattr(
             "sys.argv",
             ["python", "--url", "http://nottelerik.com/Telerik.Web.UI.DialogHandler.aspx"],
@@ -283,7 +285,6 @@ def test_url_not_up(monkeypatch, capsys):
 
 
 def test_fullrun_PBKDF2(monkeypatch, capsys, mocker):
-
     def generate_keylist_enc(include_machinekeys):
         return iter(
             ["Not_The_Real_Encryption_Key", "d2a312d9-7af4-43de-be5a-ae717b46cea6", "another_fake_encryption_key"]
@@ -297,17 +298,27 @@ def test_fullrun_PBKDF2(monkeypatch, capsys, mocker):
 
     with respx.mock:
         # Basic Probe Detects Telerik
-        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
+        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(
+            status_code=200, text=partial_dialog_page
+        )
 
         def _post_dispatcher(request):
             if PBKDF2_version_probe_matcher_incorrect(request):
-                return httpx.Response(200, text="Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)")
+                return httpx.Response(
+                    200,
+                    text="Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+                )
             if PBKDF2_version_probe_matcher(request):
                 return httpx.Response(200, text="DoesntMatter")
             if PBKDF2_found_key_matcher_negative(request):
-                return httpx.Response(200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>")
+                return httpx.Response(
+                    200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>"
+                )
             if PBKDF2_found_key_matcher(request):
-                return httpx.Response(200, text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array")
+                return httpx.Response(
+                    200,
+                    text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array",
+                )
             return httpx.Response(200)
 
         respx.post("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
@@ -329,7 +340,6 @@ def test_fullrun_PBKDF2(monkeypatch, capsys, mocker):
 
 
 def test_fullrun_PBKDF2_version_customkeys(monkeypatch, capsys, mocker):
-
     def generate_keylist_enc(include_machinekeys):
         return iter(["Not_The_Real_Encryption_Key", "another_fake_encryption_key"])
 
@@ -341,17 +351,27 @@ def test_fullrun_PBKDF2_version_customkeys(monkeypatch, capsys, mocker):
 
     with respx.mock:
         # Basic Probe Detects Telerik
-        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
+        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(
+            status_code=200, text=partial_dialog_page
+        )
 
         def _post_dispatcher(request):
             if PBKDF2_version_probe_matcher_incorrect(request):
-                return httpx.Response(200, text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)")
+                return httpx.Response(
+                    200,
+                    text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+                )
             if PBKDF2_version_probe_matcher(request):
                 return httpx.Response(200, text="DoesntMatter")
             if PBKDF2_found_key_matcher_negative(request):
-                return httpx.Response(200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>")
+                return httpx.Response(
+                    200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>"
+                )
             if PBKDF2_found_key_matcher(request):
-                return httpx.Response(200, text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array")
+                return httpx.Response(
+                    200,
+                    text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array",
+                )
             return httpx.Response(200)
 
         respx.post("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
@@ -381,7 +401,6 @@ def test_fullrun_PBKDF2_version_customkeys(monkeypatch, capsys, mocker):
 
 
 def test_fullrun_PBKDF2_modern_dialog_params(monkeypatch, capsys, mocker):
-
     def generate_keylist_enc(include_machinekeys):
         return iter(
             ["Not_The_Real_Encryption_Key", "d2a312d9-7af4-43de-be5a-ae717b46cea6", "another_fake_encryption_key"]
@@ -395,17 +414,27 @@ def test_fullrun_PBKDF2_modern_dialog_params(monkeypatch, capsys, mocker):
 
     with respx.mock:
         # Basic Probe Detects Telerik
-        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
+        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(
+            status_code=200, text=partial_dialog_page
+        )
 
         def _post_dispatcher(request):
             if PBKDF2_version_probe_matcher_incorrect_modern(request):
-                return httpx.Response(200, text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)")
+                return httpx.Response(
+                    200,
+                    text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+                )
             if PBKDF2_version_probe_matcher_modern(request):
                 return httpx.Response(200, text="DoesntMatter")
             if PBKDF2_found_key_matcher_negative(request):
-                return httpx.Response(200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>")
+                return httpx.Response(
+                    200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>"
+                )
             if PBKDF2_found_key_matcher(request):
-                return httpx.Response(200, text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array")
+                return httpx.Response(
+                    200,
+                    text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array",
+                )
             return httpx.Response(200)
 
         respx.post("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
@@ -434,7 +463,6 @@ def test_fullrun_PBKDF2_modern_dialog_params(monkeypatch, capsys, mocker):
 
 
 def test_nomatch_PBKDF2(monkeypatch, capsys, mocker):
-
     def generate_keylist_enc(include_machinekeys):
         return iter(
             ["Not_The_Real_Encryption_Key", "d2a312d9-7af4-43de-be5a-ae717b46cea6", "another_fake_encryption_key"]
@@ -448,17 +476,27 @@ def test_nomatch_PBKDF2(monkeypatch, capsys, mocker):
 
     with respx.mock:
         # Basic Probe Detects Telerik presence
-        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
+        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(
+            status_code=200, text=partial_dialog_page
+        )
 
         def _post_dispatcher(request):
             if PBKDF2_version_probe_matcher_incorrect(request):
-                return httpx.Response(200, text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)")
+                return httpx.Response(
+                    200,
+                    text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+                )
             if PBKDF2_version_probe_matcher(request):
                 return httpx.Response(200, text="DoesntMatter")
             if PBKDF2_found_key_matcher_negative(request):
-                return httpx.Response(200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>")
+                return httpx.Response(
+                    200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>"
+                )
             if PBKDF2_found_key_matcher(request):
-                return httpx.Response(200, text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array")
+                return httpx.Response(
+                    200,
+                    text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array",
+                )
             return httpx.Response(200)
 
         respx.post("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
@@ -499,11 +537,16 @@ def test_fullrun_PBKDF1_MS(monkeypatch, capsys, mocker):
 
     with respx.mock:
         # Basic Probe Detects Telerik
-        respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
+        respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(
+            status_code=200, text=partial_dialog_page
+        )
 
         def _post_dispatcher(request):
             if PBKDF1_MS_version_probe_matcher_incorrect(request):
-                return httpx.Response(200, text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)")
+                return httpx.Response(
+                    200,
+                    text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+                )
             if PBKDF1_MS_encryption_probe_matcher(request):
                 return httpx.Response(200, text="<div>Error Message:Index was outside the bounds of the array.</div>")
             if PBKDF1_MS_probe_matcher(request):
@@ -533,7 +576,6 @@ def test_fullrun_PBKDF1_MS(monkeypatch, capsys, mocker):
 
 
 def test_misctest_PBKDF1_MS(monkeypatch, capsys, mocker):
-
     mocker.patch.object(
         telerik_knownkey,
         "telerik_versions",
@@ -558,8 +600,9 @@ def test_misctest_PBKDF1_MS(monkeypatch, capsys, mocker):
     )
 
     with respx.mock:
-
-        respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
+        respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(
+            status_code=200, text=partial_dialog_page
+        )
 
         def _post_dispatcher(request):
             if PBKDF1_MS_version_probe_matcher_incorrect(request):
@@ -602,14 +645,21 @@ def test_nomatch_PBKDF1_MS(monkeypatch, capsys, mocker):
     mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
     with respx.mock:
-
-        respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
+        respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(
+            status_code=200, text=partial_dialog_page
+        )
 
         def _post_dispatcher(request):
             if pre2017_matcher_probe(request):
-                return httpx.Response(200, text="<div style='color:red'>Cannot deserialize dialog parameters. Please refresh the editor page.</div><div>Error Message:The input is not a valid Base-64 string as it contains a non-base 64 character, more than two padding characters, or an illegal character among the padding characters. </div>")
+                return httpx.Response(
+                    200,
+                    text="<div style='color:red'>Cannot deserialize dialog parameters. Please refresh the editor page.</div><div>Error Message:The input is not a valid Base-64 string as it contains a non-base 64 character, more than two padding characters, or an illegal character among the padding characters. </div>",
+                )
             if pre2017_matcher(request):
-                return httpx.Response(200, text="<div style='color:red'>Cannot deserialize dialog parameters. Please refresh the editor page.</div><div>Error Message:Invalid length for a Base-64 char array or string.</div>")
+                return httpx.Response(
+                    200,
+                    text="<div style='color:red'>Cannot deserialize dialog parameters. Please refresh the editor page.</div><div>Error Message:Invalid length for a Base-64 char array or string.</div>",
+                )
             return httpx.Response(200)
 
         respx.post("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
@@ -637,7 +687,9 @@ def test_badoutput_PBKDF1_MS(monkeypatch, capsys, mocker):
 
     with respx.mock:
         with patch("sys.exit") as exit_mock:
-            respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
+            respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(
+                status_code=200, text=partial_dialog_page
+            )
 
             def _post_dispatcher(request):
                 if pre2017_matcher_probe(request):
@@ -646,7 +698,9 @@ def test_badoutput_PBKDF1_MS(monkeypatch, capsys, mocker):
                     return httpx.Response(200, text="garbage data")
                 return httpx.Response(200)
 
-            respx.post("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
+            respx.post("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(
+                side_effect=_post_dispatcher
+            )
             monkeypatch.setattr(
                 "sys.argv",
                 ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--debug"],
@@ -659,7 +713,6 @@ def test_badoutput_PBKDF1_MS(monkeypatch, capsys, mocker):
 
 
 def test_fullrun_asyncupload_earlydetection(monkeypatch, capsys, mocker):
-
     def generate_keylist_enc(include_machinekeys):
         return iter(
             ["Not_The_Real_Encryption_Key", "d2a312d9-7af4-43de-be5a-ae717b46cea6", "another_fake_encryption_key"]
@@ -672,15 +725,20 @@ def test_fullrun_asyncupload_earlydetection(monkeypatch, capsys, mocker):
     mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
     with respx.mock:
-
         # Basic Probe Detects Telerik
-        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }')
+        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
 
         def _post_dispatcher(request):
             if asyncupload_early_result_matcher_incorrect(request):
                 return httpx.Response(500)
             if asyncupload_early_result_matcher(request):
-                return httpx.Response(500, text="<title>telerik</title><b> Exception Details: </b>System.IO.FileLoadException: Could not load file or assembly 'Telerik.Web.UI, Version=2022.3.1109, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)<br><br>")
+                return httpx.Response(
+                    500,
+                    text="<title>telerik</title><b> Exception Details: </b>System.IO.FileLoadException: Could not load file or assembly 'Telerik.Web.UI, Version=2022.3.1109, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)<br><br>",
+                )
             return httpx.Response(200)
 
         respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").mock(side_effect=_post_dispatcher)
@@ -698,7 +756,6 @@ def test_fullrun_asyncupload_earlydetection(monkeypatch, capsys, mocker):
 
 
 def test_fullrun_asyncupload_success(monkeypatch, capsys, mocker):
-
     def generate_keylist_enc(include_machinekeys):
         return iter(
             ["Not_The_Real_Encryption_Key", "d2a312d9-7af4-43de-be5a-ae717b46cea6", "another_fake_encryption_key"]
@@ -711,15 +768,20 @@ def test_fullrun_asyncupload_success(monkeypatch, capsys, mocker):
     mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
     with respx.mock:
-
         # Basic Probe Detects Telerik
-        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }')
+        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
 
         def _post_dispatcher(request):
             if asyncupload_found_key_matcher_incorrect(request):
                 return httpx.Response(500)
             if asyncupload_found_key_matcher(request):
-                return httpx.Response(200, text='{"fileInfo":{"FileName":"1c72ebb0","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}, "metaData":"a+pkVM70XskLLvpXsOGH+RUEWaNgrvi2EGIZcUrVQ4rr7hIwpIcHtxyJsGCQYWy5tgSKmK58kIk/HpDDs9Gh2qnaFi3m+pe0kb4xb8s6zIkxQYrYGrfj7EesKwvuY6HUn+y3GwesijRrVsPpt0/N5FYxu4ptrsmjWfIM65XOe8b47kLO/Rpx/4/lfJyT9ZFsFuvSZmJzWDdoV40wu5ROK9DVnU26ztRRCwpnqqxmeKvdSGpYwd/d1gisJy0i5UVNFuvRT2XC32eDiw3Kn9GOrRldOHtq5WAQWu2YzVmxr/NOmvjg3NpRLtbxU+h9D0u0K/B3kRYliO+XlCpG+l/QMLh2nAjQehNvaCG3wJ4dkW9JHHeNzbPyd+tNrlSBj6/Z+b/Ld2HCk3XydTRHuUyzqk8bC6rEHGdclNPmTIS2X0IZaI0wTctsnPHxiruwdWVNjepnaSv5IHHYFH3WhCzKy6cLPES0cAuVgxycs+49nuj7kL/JzqT6iJm0YZd/Qjo4" }')
+                return httpx.Response(
+                    200,
+                    text='{"fileInfo":{"FileName":"1c72ebb0","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}, "metaData":"a+pkVM70XskLLvpXsOGH+RUEWaNgrvi2EGIZcUrVQ4rr7hIwpIcHtxyJsGCQYWy5tgSKmK58kIk/HpDDs9Gh2qnaFi3m+pe0kb4xb8s6zIkxQYrYGrfj7EesKwvuY6HUn+y3GwesijRrVsPpt0/N5FYxu4ptrsmjWfIM65XOe8b47kLO/Rpx/4/lfJyT9ZFsFuvSZmJzWDdoV40wu5ROK9DVnU26ztRRCwpnqqxmeKvdSGpYwd/d1gisJy0i5UVNFuvRT2XC32eDiw3Kn9GOrRldOHtq5WAQWu2YzVmxr/NOmvjg3NpRLtbxU+h9D0u0K/B3kRYliO+XlCpG+l/QMLh2nAjQehNvaCG3wJ4dkW9JHHeNzbPyd+tNrlSBj6/Z+b/Ld2HCk3XydTRHuUyzqk8bC6rEHGdclNPmTIS2X0IZaI0wTctsnPHxiruwdWVNjepnaSv5IHHYFH3WhCzKy6cLPES0cAuVgxycs+49nuj7kL/JzqT6iJm0YZd/Qjo4" }',
+                )
             return httpx.Response(200)
 
         respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").mock(side_effect=_post_dispatcher)
@@ -737,7 +799,6 @@ def test_fullrun_asyncupload_success(monkeypatch, capsys, mocker):
 
 
 def test_fullrun_asyncupload_success_version_customkeys(monkeypatch, capsys, mocker):
-
     def generate_keylist_enc(include_machinekeys):
         return iter(["Not_The_Real_Encryption_Key", "another_fake_encryption_key"])
 
@@ -748,15 +809,20 @@ def test_fullrun_asyncupload_success_version_customkeys(monkeypatch, capsys, moc
     mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
     with respx.mock:
-
         # Basic Probe Detects Telerik
-        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }')
+        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
 
         def _post_dispatcher(request):
             if asyncupload_found_key_matcher_incorrect(request):
                 return httpx.Response(500)
             if asyncupload_found_key_matcher(request):
-                return httpx.Response(200, text='{"fileInfo":{"FileName":"1c72ebb0","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}, "metaData":"a+pkVM70XskLLvpXsOGH+RUEWaNgrvi2EGIZcUrVQ4rr7hIwpIcHtxyJsGCQYWy5tgSKmK58kIk/HpDDs9Gh2qnaFi3m+pe0kb4xb8s6zIkxQYrYGrfj7EesKwvuY6HUn+y3GwesijRrVsPpt0/N5FYxu4ptrsmjWfIM65XOe8b47kLO/Rpx/4/lfJyT9ZFsFuvSZmJzWDdoV40wu5ROK9DVnU26ztRRCwpnqqxmeKvdSGpYwd/d1gisJy0i5UVNFuvRT2XC32eDiw3Kn9GOrRldOHtq5WAQWu2YzVmxr/NOmvjg3NpRLtbxU+h9D0u0K/B3kRYliO+XlCpG+l/QMLh2nAjQehNvaCG3wJ4dkW9JHHeNzbPyd+tNrlSBj6/Z+b/Ld2HCk3XydTRHuUyzqk8bC6rEHGdclNPmTIS2X0IZaI0wTctsnPHxiruwdWVNjepnaSv5IHHYFH3WhCzKy6cLPES0cAuVgxycs+49nuj7kL/JzqT6iJm0YZd/Qjo4" }')
+                return httpx.Response(
+                    200,
+                    text='{"fileInfo":{"FileName":"1c72ebb0","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}, "metaData":"a+pkVM70XskLLvpXsOGH+RUEWaNgrvi2EGIZcUrVQ4rr7hIwpIcHtxyJsGCQYWy5tgSKmK58kIk/HpDDs9Gh2qnaFi3m+pe0kb4xb8s6zIkxQYrYGrfj7EesKwvuY6HUn+y3GwesijRrVsPpt0/N5FYxu4ptrsmjWfIM65XOe8b47kLO/Rpx/4/lfJyT9ZFsFuvSZmJzWDdoV40wu5ROK9DVnU26ztRRCwpnqqxmeKvdSGpYwd/d1gisJy0i5UVNFuvRT2XC32eDiw3Kn9GOrRldOHtq5WAQWu2YzVmxr/NOmvjg3NpRLtbxU+h9D0u0K/B3kRYliO+XlCpG+l/QMLh2nAjQehNvaCG3wJ4dkW9JHHeNzbPyd+tNrlSBj6/Z+b/Ld2HCk3XydTRHuUyzqk8bC6rEHGdclNPmTIS2X0IZaI0wTctsnPHxiruwdWVNjepnaSv5IHHYFH3WhCzKy6cLPES0cAuVgxycs+49nuj7kL/JzqT6iJm0YZd/Qjo4" }',
+                )
             return httpx.Response(200)
 
         respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").mock(side_effect=_post_dispatcher)
@@ -785,15 +851,20 @@ def test_fullrun_asyncupload_success_version_customkeys(monkeypatch, capsys, moc
 
 def test_fullrun_asyncupload_PBKDF1_MS(monkeypatch, capsys, mocker):
     with respx.mock:
-
         # Basic Probe Detects Telerik
-        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }')
+        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
 
         def _post_dispatcher(request):
             if asyncupload_found_key_matcher_PBKDF1_MS_incorrect(request):
                 return httpx.Response(500)
             if asyncupload_found_key_matcher_PBKDF1_MS(request):
-                return httpx.Response(200, text='{"fileInfo":{"FileName":"1c72ebb0","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}, "metaData":"a+pkVM70XskLLvpXsOGH+RUEWaNgrvi2EGIZcUrVQ4rr7hIwpIcHtxyJsGCQYWy5tgSKmK58kIk/HpDDs9Gh2qnaFi3m+pe0kb4xb8s6zIkxQYrYGrfj7EesKwvuY6HUn+y3GwesijRrVsPpt0/N5FYxu4ptrsmjWfIM65XOe8b47kLO/Rpx/4/lfJyT9ZFsFuvSZmJzWDdoV40wu5ROK9DVnU26ztRRCwpnqqxmeKvdSGpYwd/d1gisJy0i5UVNFuvRT2XC32eDiw3Kn9GOrRldOHtq5WAQWu2YzVmxr/NOmvjg3NpRLtbxU+h9D0u0K/B3kRYliO+XlCpG+l/QMLh2nAjQehNvaCG3wJ4dkW9JHHeNzbPyd+tNrlSBj6/Z+b/Ld2HCk3XydTRHuUyzqk8bC6rEHGdclNPmTIS2X0IZaI0wTctsnPHxiruwdWVNjepnaSv5IHHYFH3WhCzKy6cLPES0cAuVgxycs+49nuj7kL/JzqT6iJm0YZd/Qjo4" }')
+                return httpx.Response(
+                    200,
+                    text='{"fileInfo":{"FileName":"1c72ebb0","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}, "metaData":"a+pkVM70XskLLvpXsOGH+RUEWaNgrvi2EGIZcUrVQ4rr7hIwpIcHtxyJsGCQYWy5tgSKmK58kIk/HpDDs9Gh2qnaFi3m+pe0kb4xb8s6zIkxQYrYGrfj7EesKwvuY6HUn+y3GwesijRrVsPpt0/N5FYxu4ptrsmjWfIM65XOe8b47kLO/Rpx/4/lfJyT9ZFsFuvSZmJzWDdoV40wu5ROK9DVnU26ztRRCwpnqqxmeKvdSGpYwd/d1gisJy0i5UVNFuvRT2XC32eDiw3Kn9GOrRldOHtq5WAQWu2YzVmxr/NOmvjg3NpRLtbxU+h9D0u0K/B3kRYliO+XlCpG+l/QMLh2nAjQehNvaCG3wJ4dkW9JHHeNzbPyd+tNrlSBj6/Z+b/Ld2HCk3XydTRHuUyzqk8bC6rEHGdclNPmTIS2X0IZaI0wTctsnPHxiruwdWVNjepnaSv5IHHYFH3WhCzKy6cLPES0cAuVgxycs+49nuj7kL/JzqT6iJm0YZd/Qjo4" }',
+                )
             return httpx.Response(200)
 
         respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").mock(side_effect=_post_dispatcher)
@@ -811,7 +882,6 @@ def test_fullrun_asyncupload_PBKDF1_MS(monkeypatch, capsys, mocker):
 
 
 def test_verbose_error_parsing_PBKDF1_MS(monkeypatch, capsys, mocker):
-
     mocker.patch.object(
         telerik_knownkey.AsyncUpload,
         "solve_key",
@@ -819,11 +889,16 @@ def test_verbose_error_parsing_PBKDF1_MS(monkeypatch, capsys, mocker):
     )
 
     with respx.mock:
-
         # Basic Probe Detects Telerik
-        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }')
+        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
 
-        respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text="<b> Exception Details: </b>System.Security.Cryptography.CryptographicException: Padding is invalid and cannot be removed.<br><br>")
+        respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(
+            status_code=200,
+            text="<b> Exception Details: </b>System.Security.Cryptography.CryptographicException: Padding is invalid and cannot be removed.<br><br>",
+        )
 
         monkeypatch.setattr(
             "sys.argv",
@@ -839,7 +914,6 @@ def test_verbose_error_parsing_PBKDF1_MS(monkeypatch, capsys, mocker):
 
 
 def test_verbose_error_parsing_notdetermined_PBKDF1_MS(monkeypatch, capsys, mocker):
-
     mocker.patch.object(
         telerik_knownkey.AsyncUpload,
         "solve_key",
@@ -847,11 +921,15 @@ def test_verbose_error_parsing_notdetermined_PBKDF1_MS(monkeypatch, capsys, mock
     )
 
     with respx.mock:
-
         # Basic Probe Detects Telerik
-        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }')
+        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
 
-        respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text="<b> Exception Details: garbage")
+        respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(
+            status_code=200, text="<b> Exception Details: garbage"
+        )
 
         monkeypatch.setattr(
             "sys.argv",
@@ -865,7 +943,6 @@ def test_verbose_error_parsing_notdetermined_PBKDF1_MS(monkeypatch, capsys, mock
 
 
 def test_verbose_error_parsing_PBKDF2(monkeypatch, capsys, mocker):
-
     mocker.patch.object(
         telerik_knownkey.AsyncUpload,
         "solve_key",
@@ -873,9 +950,11 @@ def test_verbose_error_parsing_PBKDF2(monkeypatch, capsys, mocker):
     )
 
     with respx.mock:
-
         # Basic Probe Detects Telerik
-        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }')
+        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
 
         respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(
             status_code=200,
@@ -894,7 +973,6 @@ def test_verbose_error_parsing_PBKDF2(monkeypatch, capsys, mocker):
 
 
 def test_fullrun_PBKDF2_onlyhashkeyfound(monkeypatch, capsys, mocker):
-
     def generate_keylist_enc(include_machinekeys):
         return iter(
             ["Not_The_Real_Encryption_Key", "d2a312d9-7af4-43de-be5a-ae717b46cea6", "another_fake_encryption_key"]
@@ -908,17 +986,27 @@ def test_fullrun_PBKDF2_onlyhashkeyfound(monkeypatch, capsys, mocker):
 
     with respx.mock:
         # Basic Probe Detects Telerik
-        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
+        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(
+            status_code=200, text=partial_dialog_page
+        )
 
         def _post_dispatcher(request):
             if PBKDF2_version_probe_matcher_incorrect(request):
-                return httpx.Response(200, text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)")
+                return httpx.Response(
+                    200,
+                    text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+                )
             if PBKDF2_version_probe_matcher(request):
                 return httpx.Response(200, text="DoesntMatter")
             if PBKDF2_found_key_matcher_negative(request):
-                return httpx.Response(200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>")
+                return httpx.Response(
+                    200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>"
+                )
             if PBKDF2_found_key_matcher(request):
-                return httpx.Response(200, text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array")
+                return httpx.Response(
+                    200,
+                    text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array",
+                )
             return httpx.Response(200)
 
         respx.post("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
@@ -947,11 +1035,16 @@ def test_fullrun_PBKDF1_MS_customkeys(monkeypatch, capsys, mocker):
 
     with respx.mock:
         # Basic Probe Detects Telerik
-        respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
+        respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(
+            status_code=200, text=partial_dialog_page
+        )
 
         def _post_dispatcher(request):
             if PBKDF1_MS_version_probe_matcher_incorrect(request):
-                return httpx.Response(200, text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)")
+                return httpx.Response(
+                    200,
+                    text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+                )
             if PBKDF1_MS_encryption_probe_matcher(request):
                 return httpx.Response(200, text="<div>Error Message:Index was outside the bounds of the array.</div>")
             if PBKDF1_MS_probe_matcher(request):
@@ -1001,11 +1094,16 @@ def test_fullrun_PBKDF1_MS_customkeys_onlyhashkeyfound(monkeypatch, capsys, mock
 
     with respx.mock:
         # Basic Probe Detects Telerik
-        respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
+        respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(
+            status_code=200, text=partial_dialog_page
+        )
 
         def _post_dispatcher(request):
             if PBKDF1_MS_version_probe_matcher_incorrect(request):
-                return httpx.Response(200, text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)")
+                return httpx.Response(
+                    200,
+                    text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+                )
             if PBKDF1_MS_encryption_probe_matcher(request):
                 return httpx.Response(200, text="<div>Error Message:Index was outside the bounds of the array.</div>")
             if PBKDF1_MS_probe_matcher(request):
@@ -1037,7 +1135,6 @@ def test_fullrun_PBKDF1_MS_customkeys_onlyhashkeyfound(monkeypatch, capsys, mock
 
 
 def test_fullrun_PBKDF2_version_customkeys_nogoodversion(monkeypatch, capsys, mocker):
-
     def generate_keylist_enc(include_machinekeys):
         return iter(["Not_The_Real_Encryption_Key", "another_fake_encryption_key"])
 
@@ -1049,17 +1146,27 @@ def test_fullrun_PBKDF2_version_customkeys_nogoodversion(monkeypatch, capsys, mo
 
     with respx.mock:
         # Basic Probe Detects Telerik
-        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
+        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(
+            status_code=200, text=partial_dialog_page
+        )
 
         def _post_dispatcher(request):
             if PBKDF2_version_probe_matcher_incorrect(request):
-                return httpx.Response(200, text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)")
+                return httpx.Response(
+                    200,
+                    text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
+                )
             if PBKDF2_version_probe_matcher(request):
                 return httpx.Response(200, text="DoesntMatter")
             if PBKDF2_found_key_matcher_negative(request):
-                return httpx.Response(200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>")
+                return httpx.Response(
+                    200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>"
+                )
             if PBKDF2_found_key_matcher(request):
-                return httpx.Response(200, text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array")
+                return httpx.Response(
+                    200,
+                    text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array",
+                )
             return httpx.Response(200)
 
         respx.post("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
@@ -1098,10 +1205,15 @@ def test_asyncupload_failure_no_keys_found(monkeypatch, capsys, mocker):
 
     with respx.mock:
         # Basic Probe Detects Telerik
-        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }')
+        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
 
         # All POST requests return failure
-        respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=500, text="Some error")
+        respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(
+            status_code=500, text="Some error"
+        )
 
         monkeypatch.setattr(
             "sys.argv",
@@ -1127,10 +1239,16 @@ def test_asyncupload_success_with_hashkey(monkeypatch, capsys, mocker):
 
     with respx.mock:
         # Basic Probe Detects Telerik
-        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }')
+        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(
+            status_code=200,
+            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
+        )
 
         # Success response that includes fileInfo
-        respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{"fileInfo":{"FileName":"test","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}}')
+        respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(
+            status_code=200,
+            text='{"fileInfo":{"FileName":"test","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}}',
+        )
 
         monkeypatch.setattr(
             "sys.argv",
@@ -1174,7 +1292,10 @@ def test_dialoghandler_probe_version_with_title(monkeypatch, capsys, mocker):
     with respx.mock:
         # Mock a response with title that has different size than baseline
         def response_with_title(request):
-            return httpx.Response(200, text="<html><head><title>Test Telerik Page</title></head><body>Test response with different size</body></html>")
+            return httpx.Response(
+                200,
+                text="<html><head><title>Test Telerik Page</title></head><body>Test response with different size</body></html>",
+            )
 
         respx.post("http://test.com").mock(side_effect=response_with_title)
 
@@ -1192,11 +1313,15 @@ def test_dialoghandler_detect_derive_function_responses(monkeypatch, capsys, moc
 
     # Test case 1: Exception response leading to PBKDF2 detection
     with respx.mock:
-        respx.get("http://test.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
+        respx.get("http://test.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(
+            status_code=200, text=partial_dialog_page
+        )
 
         def _post_dispatcher(request):
             if PBKDF1_MS_probe_matcher(request):
-                return httpx.Response(200, text="<div>Error Message:Exception of type 'System.Exception' was thrown</div>")
+                return httpx.Response(
+                    200, text="<div>Error Message:Exception of type 'System.Exception' was thrown</div>"
+                )
             return httpx.Response(200)
 
         respx.post("http://test.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
@@ -1218,7 +1343,9 @@ def test_dialoghandler_detect_derive_function_responses(monkeypatch, capsys, moc
 
     # Test case 2: Length cannot be less than zero response leading to PBKDF1_MS detection
     with respx.mock:
-        respx.get("http://test2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
+        respx.get("http://test2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(
+            status_code=200, text=partial_dialog_page
+        )
 
         def _post_dispatcher(request):
             if PBKDF1_MS_probe_matcher(request):
@@ -1244,7 +1371,9 @@ def test_dialoghandler_detect_derive_function_responses(monkeypatch, capsys, moc
 
     # Test case 3: Invalid Base-64 response causing early return
     with respx.mock:
-        respx.get("http://test3.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
+        respx.get("http://test3.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(
+            status_code=200, text=partial_dialog_page
+        )
 
         def _post_dispatcher(request):
             if PBKDF1_MS_probe_matcher(request):
@@ -1279,7 +1408,9 @@ def test_dialoghandler_pbkdf1_ms_failed_encryption_key(monkeypatch, capsys, mock
 
     with respx.mock:
         # Basic Probe Detects Telerik
-        respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
+        respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(
+            status_code=200, text=partial_dialog_page
+        )
 
         # Successful hash key discovery + All encryption key attempts fail
         def encryption_failure_matcher(request):
@@ -1287,7 +1418,9 @@ def test_dialoghandler_pbkdf1_ms_failed_encryption_key(monkeypatch, capsys, mock
 
         def _post_dispatcher(request):
             if encryption_failure_matcher(request):
-                return httpx.Response(200, text="<div>Error Message:Some other error that doesn't indicate success</div>")
+                return httpx.Response(
+                    200, text="<div>Error Message:Some other error that doesn't indicate success</div>"
+                )
             if PBKDF1_MS_probe_matcher(request):
                 return httpx.Response(200, text="Error Message:Length cannot be less than zero")
             if PBKDF1_MS_found_key_matcher_negative(request):
@@ -1321,7 +1454,9 @@ def test_dialoghandler_pbkdf2_mode_execution(monkeypatch, capsys, mocker):
 
     with respx.mock:
         # Basic Probe Detects Telerik
-        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
+        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(
+            status_code=200, text=partial_dialog_page
+        )
 
         # Detect PBKDF2 mode + All key combination attempts fail - no match found
         def pbkdf2_failure_matcher(request):
@@ -1329,9 +1464,13 @@ def test_dialoghandler_pbkdf2_mode_execution(monkeypatch, capsys, mocker):
 
         def _post_dispatcher(request):
             if pbkdf2_failure_matcher(request):
-                return httpx.Response(200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>")
+                return httpx.Response(
+                    200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>"
+                )
             if PBKDF1_MS_probe_matcher(request):
-                return httpx.Response(200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>")
+                return httpx.Response(
+                    200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>"
+                )
             return httpx.Response(200)
 
         respx.post("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)

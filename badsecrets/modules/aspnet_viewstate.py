@@ -103,7 +103,6 @@ class ASPNET_Viewstate(BadsecretsBase):
                         continue
 
     def viewstate_validate(self, vkey_bytes, encrypted, viewstate_B64, generator, url, mode, viewstate_userkey=None):
-
         original_vkey_bytes = vkey_bytes
         viewstate_bytes = base64.b64decode(viewstate_B64)
 
