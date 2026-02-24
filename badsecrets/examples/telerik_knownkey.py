@@ -252,7 +252,7 @@ class AsyncUpload:
         payload = ""
         payload += f"-----------------------------{multipart_boundary}\r\n"
         payload += 'Content-Disposition: form-data; name="rauPostData"\r\n\r\n'
-        payload += f"{self.encrypt(enc_a,key,iv)}&{self.encrypt(enc_b,key,iv)}\r\n"
+        payload += f"{self.encrypt(enc_a, key, iv)}&{self.encrypt(enc_b, key, iv)}\r\n"
         payload += f"-----------------------------{multipart_boundary}\r\n"
         payload += 'Content-Disposition: form-data; name="file"; filename="blob"\r\n'
         payload += "Content-Type: application/octet-stream\r\n"

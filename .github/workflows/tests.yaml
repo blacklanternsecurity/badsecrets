@@ -27,7 +27,7 @@ jobs:
         with:
           python-version: 3.9
       - name: Install Ruff
-        run: pip install ruff
+        run: pip install ruff==0.15.2
       - name: Ruff format check
         run: ruff format --check .
       - name: Ruff lint check
