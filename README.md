@@ -446,17 +446,17 @@ else:
 ```
 
 #### Carve
-An additional layer of abstraction above check_secret, which accepts a python requests.response object or a string
+An additional layer of abstraction above check_secret, which accepts an httpx.Response object or a string
 
 ```python
-import requests
+import httpx
 from badsecrets import modules_loaded
 Telerik_HashKey = modules_loaded["telerik_hashkey"]
 
 x = Telerik_HashKey()
 
-res = requests.get(f"http://example.com/")
-r_list = x.carve(requests_response=res)
+res = httpx.get("http://example.com/")
+r_list = x.carve(httpx_response=res)
 print(r_list)
 
 telerik_dialogparameters_sample = """
@@ -496,13 +496,13 @@ for test in tests:
 
 ### Carve all modules at once
 ```python
-import requests
+import httpx
 from badsecrets.base import carve_all_modules
-    
-### using python requests response object
 
-res = requests.get(f"http://example.com/")
-r_list = carve_all_modules(requests_response=res)
+### using httpx response object
+
+res = httpx.get("http://example.com/")
+r_list = carve_all_modules(httpx_response=res)
 print(r_list)
 
 ### Using string

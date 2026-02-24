@@ -4,7 +4,7 @@ import gzip
 import base64
 import hashlib
 import binascii
-import requests
+import httpx
 import badsecrets.errors
 from abc import abstractmethod
 
@@ -83,27 +83,25 @@ class BadsecretsBase:
     def carve_regex(self):
         return None
 
-    def carve(self, body=None, cookies=None, headers=None, requests_response=None, **kwargs):
+    def carve(self, body=None, cookies=None, headers=None, httpx_response=None, **kwargs):
         results = []
 
-        if not body and not cookies and not headers and requests_response == None:
-            raise badsecrets.errors.CarveException("Either body/headers/cookies or requests_response required")
+        if not body and not cookies and not headers and httpx_response == None:
+            raise badsecrets.errors.CarveException("Either body/headers/cookies or httpx_response required")
 
-        if requests_response != None:
+        if httpx_response != None:
             if body or cookies or headers:
-                raise badsecrets.errors.CarveException("Body/cookies/headers and requests_response cannot both be set")
+                raise badsecrets.errors.CarveException("Body/cookies/headers and httpx_response cannot both be set")
 
-            if type(requests_response) == requests.models.Response:
+            if isinstance(httpx_response, httpx.Response):
                 if not cookies:
-                    cookies = (
-                        requests_response.cookies.get_dict() if hasattr(requests_response.cookies, "get_dict") else {}
-                    )
+                    cookies = dict(httpx_response.cookies)
                 if not headers:
-                    headers = requests_response.headers
-                if not body and hasattr(requests_response, "text"):
-                    body = requests_response.text
+                    headers = httpx_response.headers
+                if not body and hasattr(httpx_response, "text"):
+                    body = httpx_response.text
             else:
-                raise badsecrets.errors.CarveException("requests_response must be a requests.models.Response object")
+                raise badsecrets.errors.CarveException("httpx_response must be an httpx.Response object")
 
         if cookies:
             if type(cookies) != dict:

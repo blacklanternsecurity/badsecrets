@@ -1,7 +1,7 @@
 import os
 import sys
-import requests
-import requests_mock
+import httpx
+import respx
 from mock import patch
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -14,6 +14,11 @@ Telerik_HashKey = modules_loaded["telerik_hashkey"]
 Telerik_EncryptionKey = modules_loaded["telerik_encryptionkey"]
 
 
+def _body(request):
+    """Helper to get request body as a string (httpx request.content is bytes)."""
+    return request.content.decode() if request.content else ""
+
+
 partial_dialog_page = """
 <input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="D9FD575A" />
 <input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="/wEdAAJspJIt1GVCOCk05y5PNKqHr1eUXYH2SY42AOoXP1wAYw2bbvWgGSKjsWouPBAT+yhhHBVc" /><input type="hidden" name="dialogParametersHolder" id="dialogParametersHolder" /><div style='text-align:center;'>Loading the dialog...</div>
@@ -23,85 +28,89 @@ partial_dialog_page = """
 
 
 def pre2017_matcher(request):
-    if "dialogParametersHolder=AAAA" in request.body:
+    body = request.content.decode() if request.content else ""
+    if "dialogParametersHolder=AAAA" in body:
         return True
     return False
 
 
 def pre2017_matcher_probe(request):
-    if "dialogParametersHolder=AAAA" not in request.body:
+    body = request.content.decode() if request.content else ""
+    if "dialogParametersHolder=AAAA" not in body:
         return True
     return False
 
 
 def asyncupload_verbose_error_PBKDF2(request):
-
+    body = request.content if request.content else b""
+    body_str = body.decode() if body else ""
     if (
-        b'{"TotalChunks":1,"ChunkIndex":0,"TotalFileSize":1,"UploadID":"6cf6c6cdcabc.txt"}' in request.body
+        b'{"TotalChunks":1,"ChunkIndex":0,"TotalFileSize":1,"UploadID":"6cf6c6cdcabc.txt"}' in body
         and "mQheol55IDiQWWSxl+Atkc68JXWUJ6QSirwLhEwleMiw3vN4cwABE74V2fWsLGg8CFXHOP6np90M+sLrLDqFACGNvonxmgT8aBsTZPWbXErewMGNWBP34aX0DmMvXVyTEpQ6FkFhZi19cTtdYfRLI8Uc04uNSsdWnltDMQ2CX/sSLOXUFNnZdAwAXgUuprYhU28Zwh/GdgYh447ksXfAC2fuPqEJqKDDwBlltxsS/zSq8ipIg326ymB2dmOpH/P3hcAmTKOyzB0dW6a6pmJvqNVU+50DlrUC00RbBbTJwlV6Xm4s4XTvgXLvMQ6czz2OAYY18HI+HYX5uvajctj/25UR8edwu68ZCgedsD7EZHRSSthjxohxfAyrfshjcu1LnhCEd0ClowKxBS4eiaLxVxhJAdB7XcbbXxIS9WWKa7gtRMNc/jUAOlIpvOZ3N+bOQ6rsNMHv7TZk1g0bxPl99yBn9qvtAwDMNPDoADxoBSisAkIIl9mImKv7y7nAiKoj7ukApdu5XQuVo10SxwkLkqHcvEEgjxTrOlCbEbxK2/du9TgXxD9iqKyaPLHPzNZsnzCsG6qNXv0fNkeASP9tZAyvi/y1eLrpScE+J7blfT+kBkGPTTFc6Z4z6lN7GqSHofq/CDHC2S2+qdoRdC3C25V74j+Ae6MkpSfqYx4KZYNtxBAxjf9Uf3JVSiZh3X2W/7aFeimFft0h/liybSjJTzO+AwNJluI4kXqemFoHnjVFfUQViaIuk4UP0D861kCU6KIGLZLpOaa0g0KM8hmu3OjwVOy8QVXYtbx5lOmSX9h3imRzMDFRTXK25YpUJgD0/LFMgCeZLA8SCYzkThyN2d8f8n5l8iOScR47o8i8sqCp/fd3JTogSbwD7LxnHudpiw2W/OfpMGipgc6loQFoX4klQaYwKkA4w+GUzahfAJmIiukZuTLOPCPQvX4wKtLqw1YiHtuaLHvLYq2/F66QQXNrZ4SucUNED0p5TUVTvHGUbuA0zxAyYSfYVgTNZjXGguQBY7DsN1SkpCa/ltvIiGtCbHQR86OrvjJMACe0wdpMCqEg7JiGym3RrLqvmjpS&sbZRwxJ96gmXFBSbSvT0ve7jpvDoieqd6RbG+GIP0H7sO5/0ZnvheosB9jQAifuMabY7lW4UzZgr5o2iqE0tBl4SGhfWyYW7iCFXnd3aIuCnUvhT58Rp8g7kGkA/eU/s68E66KOBXNuBnokZR9cIsjE0Tt3Jfxrk018+CmVcXpjXp/RmhRwCJTgEAXQuNplb/KdkLxqDn519iRtbiU6aLZX8YctdFQBqyKVgkk8WYXxcXQ8wYnxtpEtGuBcsndUi1iPp4Od8rYY1HPWg+FIquW17YPHjfP4gO4dhZe4sd7gH0ARyGDjiYVj7ODDE0wGmwmFVdQTrDX5AaxKuJy0NbQ=="
-        in request.body
+        in body_str
     ):
         return True
     return False
 
 
 def asyncupload_found_key_matcher(request):
-
+    body = request.content if request.content else b""
     if (
         b"c7g3CANCQbJ+X+IODBkErbuhQJ1AK1dJ03CaDAQ10aShpEysYFi6JD5Lg/QsepJ9T3Wsp126Z4vVzaH7fU6BmozmhQ1hIosvIFAwaPlsx4FWMGxX9wkEgESpazGqRXqWEJPsINIQBUB0DSOMnSNzlFWoDKkaCp7ZlXCJ0ZgMFYqBvPyK8DhMYri1RpiY1zgI4I/RA5Q1cqwwKjEcqP1XdwRMbE5we0z0fLs6Gmh83Z2rcriARFnBVZ45Wt40ENII6Gs7k4oQeeAx+JocDdu+K73FFFBAN1VwdNGOLO2lor4j/Pz1hxjgxNUmbpsWfQ2OdSLYKZxiOBMrD36tJeSRosQcwwbY8NVKKqv/44bzjTe01m2Smv0V+gusVyidEhCEVjKtRk+arUKMXg6BWEf4GReKkWiujlEf4lKeaYCz90LbGZajJvcw6OggVrGPALuJTC0JlmJ/Ms6v5i+x6mSXWcbAqPMEWGHLH303iZIpj36ivzZTvp3H85pXcJ2HLwfUSVLD4XShNFF9KyppZzqP18sCnEJl7ngXnAd6aReC1HyHMODgQ9Naj5wVYbgqEhuSCglebz+Ndhe3JybnDrb8aEjU542LWC3MxZF/GMIl60C/s7tzr5zNzb9487ELpKGOY4XYTuWihmK4zUrt0i733mEg73X7NkmzmnCgLRdaOx1bKYife22mqE8B7JBee3QYWdqyMTg1u3g934pI97bMnAzLkE7ASwLyN2sWOs9jpdnMgCWgh4EfJco6H9f/V4JkdgKE8Dud1ICUqWVm1xR+MUhScEq7KUEl3fSDV9bCplUx12KuXL4QUG6z74w8YnUV4V1aIKHZsh6G1/V3viEEr/3AqxHiTJixhgyHIhIST0fJQQdkMZdufqDPR2P+200MKv92IQ3StN2rw8WQ4sZaijH9OP0HlgouVYE4y9yrDfemw7++iWdbu91T6NiTYau5Z6AOG8jXOxzcrHZF3HWtRoeu3DlpGWPOXVLosenUm3bD/UxfqPwa5B36uCTh6Qsd4+53nZOItLpooo7KjGk//qYvfWpY5duCKqBVgBK+kIWv7PeKUsZfqaRI7tCn/jsA8vKLS7utYDMLM04L/ycFExlCk5Xc40ZeqVjGeSOnl/2MFeDyJDBdWTbf44gBLQyrxP5ofCDg+YvOn/ntbjOy78TtDD+kU8RtCtXRNam6nDLgfYmN8icAsxSCwQduQMu/ZS1qxMm/KhsiPsWLvdtNhfb2Jra57V1moG42K7O6VZuSS+bVVXMS2h3raSvXOSQWKLuwbcvg7Dro7+UXMJtVY2W6bksKvFOYYOYAlBIodCg=&MZHHCxK8LwqtvEKkgBFFUe7zg+by4jHrTU//aYL0k0b6ulXwqCrXGUCjqKoidbDQwSoa9hteI8tLEoFvWyslU4FU0XPU3riYQ0Pq/H8DVHcPIR++q5mKHUgtAgM7cruftoyjZRbWqgaQijwhkY53c5QvnpjiqkhFYx3ILsLtHvbl4i64h9p3tZFa1adNnYXjvmQ/gq6obcaR3IYXttWrCEdnuxO9TzLb6tSVuBuOWOKYwKrKl+XS4h4RTfWyDxLR26l6y2oyBWcW62tcn132PdLtoYpxXyr+ByL8I5OEtX0j7YCbO1VDutoV/D9GZDAVpViJNDXPaD4QWn/ccD98YQ=="
-        in request.body
+        in body
     ):
         return True
     return False
 
 
 def asyncupload_found_key_matcher_incorrect(request):
-
+    body = request.content if request.content else b""
     if (
         b"c7g3CANCQbJ+X+IODBkErbuhQJ1AK1dJ03CaDAQ10aShpEysYFi6JD5Lg/QsepJ9T3Wsp126Z4vVzaH7fU6BmozmhQ1hIosvIFAwaPlsx4FWMGxX9wkEgESpazGqRXqWEJPsINIQBUB0DSOMnSNzlFWoDKkaCp7ZlXCJ0ZgMFYqBvPyK8DhMYri1RpiY1zgI4I/RA5Q1cqwwKjEcqP1XdwRMbE5we0z0fLs6Gmh83Z2rcriARFnBVZ45Wt40ENII6Gs7k4oQeeAx+JocDdu+K73FFFBAN1VwdNGOLO2lor4j/Pz1hxjgxNUmbpsWfQ2OdSLYKZxiOBMrD36tJeSRosQcwwbY8NVKKqv/44bzjTe01m2Smv0V+gusVyidEhCEVjKtRk+arUKMXg6BWEf4GReKkWiujlEf4lKeaYCz90LbGZajJvcw6OggVrGPALuJTC0JlmJ/Ms6v5i+x6mSXWcbAqPMEWGHLH303iZIpj36ivzZTvp3H85pXcJ2HLwfUSVLD4XShNFF9KyppZzqP18sCnEJl7ngXnAd6aReC1HyHMODgQ9Naj5wVYbgqEhuSCglebz+Ndhe3JybnDrb8aEjU542LWC3MxZF/GMIl60C/s7tzr5zNzb9487ELpKGOY4XYTuWihmK4zUrt0i733mEg73X7NkmzmnCgLRdaOx1bKYife22mqE8B7JBee3QYWdqyMTg1u3g934pI97bMnAzLkE7ASwLyN2sWOs9jpdnMgCWgh4EfJco6H9f/V4JkdgKE8Dud1ICUqWVm1xR+MUhScEq7KUEl3fSDV9bCplUx12KuXL4QUG6z74w8YnUV4V1aIKHZsh6G1/V3viEEr/3AqxHiTJixhgyHIhIST0fJQQdkMZdufqDPR2P+200MKv92IQ3StN2rw8WQ4sZaijH9OP0HlgouVYE4y9yrDfemw7++iWdbu91T6NiTYau5Z6AOG8jXOxzcrHZF3HWtRoeu3DlpGWPOXVLosenUm3bD/UxfqPwa5B36uCTh6Qsd4+53nZOItLpooo7KjGk//qYvfWpY5duCKqBVgBK+kIWv7PeKUsZfqaRI7tCn/jsA8vKLS7utYDMLM04L/ycFExlCk5Xc40ZeqVjGeSOnl/2MFeDyJDBdWTbf44gBLQyrxP5ofCDg+YvOn/ntbjOy78TtDD+kU8RtCtXRNam6nDLgfYmN8icAsxSCwQduQMu/ZS1qxMm/KhsiPsWLvdtNhfb2Jra57V1moG42K7O6VZuSS+bVVXMS2h3raSvXOSQWKLuwbcvg7Dro7+UXMJtVY2W6bksKvFOYYOYAlBIodCg=&MZHHCxK8LwqtvEKkgBFFUe7zg+by4jHrTU//aYL0k0b6ulXwqCrXGUCjqKoidbDQwSoa9hteI8tLEoFvWyslU4FU0XPU3riYQ0Pq/H8DVHcPIR++q5mKHUgtAgM7cruftoyjZRbWqgaQijwhkY53c5QvnpjiqkhFYx3ILsLtHvbl4i64h9p3tZFa1adNnYXjvmQ/gq6obcaR3IYXttWrCEdnuxO9TzLb6tSVuBuOWOKYwKrKl+XS4h4RTfWyDxLR26l6y2oyBWcW62tcn132PdLtoYpxXyr+ByL8I5OEtX0j7YCbO1VDutoV/D9GZDAVpViJNDXPaD4QWn/ccD98YQ=="
-        in request.body
+        in body
     ):
         return False
     return True
 
 
 def asyncupload_early_result_matcher(request):
-
-    if b"r+R+MLL7r9MwAHb7S6n5psOS6iwav8/lRtiOVHMaFba4gCRg0YWT5j+A=" in request.body:
+    body = request.content if request.content else b""
+    if b"r+R+MLL7r9MwAHb7S6n5psOS6iwav8/lRtiOVHMaFba4gCRg0YWT5j+A=" in body:
         return True
     return False
 
 
 def asyncupload_early_result_matcher_incorrect(request):
-
-    if b"r+R+MLL7r9MwAHb7S6n5psOS6iwav8/lRtiOVHMaFba4gCRg0YWT5j+A=" in request.body:
+    body = request.content if request.content else b""
+    if b"r+R+MLL7r9MwAHb7S6n5psOS6iwav8/lRtiOVHMaFba4gCRg0YWT5j+A=" in body:
         return False
     return True
 
 
 def asyncupload_found_key_matcher_PBKDF1_MS(request):
-
+    body = request.content if request.content else b""
     if (
         b"z3TV+wmyQiHUCiyUIKb/5VSJkb+rgQUYlw9fs9Bh1aikXUQpWVw3DQyPPCNuxD5zI9DI1NXdtBFzXwglAwVHAVhQcWA79V/hc8dx4q1rq38qgYnIf80kbohlpHONMJEeWi99Ha5sQe41Afy6j1JTDnh629pjPgidJ4Ben0+hSyX3NIh3tgRpZvj7e6f98c4BfN89uSraNzCMQej0LvAs3wY1ec5LYeC2XcDGW94MPdWBasJpB3Ka96aOJ+P6X+MUDaqSPCorC00uC17rQ4c0If1Kj8g4ZLuViuU7ESbhqcCLNW1ZLmOcl+4x+UohKeNJqVN3SNfFdu+CzXl+pkADAyTBNIGG4vuqLYPGCKPyyWYi5gTmKSXWcLLqwTvRvWxpohlEpIeFDJN7aaIp0qVzmsgP6NAg8WciboLuNkhi4gVTMgEm03WTfRCYW5mK+t/db2Ec4xPn6U3vZdPzUR9mWFuc9uu4mH0NLw6cZUr8iLQ9OMzebFyBpfHi3oTN5ztj+ZyurfFaVJKRhaWYoMXcD0cZqeA4nImvtCw8M9iH4cjPGj16UZEu/xW8myeOb0N2iJVSzirNQ8ZIDLOID90Zk0NV813u0EiyfSiyX7HkYz+MDtul+eQpyCREYsnMfYXcW/L7FQSWwcAnBgwNeCbRUx34f3Lw4ifuQ9rXP63DYUglIaL3Y859jOALQZ2m/YvhI+azF6GfZTYvRrzTeaCvk1uoE48+eb917uVnImH8eUUI4sTqsIG9RBpG/E3rzAXL+tXQ+0Y+4M/D+XqO27pg8+U4FoThJeOFsvkS0TiNja1CMV4D5Ej6LVe0qqOX7yJlJYmnHfn6Dymofg0rs0HJG+eJJPQW3+rAivEWeZR0t/xUEJZ60I7+puUSy4euzZzTA8oBb0gwqYsjTnJFe0JrCPDS0ktxreOzSUZ81IxrATjcsEfc3IbcWe5lYgWfNabEAZnSC7PnUEkpA5+mJstTznE8YkFYi3aEVE44IHMkYFecumW/hwqxSvwVFe8kmixASk1540cT4eM5/Xc+hQzehjd6eBI7Lne7nC1HJ5AL1talf8UCcykPh4fu7IqguEMw&Yask2YKsPSxDbrmYLHaHB5MMRIO9n33I10MmRNJCyS6m12Rjp7gqc+de/QszySP2TwCQDTTYyBAvNFJAl9IcnqwqwkDwswrtgAQTNZlIxlGdBZkfndRQFgvoKIJmV+tcnAHuvv3wPmRuxNou/qwQq1LikSfuBF5W443Hzm43y67v+59XzUjOC3pc+9+fcrU5KSeE1kqeITCN8wdR9TEtF/QdisA5ET7he6d+0If4VlCeRZzr8Qu2+nA9vBB4wYnUalt/xM4o6nOTcBcC2yMjqlh44HyhYN64n49r8+AwAHK1UuqoE0W46n3xA4JZE5XTGXwGZU7oabHRY6Sb2zOFtzuoa0u4Q+QzSMYtB5dCJt0="
-        in request.body
+        in body
     ):
         return True
     return False
 
 
 def asyncupload_found_key_matcher_PBKDF1_MS_incorrect(request):
-
+    body = request.content if request.content else b""
     if (
         b"z3TV+wmyQiHUCiyUIKb/5VSJkb+rgQUYlw9fs9Bh1aikXUQpWVw3DQyPPCNuxD5zI9DI1NXdtBFzXwglAwVHAVhQcWA79V/hc8dx4q1rq38qgYnIf80kbohlpHONMJEeWi99Ha5sQe41Afy6j1JTDnh629pjPgidJ4Ben0+hSyX3NIh3tgRpZvj7e6f98c4BfN89uSraNzCMQej0LvAs3wY1ec5LYeC2XcDGW94MPdWBasJpB3Ka96aOJ+P6X+MUDaqSPCorC00uC17rQ4c0If1Kj8g4ZLuViuU7ESbhqcCLNW1ZLmOcl+4x+UohKeNJqVN3SNfFdu+CzXl+pkADAyTBNIGG4vuqLYPGCKPyyWYi5gTmKSXWcLLqwTvRvWxpohlEpIeFDJN7aaIp0qVzmsgP6NAg8WciboLuNkhi4gVTMgEm03WTfRCYW5mK+t/db2Ec4xPn6U3vZdPzUR9mWFuc9uu4mH0NLw6cZUr8iLQ9OMzebFyBpfHi3oTN5ztj+ZyurfFaVJKRhaWYoMXcD0cZqeA4nImvtCw8M9iH4cjPGj16UZEu/xW8myeOb0N2iJVSzirNQ8ZIDLOID90Zk0NV813u0EiyfSiyX7HkYz+MDtul+eQpyCREYsnMfYXcW/L7FQSWwcAnBgwNeCbRUx34f3Lw4ifuQ9rXP63DYUglIaL3Y859jOALQZ2m/YvhI+azF6GfZTYvRrzTeaCvk1uoE48+eb917uVnImH8eUUI4sTqsIG9RBpG/E3rzAXL+tXQ+0Y+4M/D+XqO27pg8+U4FoThJeOFsvkS0TiNja1CMV4D5Ej6LVe0qqOX7yJlJYmnHfn6Dymofg0rs0HJG+eJJPQW3+rAivEWeZR0t/xUEJZ60I7+puUSy4euzZzTA8oBb0gwqYsjTnJFe0JrCPDS0ktxreOzSUZ81IxrATjcsEfc3IbcWe5lYgWfNabEAZnSC7PnUEkpA5+mJstTznE8YkFYi3aEVE44IHMkYFecumW/hwqxSvwVFe8kmixASk1540cT4eM5/Xc+hQzehjd6eBI7Lne7nC1HJ5AL1talf8UCcykPh4fu7IqguEMw&Yask2YKsPSxDbrmYLHaHB5MMRIO9n33I10MmRNJCyS6m12Rjp7gqc+de/QszySP2TwCQDTTYyBAvNFJAl9IcnqwqwkDwswrtgAQTNZlIxlGdBZkfndRQFgvoKIJmV+tcnAHuvv3wPmRuxNou/qwQq1LikSfuBF5W443Hzm43y67v+59XzUjOC3pc+9+fcrU5KSeE1kqeITCN8wdR9TEtF/QdisA5ET7he6d+0If4VlCeRZzr8Qu2+nA9vBB4wYnUalt/xM4o6nOTcBcC2yMjqlh44HyhYN64n49r8+AwAHK1UuqoE0W46n3xA4JZE5XTGXwGZU7oabHRY6Sb2zOFtzuoa0u4Q+QzSMYtB5dCJt0="
-        in request.body
+        in body
     ):
         return False
     return True
 
 
 def PBKDF2_found_key_matcher(request):
+    body = _body(request)
     if (
-        request.body
+        body
         == "dialogParametersHolder=%2Bv%2BRs6kf9lDUYnqqYk32Vg84DkpdruQOKGZRmm6RMkaYuxNmvg5Ca5cT%2F74qkOozHIKkG1ovf6XBsjlp4kgO8BJ6KgNcT78BExQZfT1mN5rFGZylxNlfmCxZEQFLAyV2xh%2FkGVb%2Bk95TQYnppybCMfuwinH7NDbVXKO7qr3kTNUCkgUUdFGWw6%2BoM49hkD%2BwQN%2F62S%2F%2BfVkxGJeRQEKHakLELFYpjwgW6UsXXDGmQilTdKx4iZ1MlO3JsD%2FWMUF94bACEiq26YUKhW7j0MEChv4regUuWBhAvrq0WKEdRbk%3D"
     ):
         return True
@@ -109,8 +118,9 @@ def PBKDF2_found_key_matcher(request):
 
 
 def PBKDF2_found_key_matcher_negative(request):
+    body = _body(request)
     if (
-        request.body
+        body
         == "dialogParametersHolder=%2Bv%2BRs6kf9lDUYnqqYk32Vg84DkpdruQOKGZRmm6RMkaYuxNmvg5Ca5cT%2F74qkOozHIKkG1ovf6XBsjlp4kgO8BJ6KgNcT78BExQZfT1mN5rFGZylxNlfmCxZEQFLAyV2xh%2FkGVb%2Bk95TQYnppybCMfuwinH7NDbVXKO7qr3kTNUCkgUUdFGWw6%2BoM49hkD%2BwQN%2F62S%2F%2BfVkxGJeRQEKHakLELFYpjwgW6UsXXDGmQilTdKx4iZ1MlO3JsD%2FWMUF94bACEiq26YUKhW7j0MEChv4regUuWBhAvrq0WKEdRbk%3D"
     ):
         return False
@@ -118,8 +128,9 @@ def PBKDF2_found_key_matcher_negative(request):
 
 
 def PBKDF2_version_probe_matcher(request):
+    body = _body(request)
     if (
-        request.body
+        body
         == "dialogParametersHolder=%2Bv%2BRs6kf9lDUYnqqYk32Vg84DkpdruQOKGZRmm6RMkaYuxNmvg5Ca5cT%2F74qkOozHIKkG1ovf6XBsjlp4kgO8BJ6KgNcT78BExQZfT1mN5rMO8kcLDRdffFhFXmvAr0o%2F4x%2B9VoRJVaOyGLXk2nhX4OMP%2BjGP2C96Fa6LyfGWHlk1CF0E5mAPeQ6CLbycR88WU5hlmUUqniXC2UdeYd6HO9RFnISEnhq72MkdiEfvNsqAhr2XaCX2%2BQxFXfCLi2%2Fc%2Bn2NmUiFRdhCLutnVxILEnYiRmU5eHJdB2IOTtoc2XZ3NUdZJwrwOswjzCkk7LOwt2bddTvOXdfWtRrbNz1GDNXlPz1cXotgAhucxLLsknNDbeeboMbL%2Bk3tIeervi7oI%2FRQn6Ml3ffUAfcqHzwcZCEIlQXh%2FBEIKHAY9fGKs5JSdtRbREDI0rh9sH%2B0TmYv444WQyqYpa8pOqtxgC1QRRcsNQcVGFzpyNL2SfKSlLTZi5Q7bo8XMTfLG6jg60csDEDiJ7MwJBGIm1iYzt%2FP9JEKkZujTMyHoBI0RESNpux7BeanEIDsfDmfwbcUo%2B2%2BkoHkCE4zXWBdW3lqssk4GwSbc0mbmf3U79rsQdNEqIOL87evE1U6tGB5PuXgwAIj9sKdyffd8%2B%2Bz1CCffFovLM72ilbCmSljAJ%2BvVBfNpTiL7RV7j3XGygljzi4NL8yXJuCLYiNxmqPMdV8DahLed0jSe2mkU1u6rx4yS3dcWEfwMWjI5tVrfnbqtdInC8TliXkTZ919CtORoydmIXGL1u3kdBIq8EZcjRMa4bN4VTvUlbqeIe8p8QYEQwAi7vXiZCKS6R6dmJfQv%2B%2FqBHXWSFuglLYde019GNtNdGQfEnY31zT0Q86ieDYn4k55LbYq5lK8PNjg50gdJxn9fNtHTQ7frKP9vRM4cImRSvDBTATVw1PDzMqn0exo3xciYd5%2BXYAxlFoqwFMDz40w2xR4OWwoPsixpVjR2DYiqYiZrYytFMjziRCLQhkVuJpED8nB9CTlo05WBKN%2Bb4UBHBg%2FkCkHXJxNakIX7UbAjDcqzrNCGhjrgehCGA81uOf0Ppfswda0ZHMi8g9W6Y7uwWmn7Ux7xBMgDCUNIi8I3UvLGXdKnuB8YHX8TLC1z2%2Fm3ip797Pix1ya2sBsbw9KgOJ7PBT0u9W0puchi7zpT%2FzFe3V2HbV0ottDethRJhzaN856VgvjyNhbbmA04gnal%2Fq01j7LNWxEwTjNPyHORI1l9jztvYqItLei7YQYg2pFhmvuv0Od8DPfH40Y1m3mL2F2d%2FAy3ImzFI%2BKQB6mnGPvRcDIS1j7zPhciKRuLfu3dCxhIH7ojo83rhQus3SyXdyZ5cjkFKcG3H7WmBBMOFs2o5xjWcdLARevRbNbqwRfATerc5GuJxy1Qb8RJvOqhDcS5YAHyxVMx2QYU3yMhg0tCpy4wW%2FHsa33feu3NeBu9lRI38ojJNM7o6xYRoSTQu4tYadB4Yh4w60e%2FsttnecOC5plZrLw6BYN2piqvUD07BnO4yTvrpdBDXR%2BMFDchnFh2YK9JtvvtAISvpoSOJojOhwRKuafCwEJn0GB1dsdmOOxxaFHkPXQ7789eCxlTL5mkVf3ktzmHQdDyBxBlDLFWSjmFIBHp%2BPobFdDOmv5p6J3%2F%2FM23PMgGDLRMrj5LVZV3trGV1ZaJHEFIGmVwW0tN4426Q4rCdcxT4ju%2B%2FNhcq90e8crWw9nrF2rPTzW1YM7VqWWwhLj8MtVtGZFa3N%2FxdjEys8FWyT8VqAbC4IltuT5lW1ou1SXsA96h%2F9y3vzJADbm4Lv624OGnh6M%2FCmR930i6YeUlWWmMw1%2FpcZ5werHPm9v0OWulNmGfbNEoKuThz2sSCZ8FLNVToygv1VXPXnur4dJnoCkwBP2%2BQQ6%2FHlyFRXnrrGsiDJE3qtRXgECIhc2zpuC5HAz9FhIfC9VZZ5nxRMbhA6W%2Fz%2BjPpKLCBpmLqHJfy8%2B%2FausiZJv7d9yQ0SvHtq0y%2FSY04hOgZTJul6IIYpObD6s%2FqrGy2nMmY3%2FtEn830%2F%2BFERnXMeBsj%2B%2F5ZSewYe4xBnub1wvSbsA3qjoU5gq7fhDJOhmMQXkbas%2FRholsU9CNKNXpSyqVarqAc8XwaG34JmdG3wjQXd6p%2Bz2jZLew5ja8nelvVdIeN%2F9ejCNOoXcPApYLHyxslcrEuJrSHlAMR4FbonfrFhYYTR%2B8pdxRGYGpVUDxlIRvayztxVhLnSpRwg5uIXktoMwJ%2FSaF8x29hA9LIyUqAu4%2FR2hQW%2B4SImPpsXXpqtiGkjfub23eHBh6%2BtPfI7KNBt0Sz%2F3IcUvQk%2BWZYFfPMd8cXJdempaxEs%2BWRlN16p%2BjqhLiVh2A8iaZ4WvdHZmEP7slp3BgAJHjnl7C9sEWeDqCEwe%2FjIDLeJ1X%2FDjBXwflC7CNUtfL5Xw3En%2FArqlvVhUGhwvFy6lQocBfs6%2BLYvOaWiwZ37DX8rkRZlWpkY2rpapUrmnba7Ly%2FoLx924DzkK78M%2BzFL0ra5b1t6Rgv5zuibZAhF47t1EdOxpWIlBlf3zB9gg2M5Rk%2F9IMH%2BzrDHou9o9uO%2BDC6WFddIOuEWc1nrjSenwFkvqgNVdc9CtdiVDWnFLKJh70er5L8AlH7uCb4iXrYljyCSAeyr0DiKz6T8ox10NRGPI6iJbYf%2FIr3IuZE1oJgqcvn7tKhQBOq4jemlZpbeQgPy0FxO0%2BDxeqI%3D"
     ):
         return True
@@ -127,11 +138,12 @@ def PBKDF2_version_probe_matcher(request):
 
 
 def PBKDF2_version_probe_matcher_incorrect(request):
+    body = _body(request)
     if (
-        request.body != "dialogParametersHolder=AAAA"
-        and request.body
+        body != "dialogParametersHolder=AAAA"
+        and body
         != "dialogParametersHolder=%2Bv%2BRs6kf9lDUYnqqYk32Vg84DkpdruQOKGZRmm6RMkaYuxNmvg5Ca5cT%2F74qkOozHIKkG1ovf6XBsjlp4kgO8BJ6KgNcT78BExQZfT1mN5rMO8kcLDRdffFhFXmvAr0o%2F4x%2B9VoRJVaOyGLXk2nhX4OMP%2BjGP2C96Fa6LyfGWHlk1CF0E5mAPeQ6CLbycR88WU5hlmUUqniXC2UdeYd6HO9RFnISEnhq72MkdiEfvNsqAhr2XaCX2%2BQxFXfCLi2%2Fc%2Bn2NmUiFRdhCLutnVxILEnYiRmU5eHJdB2IOTtoc2XZ3NUdZJwrwOswjzCkk7LOwt2bddTvOXdfWtRrbNz1GDNXlPz1cXotgAhucxLLsknNDbeeboMbL%2Bk3tIeervi7oI%2FRQn6Ml3ffUAfcqHzwcZCEIlQXh%2FBEIKHAY9fGKs5JSdtRbREDI0rh9sH%2B0TmYv444WQyqYpa8pOqtxgC1QRRcsNQcVGFzpyNL2SfKSlLTZi5Q7bo8XMTfLG6jg60csDEDiJ7MwJBGIm1iYzt%2FP9JEKkZujTMyHoBI0RESNpux7BeanEIDsfDmfwbcUo%2B2%2BkoHkCE4zXWBdW3lqssk4GwSbc0mbmf3U79rsQdNEqIOL87evE1U6tGB5PuXgwAIj9sKdyffd8%2B%2Bz1CCffFovLM72ilbCmSljAJ%2BvVBfNpTiL7RV7j3XGygljzi4NL8yXJuCLYiNxmqPMdV8DahLed0jSe2mkU1u6rx4yS3dcWEfwMWjI5tVrfnbqtdInC8TliXkTZ919CtORoydmIXGL1u3kdBIq8EZcjRMa4bN4VTvUlbqeIe8p8QYEQwAi7vXiZCKS6R6dmJfQv%2B%2FqBHXWSFuglLYde019GNtNdGQfEnY31zT0Q86ieDYn4k55LbYq5lK8PNjg50gdJxn9fNtHTQ7frKP9vRM4cImRSvDBTATVw1PDzMqn0exo3xciYd5%2BXYAxlFoqwFMDz40w2xR4OWwoPsixpVjR2DYiqYiZrYytFMjziRCLQhkVuJpED8nB9CTlo05WBKN%2Bb4UBHBg%2FkCkHXJxNakIX7UbAjDcqzrNCGhjrgehCGA81uOf0Ppfswda0ZHMi8g9W6Y7uwWmn7Ux7xBMgDCUNIi8I3UvLGXdKnuB8YHX8TLC1z2%2Fm3ip797Pix1ya2sBsbw9KgOJ7PBT0u9W0puchi7zpT%2FzFe3V2HbV0ottDethRJhzaN856VgvjyNhbbmA04gnal%2Fq01j7LNWxEwTjNPyHORI1l9jztvYqItLei7YQYg2pFhmvuv0Od8DPfH40Y1m3mL2F2d%2FAy3ImzFI%2BKQB6mnGPvRcDIS1j7zPhciKRuLfu3dCxhIH7ojo83rhQus3SyXdyZ5cjkFKcG3H7WmBBMOFs2o5xjWcdLARevRbNbqwRfATerc5GuJxy1Qb8RJvOqhDcS5YAHyxVMx2QYU3yMhg0tCpy4wW%2FHsa33feu3NeBu9lRI38ojJNM7o6xYRoSTQu4tYadB4Yh4w60e%2FsttnecOC5plZrLw6BYN2piqvUD07BnO4yTvrpdBDXR%2BMFDchnFh2YK9JtvvtAISvpoSOJojOhwRKuafCwEJn0GB1dsdmOOxxaFHkPXQ7789eCxlTL5mkVf3ktzmHQdDyBxBlDLFWSjmFIBHp%2BPobFdDOmv5p6J3%2F%2FM23PMgGDLRMrj5LVZV3trGV1ZaJHEFIGmVwW0tN4426Q4rCdcxT4ju%2B%2FNhcq90e8crWw9nrF2rPTzW1YM7VqWWwhLj8MtVtGZFa3N%2FxdjEys8FWyT8VqAbC4IltuT5lW1ou1SXsA96h%2F9y3vzJADbm4Lv624OGnh6M%2FCmR930i6YeUlWWmMw1%2FpcZ5werHPm9v0OWulNmGfbNEoKuThz2sSCZ8FLNVToygv1VXPXnur4dJnoCkwBP2%2BQQ6%2FHlyFRXnrrGsiDJE3qtRXgECIhc2zpuC5HAz9FhIfC9VZZ5nxRMbhA6W%2Fz%2BjPpKLCBpmLqHJfy8%2B%2FausiZJv7d9yQ0SvHtq0y%2FSY04hOgZTJul6IIYpObD6s%2FqrGy2nMmY3%2FtEn830%2F%2BFERnXMeBsj%2B%2F5ZSewYe4xBnub1wvSbsA3qjoU5gq7fhDJOhmMQXkbas%2FRholsU9CNKNXpSyqVarqAc8XwaG34JmdG3wjQXd6p%2Bz2jZLew5ja8nelvVdIeN%2F9ejCNOoXcPApYLHyxslcrEuJrSHlAMR4FbonfrFhYYTR%2B8pdxRGYGpVUDxlIRvayztxVhLnSpRwg5uIXktoMwJ%2FSaF8x29hA9LIyUqAu4%2FR2hQW%2B4SImPpsXXpqtiGkjfub23eHBh6%2BtPfI7KNBt0Sz%2F3IcUvQk%2BWZYFfPMd8cXJdempaxEs%2BWRlN16p%2BjqhLiVh2A8iaZ4WvdHZmEP7slp3BgAJHjnl7C9sEWeDqCEwe%2FjIDLeJ1X%2FDjBXwflC7CNUtfL5Xw3En%2FArqlvVhUGhwvFy6lQocBfs6%2BLYvOaWiwZ37DX8rkRZlWpkY2rpapUrmnba7Ly%2FoLx924DzkK78M%2BzFL0ra5b1t6Rgv5zuibZAhF47t1EdOxpWIlBlf3zB9gg2M5Rk%2F9IMH%2BzrDHou9o9uO%2BDC6WFddIOuEWc1nrjSenwFkvqgNVdc9CtdiVDWnFLKJh70er5L8AlH7uCb4iXrYljyCSAeyr0DiKz6T8ox10NRGPI6iJbYf%2FIr3IuZE1oJgqcvn7tKhQBOq4jemlZpbeQgPy0FxO0%2BDxeqI%3D"
-        and request.body
+        and body
         != "dialogParametersHolder=%2Bv%2BRs6kf9lDUYnqqYk32Vg84DkpdruQOKGZRmm6RMkaYuxNmvg5Ca5cT%2F74qkOozHIKkG1ovf6XBsjlp4kgO8BJ6KgNcT78BExQZfT1mN5rFGZylxNlfmCxZEQFLAyV2xh%2FkGVb%2Bk95TQYnppybCMfuwinH7NDbVXKO7qr3kTNUCkgUUdFGWw6%2BoM49hkD%2BwQN%2F62S%2F%2BfVkxGJeRQEKHakLELFYpjwgW6UsXXDGmQilTdKx4iZ1MlO3JsD%2FWMUF94bACEiq26YUKhW7j0MEChv4regUuWBhAvrq0WKEdRbk%3D"
     ):
         return True
@@ -139,8 +151,9 @@ def PBKDF2_version_probe_matcher_incorrect(request):
 
 
 def PBKDF2_version_probe_matcher_modern(request):
+    body = _body(request)
     if (
-        request.body
+        body
         == "dialogParametersHolder=%2Bv%2BRs6kf9lDUYnqqYk32Vg84DkpdruQOKGZRmm6RMkaYuxNmvg5Ca5cT%2F74qkOozHIKkG1ovf6XBsjlp4kgO8BJ6KgNcT78BExQZfT1mN5rMO8kcLDRdffFhFXmvAr0o%2F4x%2B9VoRJVaOyGLXk2nhX4OMP%2BjGP2C96Fa6LyfGWHlk1CF0E5mAPeQ6CLbycR88WU5hlmUUqniXC2UdeYd6HO9RFnISEnhq72MkdiEfvNsqAhr2XaCX2%2BQxFXfCLi2%2Fc%2Bn2NmUiFRdhCLutnVxILEnYiRmU5eHJdB2IOTtoc2XZ3NUdZJwrwOswjzCkk7LOwt2bddTvOXdfWtRrbNz1GDNXlPz1cXotgAhucxLLsknNDbeeboMbL%2Bk3tIeervi7oI%2FRQn6Ml3ffUAfcqHzwcXSXq6ey16mT7GUJbst%2BCQnfUQu5gqzYBOwSmvNPc9AtoVWV%2F5dfO1uPm%2F%2FfLxuOXoxO5v7UIJNIX1KUEuFcysdbBSkZHdCqSRasDt63Li1lZEqHBCuHSNj%2BcEcRGx841w%2BCN%2BWrJyanc%2F3OOP%2BNWRYRstLeKZVf3aRHhKYNp4Q%2B%2BSEQxIVpv9UxWpkOSs%2Bbckk36t3N6DCcKGB1z9lelAGTDzlOLPUh9GhikJAESqLytLBC0CXn40%2BI%2BlBRZ44m4TX53YDcKBPOfiP880p3%2BfnIOY1X6p7HMNoi5jcUlphEQv5aN60B7TkYzZVRQS6xX0gq8r1La9iEUeE4t8378DhGQ8qkcHv1JkJM4WBgQaFzfWxj5Dg%2BL7USGaCKNH4W0kzeBSNrRW5ETwJDrDh683%2BzOJCEqh5Wlqjswo4986yHARJEJzRgJC2O4EbGcGyBtiaNioPFUyyX87ovcxMqIdMEyfZpo5QeWd4s0Sufx4vICyl%2BkGtzo0f7xIhIeuJRsbXvKmHxx0wwVJZsOFR5SBYrd7%2Bs6TM8waDsXr5pC%2FdTT3pBCh%2BWPS%2Fy%2FMgHjh75q6lWy4UTygpb6brMqiW%2F%2F1NXRLLHqqweT8xy5N0x7ck8bspjo7yF1rNn%2FixyuQ7HLZsEiXEbwBCBGGnTF2P4geoz9t7y7wUdoRw5SDyhSqoS2X5Urwou8KNAN4kY20JNgoM8L3ef8TcHctE2vwQ0jvCLxec%2FC3hr61NyO8QVxi8KzJvjRaHqkDkzJ5GQ3N1JLfA7Mdg%2FZTRzu2C7v5ubmJPR%2BiA24xOoKUvsYJQ0KiXRkWdGG5bprG4DjFWgkrGVh0yH4lj5R97BQ0uIIZehSQXibhI9RiANf459jDJN3eTQ6mcpYkvz%2FW0GnHKRgjcqRFqXnqsUdEHnuUkmZvdhbyRdPrkHvn99RhVmX4QXHYO0ehZVXknk42D5euG0acZMSyygTXrZZNu6e%2BriIrlmMGQgKuwN%2FNVz%2Bocl987zG%2Fmf7r%2FRz1ZSXkNtixN7LQwpZ%2BCM7zP64ugTT%2FWoo76hZgf5PjlW3C9k8tIPXEVT6HKIzteaP6YrviJCuy8VAybH5t1aDY%2FGl5MXiFjfGZNf3921yvTlwmWOi0oUFky5460M1RYwt4UHkwmFIAIJF4TN5kIu%2FaJxYHTCG%2BC14r7TjVPJuy%2FI2iYEJOA58G9yOevW6ixm650ELGqXXgbRRUH3hec6j%2FrRdrNdPU7isX%2FBBicEACDS97uvz62YkJwwJ5AUEnfuV%2FhnlJzIjNC%2Fq7xAb2sXuv6HTdtJYaJbe5%2BXWwq0AppO5NV9oU2cD%2F%2F1JhRN6GZ3myMGYGwDRYdPIqJ0l9PUCetBrSQR7830WkfGJ%2FHfuIWH%2F45zGsixZXYwHfE90rVvCisAjJ%2BBsjYX%2BKSx3PXAg2%2BKzybzyd6m%2B6ArimL%2FwWXF4t6eEFOrzKL8zYzNMDlKab6rgFhXPYw%2Bseulb9lwi90MlPoBmDjuEDJxtD7tNYMd3yWBIYyVN3Pv6adra6cKizf8zGBTl3ofs%2Fj5v2wjb1Dp33tbcASpHAL0rfyns7O%2Bm%2BZRAtn1tr5JRFSseu%2BqNXCiFCr2Oc3%2FCseGewyQhMqBkcPDOxfRvPMNdQhR4e92EDnFV1a%2FzJKSf%2BvqBzDiAeqBojmIjUppKBPtDTs0J%2B6UIPzkO8z5Ff%2BstJwF%2FplkftFk6CpAvDITRDgKgbMJ%2BVB8CqeOF2%2FS3Q4LEcLxxUUTgUvEQb9OxVWzd7YDTSAvcCvc3y9T3d0bJxJ0%2BGjZO2ZbnB7tDgBmC4clqtwp3m2JyFWOWzzkmLx16bfgA259Piju0qHZKFtQaASrFTy2QxM0MmyXpgcBWZgiubyta4%2B6d9YkgMQp4tcsL6k1HLYGRHujkaixzdVgjvXwsQ0EqYeX5RM2vzWaPhxSK%2BnsjxgiURZbj5wWvVQPml9RHnTdyYRvELRAqxPCFhYFQ%2BpEIwUHwEuvgkvgmyHjN3ZspADp%2BcO9B9VoAFmLg74jkcifZJqy2WpIPTL6JASkn9A2UgmmnAAqmu%2BwEayHVtrBGrpswqeKT3q7JttEn5YbbWYN%2FLyOtVG5VCBoxjP3XFTcLV0wcXHSrm6EMPkzi%2Bqv%2BYHUBJQ43YycfduyjZuWw9jmU4wm8O%2BIFVsaSxmmxnsQ2jAotpr%2BxUZXTjInv8TvHuO4xaLqyifS%2B7Ht1wAwrXtcfseEkkCVwRLib5F%2FEMIWWDrYpKWx5fYZjBNlhMb21WvehQkeVu71jK%2FUdqV%2BBVfT8yjHbk7vaxxxiewLXV7LP3D56LPD8koeIwptkJ62JHFBjnlvR9XHZowkiPZZ3X7BV3S6S6t5TIjDHVeuO3PZnSv9ic0BGb8Srbq2eABgsmOXPKTHgaTAFzUTa8axECwKYWQfZvJRnDrvP8qt34C2Y9tDa1THJqdtb3x3Qco6exHd5WpH2LcR0j1fc4ZJDocOXnZaQKyvDlMTZIfA4O2WzeECxHIJIe2ulebZpJHCX3bFtBrlmy45z4pwbl%2BcUBzLLpzn8Ro7g5427G3aj%2Ftn5s1K42yMbrcNCbaSPK4SnCAA9%2BkKqwcoatuiyi3fy7vhOAgP0BNNFRO8LjLsJth%2BfRRQDTNLD0jUKPtS7DtAKck3h30%2FRFJj4QYLYeQ%3D"
     ):
         return True
@@ -148,11 +161,12 @@ def PBKDF2_version_probe_matcher_modern(request):
 
 
 def PBKDF2_version_probe_matcher_incorrect_modern(request):
+    body = _body(request)
     if (
-        request.body != "dialogParametersHolder=AAAA"
-        and request.body
+        body != "dialogParametersHolder=AAAA"
+        and body
         != "dialogParametersHolder=%2Bv%2BRs6kf9lDUYnqqYk32Vg84DkpdruQOKGZRmm6RMkaYuxNmvg5Ca5cT%2F74qkOozHIKkG1ovf6XBsjlp4kgO8BJ6KgNcT78BExQZfT1mN5rMO8kcLDRdffFhFXmvAr0o%2F4x%2B9VoRJVaOyGLXk2nhX4OMP%2BjGP2C96Fa6LyfGWHlk1CF0E5mAPeQ6CLbycR88WU5hlmUUqniXC2UdeYd6HO9RFnISEnhq72MkdiEfvNsqAhr2XaCX2%2BQxFXfCLi2%2Fc%2Bn2NmUiFRdhCLutnVxILEnYiRmU5eHJdB2IOTtoc2XZ3NUdZJwrwOswjzCkk7LOwt2bddTvOXdfWtRrbNz1GDNXlPz1cXotgAhucxLLsknNDbeeboMbL%2Bk3tIeervi7oI%2FRQn6Ml3ffUAfcqHzwcXSXq6ey16mT7GUJbst%2BCQnfUQu5gqzYBOwSmvNPc9AtoVWV%2F5dfO1uPm%2F%2FfLxuOXoxO5v7UIJNIX1KUEuFcysdbBSkZHdCqSRasDt63Li1lZEqHBCuHSNj%2BcEcRGx841w%2BCN%2BWrJyanc%2F3OOP%2BNWRYRstLeKZVf3aRHhKYNp4Q%2B%2BSEQxIVpv9UxWpkOSs%2Bbckk36t3N6DCcKGB1z9lelAGTDzlOLPUh9GhikJAESqLytLBC0CXn40%2BI%2BlBRZ44m4TX53YDcKBPOfiP880p3%2BfnIOY1X6p7HMNoi5jcUlphEQv5aN60B7TkYzZVRQS6xX0gq8r1La9iEUeE4t8378DhGQ8qkcHv1JkJM4WBgQaFzfWxj5Dg%2BL7USGaCKNH4W0kzeBSNrRW5ETwJDrDh683%2BzOJCEqh5Wlqjswo4986yHARJEJzRgJC2O4EbGcGyBtiaNioPFUyyX87ovcxMqIdMEyfZpo5QeWd4s0Sufx4vICyl%2BkGtzo0f7xIhIeuJRsbXvKmHxx0wwVJZsOFR5SBYrd7%2Bs6TM8waDsXr5pC%2FdTT3pBCh%2BWPS%2Fy%2FMgHjh75q6lWy4UTygpb6brMqiW%2F%2F1NXRLLHqqweT8xy5N0x7ck8bspjo7yF1rNn%2FixyuQ7HLZsEiXEbwBCBGGnTF2P4geoz9t7y7wUdoRw5SDyhSqoS2X5Urwou8KNAN4kY20JNgoM8L3ef8TcHctE2vwQ0jvCLxec%2FC3hr61NyO8QVxi8KzJvjRaHqkDkzJ5GQ3N1JLfA7Mdg%2FZTRzu2C7v5ubmJPR%2BiA24xOoKUvsYJQ0KiXRkWdGG5bprG4DjFWgkrGVh0yH4lj5R97BQ0uIIZehSQXibhI9RiANf459jDJN3eTQ6mcpYkvz%2FW0GnHKRgjcqRFqXnqsUdEHnuUkmZvdhbyRdPrkHvn99RhVmX4QXHYO0ehZVXknk42D5euG0acZMSyygTXrZZNu6e%2BriIrlmMGQgKuwN%2FNVz%2Bocl987zG%2Fmf7r%2FRz1ZSXkNtixN7LQwpZ%2BCM7zP64ugTT%2FWoo76hZgf5PjlW3C9k8tIPXEVT6HKIzteaP6YrviJCuy8VAybH5t1aDY%2FGl5MXiFjfGZNf3921yvTlwmWOi0oUFky5460M1RYwt4UHkwmFIAIJF4TN5kIu%2FaJxYHTCG%2BC14r7TjVPJuy%2FI2iYEJOA58G9yOevW6ixm650ELGqXXgbRRUH3hec6j%2FrRdrNdPU7isX%2FBBicEACDS97uvz62YkJwwJ5AUEnfuV%2FhnlJzIjNC%2Fq7xAb2sXuv6HTdtJYaJbe5%2BXWwq0AppO5NV9oU2cD%2F%2F1JhRN6GZ3myMGYGwDRYdPIqJ0l9PUCetBrSQR7830WkfGJ%2FHfuIWH%2F45zGsixZXYwHfE90rVvCisAjJ%2BBsjYX%2BKSx3PXAg2%2BKzybzyd6m%2B6ArimL%2FwWXF4t6eEFOrzKL8zYzNMDlKab6rgFhXPYw%2Bseulb9lwi90MlPoBmDjuEDJxtD7tNYMd3yWBIYyVN3Pv6adra6cKizf8zGBTl3ofs%2Fj5v2wjb1Dp33tbcASpHAL0rfyns7O%2Bm%2BZRAtn1tr5JRFSseu%2BqNXCiFCr2Oc3%2FCseGewyQhMqBkcPDOxfRvPMNdQhR4e92EDnFV1a%2FzJKSf%2BvqBzDiAeqBojmIjUppKBPtDTs0J%2B6UIPzkO8z5Ff%2BstJwF%2FplkftFk6CpAvDITRDgKgbMJ%2BVB8CqeOF2%2FS3Q4LEcLxxUUTgUvEQb9OxVWzd7YDTSAvcCvc3y9T3d0bJxJ0%2BGjZO2ZbnB7tDgBmC4clqtwp3m2JyFWOWzzkmLx16bfgA259Piju0qHZKFtQaASrFTy2QxM0MmyXpgcBWZgiubyta4%2B6d9YkgMQp4tcsL6k1HLYGRHujkaixzdVgjvXwsQ0EqYeX5RM2vzWaPhxSK%2BnsjxgiURZbj5wWvVQPml9RHnTdyYRvELRAqxPCFhYFQ%2BpEIwUHwEuvgkvgmyHjN3ZspADp%2BcO9B9VoAFmLg74jkcifZJqy2WpIPTL6JASkn9A2UgmmnAAqmu%2BwEayHVtrBGrpswqeKT3q7JttEn5YbbWYN%2FLyOtVG5VCBoxjP3XFTcLV0wcXHSrm6EMPkzi%2Bqv%2BYHUBJQ43YycfduyjZuWw9jmU4wm8O%2BIFVsaSxmmxnsQ2jAotpr%2BxUZXTjInv8TvHuO4xaLqyifS%2B7Ht1wAwrXtcfseEkkCVwRLib5F%2FEMIWWDrYpKWx5fYZjBNlhMb21WvehQkeVu71jK%2FUdqV%2BBVfT8yjHbk7vaxxxiewLXV7LP3D56LPD8koeIwptkJ62JHFBjnlvR9XHZowkiPZZ3X7BV3S6S6t5TIjDHVeuO3PZnSv9ic0BGb8Srbq2eABgsmOXPKTHgaTAFzUTa8axECwKYWQfZvJRnDrvP8qt34C2Y9tDa1THJqdtb3x3Qco6exHd5WpH2LcR0j1fc4ZJDocOXnZaQKyvDlMTZIfA4O2WzeECxHIJIe2ulebZpJHCX3bFtBrlmy45z4pwbl%2BcUBzLLpzn8Ro7g5427G3aj%2Ftn5s1K42yMbrcNCbaSPK4SnCAA9%2BkKqwcoatuiyi3fy7vhOAgP0BNNFRO8LjLsJth%2BfRRQDTNLD0jUKPtS7DtAKck3h30%2FRFJj4QYLYeQ%3D"
-        and request.body
+        and body
         != "dialogParametersHolder=%2Bv%2BRs6kf9lDUYnqqYk32Vg84DkpdruQOKGZRmm6RMkaYuxNmvg5Ca5cT%2F74qkOozHIKkG1ovf6XBsjlp4kgO8BJ6KgNcT78BExQZfT1mN5rFGZylxNlfmCxZEQFLAyV2xh%2FkGVb%2Bk95TQYnppybCMfuwinH7NDbVXKO7qr3kTNUCkgUUdFGWw6%2BoM49hkD%2BwQN%2F62S%2F%2BfVkxGJeRQEKHakLELFYpjwgW6UsXXDGmQilTdKx4iZ1MlO3JsD%2FWMUF94bACEiq26YUKhW7j0MEChv4regUuWBhAvrq0WKEdRbk%3D"
     ):
         return True
@@ -160,34 +174,38 @@ def PBKDF2_version_probe_matcher_incorrect_modern(request):
 
 
 def PBKDF1_MS_found_key_matcher(request):
+    body = _body(request)
     if (
-        request.body
+        body
         == "dialogParametersHolder=RW5hYmxlQXN5bmNVcGxvYWQsRmFsc2UsMyxUcnVlO0RlbGV0ZVBhdGhzLFRydWUsMCxabWs0ZFV4M1BUMHNabWs0ZFV4M1BUMD07RW5hYmxlRW1iZWRkZWRCYXNlU3R5bGVzaGVldCxGYWxzZSwzLFRydWU7UmVuZGVyTW9kZSxGYWxzZSwyLDI7VXBsb2FkUGF0aHMsVHJ1ZSwwLFptazRkVXgzUFQwc1ptazRkVXgzUFQwPTtTZWFyY2hQYXR0ZXJucyxUcnVlLDAsUzJrMGNRPT07RW5hYmxlRW1iZWRkZWRTa2lucyxGYWxzZSwzLFRydWU7TWF4VXBsb2FkRmlsZVNpemUsRmFsc2UsMSwyMDQ4MDA7TG9jYWxpemF0aW9uUGF0aCxGYWxzZSwwLDtGaWxlQnJvd3NlckNvbnRlbnRQcm92aWRlclR5cGVOYW1lLEZhbHNlLDAsO1ZpZXdQYXRocyxUcnVlLDAsWm1rNGRVeDNQVDBzWm1rNGRVeDNQVDA9O0lzU2tpblRvdWNoLEZhbHNlLDMsRmFsc2U7U2NyaXB0TWFuYWdlclByb3BlcnRpZXMsRmFsc2UsMCxDZ29LQ2taaGJITmxDakFLQ2dvSztFeHRlcm5hbERpYWxvZ3NQYXRoLEZhbHNlLDAsO0xhbmd1YWdlLEZhbHNlLDAsWlc0dFZWTT07VGVsZXJpay5EaWFsb2dEZWZpbml0aW9uLkRpYWxvZ1R5cGVOYW1lLEZhbHNlLDAsVkdWc1pYSnBheTVYWldJdVZVa3VSV1JwZEc5eUxrUnBZV3h2WjBOdmJuUnliMnh6TGtSdlkzVnRaVzUwVFdGdVlXZGxja1JwWVd4dlp5d2dWR1ZzWlhKcGF5NVhaV0l1VlVrc0lGWmxjbk5wYjI0OU1qQXhPQzR4TGpFeE55NDBOU3dnUTNWc2RIVnlaVDF1WlhWMGNtRnNMQ0JRZFdKc2FXTkxaWGxVYjJ0bGJqMHhNakZtWVdVM09ERTJOV0poTTJRMDtBbGxvd011bHRpcGxlU2VsZWN0aW9uLEZhbHNlLDMsRmFsc2U%3DL5sb9SKliKw%2Bw6w13%2FzMlFZ52mRvsWTpQO3uN4eQQ7k%3D"
-        and request.body != "dialogParametersHolder=AAAA"
+        and body != "dialogParametersHolder=AAAA"
     ):
         return True
     return False
 
 
 def PBKDF1_MS_found_key_matcher_negative(request):
+    body = _body(request)
     if (
-        request.body
+        body
         == "dialogParametersHolder=RW5hYmxlQXN5bmNVcGxvYWQsRmFsc2UsMyxUcnVlO0RlbGV0ZVBhdGhzLFRydWUsMCxabWs0ZFV4M1BUMHNabWs0ZFV4M1BUMD07RW5hYmxlRW1iZWRkZWRCYXNlU3R5bGVzaGVldCxGYWxzZSwzLFRydWU7UmVuZGVyTW9kZSxGYWxzZSwyLDI7VXBsb2FkUGF0aHMsVHJ1ZSwwLFptazRkVXgzUFQwc1ptazRkVXgzUFQwPTtTZWFyY2hQYXR0ZXJucyxUcnVlLDAsUzJrMGNRPT07RW5hYmxlRW1iZWRkZWRTa2lucyxGYWxzZSwzLFRydWU7TWF4VXBsb2FkRmlsZVNpemUsRmFsc2UsMSwyMDQ4MDA7TG9jYWxpemF0aW9uUGF0aCxGYWxzZSwwLDtGaWxlQnJvd3NlckNvbnRlbnRQcm92aWRlclR5cGVOYW1lLEZhbHNlLDAsO1ZpZXdQYXRocyxUcnVlLDAsWm1rNGRVeDNQVDBzWm1rNGRVeDNQVDA9O0lzU2tpblRvdWNoLEZhbHNlLDMsRmFsc2U7U2NyaXB0TWFuYWdlclByb3BlcnRpZXMsRmFsc2UsMCxDZ29LQ2taaGJITmxDakFLQ2dvSztFeHRlcm5hbERpYWxvZ3NQYXRoLEZhbHNlLDAsO0xhbmd1YWdlLEZhbHNlLDAsWlc0dFZWTT07VGVsZXJpay5EaWFsb2dEZWZpbml0aW9uLkRpYWxvZ1R5cGVOYW1lLEZhbHNlLDAsVkdWc1pYSnBheTVYWldJdVZVa3VSV1JwZEc5eUxrUnBZV3h2WjBOdmJuUnliMnh6TGtSdlkzVnRaVzUwVFdGdVlXZGxja1JwWVd4dlp5d2dWR1ZzWlhKcGF5NVhaV0l1VlVrc0lGWmxjbk5wYjI0OU1qQXhPQzR4TGpFeE55NDBOU3dnUTNWc2RIVnlaVDF1WlhWMGNtRnNMQ0JRZFdKc2FXTkxaWGxVYjJ0bGJqMHhNakZtWVdVM09ERTJOV0poTTJRMDtBbGxvd011bHRpcGxlU2VsZWN0aW9uLEZhbHNlLDMsRmFsc2U%3DL5sb9SKliKw%2Bw6w13%2FzMlFZ52mRvsWTpQO3uN4eQQ7k%3D"
-        and request.body != "dialogParametersHolder=AAAA"
+        and body != "dialogParametersHolder=AAAA"
     ):
         return False
     return True
 
 
 def PBKDF1_MS_probe_matcher(request):
-    if request.body == "dialogParametersHolder=AAAA":
+    body = _body(request)
+    if body == "dialogParametersHolder=AAAA":
         return True
     return False
 
 
 def PBKDF1_MS_encryption_probe_matcher(request):
+    body = _body(request)
     if (
-        request.body
+        body
         == "dialogParametersHolder=CaCbLSlA%2F3GG4AJY2Lrkw%2FYyoo9hsLMk7MDf5Ku5qk7ALj2MhWj%2BdiVwDJIpxdOfGYYKT%2BtFcvqOSZPRZZas0cgfM1xZtoJ0rDr0vHZCeKF2MchSI7T4s1rp%2F17FOhy0VFUWETHfD47ah6CDQGtptldvlYp5Iq5FSRMgJrFZ6V8%3D"
     ):
         return True
@@ -195,13 +213,14 @@ def PBKDF1_MS_encryption_probe_matcher(request):
 
 
 def PBKDF1_MS_version_probe_matcher_incorrect(request):
+    body = _body(request)
     if (
-        request.body != "dialogParametersHolder=AAAA"
-        and request.body
+        body != "dialogParametersHolder=AAAA"
+        and body
         != "dialogParametersHolder=RW5hYmxlQXN5bmNVcGxvYWQsRmFsc2UsMyxUcnVlO0RlbGV0ZVBhdGhzLFRydWUsMCxabWs0ZFV4M1BUMHNabWs0ZFV4M1BUMD07RW5hYmxlRW1iZWRkZWRCYXNlU3R5bGVzaGVldCxGYWxzZSwzLFRydWU7UmVuZGVyTW9kZSxGYWxzZSwyLDI7VXBsb2FkUGF0aHMsVHJ1ZSwwLFptazRkVXgzUFQwc1ptazRkVXgzUFQwPTtTZWFyY2hQYXR0ZXJucyxUcnVlLDAsUzJrMGNRPT07RW5hYmxlRW1iZWRkZWRTa2lucyxGYWxzZSwzLFRydWU7TWF4VXBsb2FkRmlsZVNpemUsRmFsc2UsMSwyMDQ4MDA7TG9jYWxpemF0aW9uUGF0aCxGYWxzZSwwLDtGaWxlQnJvd3NlckNvbnRlbnRQcm92aWRlclR5cGVOYW1lLEZhbHNlLDAsO1ZpZXdQYXRocyxUcnVlLDAsWm1rNGRVeDNQVDBzWm1rNGRVeDNQVDA9O0lzU2tpblRvdWNoLEZhbHNlLDMsRmFsc2U7U2NyaXB0TWFuYWdlclByb3BlcnRpZXMsRmFsc2UsMCxDZ29LQ2taaGJITmxDakFLQ2dvSztFeHRlcm5hbERpYWxvZ3NQYXRoLEZhbHNlLDAsO0xhbmd1YWdlLEZhbHNlLDAsWlc0dFZWTT07VGVsZXJpay5EaWFsb2dEZWZpbml0aW9uLkRpYWxvZ1R5cGVOYW1lLEZhbHNlLDAsVkdWc1pYSnBheTVYWldJdVZVa3VSV1JwZEc5eUxrUnBZV3h2WjBOdmJuUnliMnh6TGtSdlkzVnRaVzUwVFdGdVlXZGxja1JwWVd4dlp5d2dWR1ZzWlhKcGF5NVhaV0l1VlVrc0lGWmxjbk5wYjI0OU1qQXhPQzR4TGpFeE55NDBOU3dnUTNWc2RIVnlaVDF1WlhWMGNtRnNMQ0JRZFdKc2FXTkxaWGxVYjJ0bGJqMHhNakZtWVdVM09ERTJOV0poTTJRMDtBbGxvd011bHRpcGxlU2VsZWN0aW9uLEZhbHNlLDMsRmFsc2U%3DL5sb9SKliKw%2Bw6w13%2FzMlFZ52mRvsWTpQO3uN4eQQ7k%3D"
-        and request.body
+        and body
         != "dialogParametersHolder=CaCbLSlA%2F3GG4AJY2Lrkw%2FYyoo9hsLMk7MDf5Ku5qk7ALj2MhWj%2BdiVwDJIpxdOfGYYKT%2BtFcvqOSZPRZZas0cgfM1xZtoJ0rDr0vHZCeKF2MchSI7T4s1rp%2F17FOhy0VFUWETHfD47ah6CDQGtptldvlYp5Iq5FSRMgJrFZ6V8%3D"
-        and request.body
+        and body
         != "dialogParametersHolder=gRRgyE4BOGtN%2FLtBxeEeJDuLj%2FUwIG4oBhO5rCDfPjeH10P8Y02mDK3B%2FtsdOIrwILK7XjQiuTlTZMgHckSyb518JPAo6evNlVTPWD5AZX5l4UIUkfdJvq28UHyeBA4eC58PfA6nG7V2Q97Qwqef6cpbM6t88zvE0wJt8uUKji4ZfyBif4du8JgpDzzdSi%2BlWYd3YhzNbbfKVH%2F0sfraIHOsRvwNwrVc0V%2Fnmn%2BGlqm1rheswSONIo7BzKo04RLb232aDuWcluEWDMFdNJpzpdgcq96mWrs9KttFyRjUZ%2FhUi8ZQi0R4GXCrfHRTAYOq%2B2TNdECbAEfmA4n9Pb0BDDGDfghLV6h%2FbLrUaMWZCx6U5zCQfymn96h1t5acGgfxYMCS%2FYS7WRPytc759VdSM2KhGVmuGlupbxVz5gVOWffo5rTDQxwiPhcWYHTJlN%2FawmJfHJsJV0WvTBaW9nEPL0QeeUEu3jc7OPW9CbVufHb7Rfg7RQ%2F6Gjz5TBlzfY32lcFTsyRolWjxU3%2FVBb09tcN2EJGBnjZxpl6eFsYOvexTx0ykt0PCQagdR0DPFLPsdj7kDMrdDhpMDjsqQA0W06ULEtlR8unWsjavyK0%2B8CuTN%2BkuMzFrH10Wvqb5j3SYwANq3pyEuf3OScByrY8NVz7EzX%2BYQb5%2FByHmXi99NCHbO6ZQyHnM%2BPWYwinlnFrU6f%2BvI2ruMl35dZ%2BWWSGnEdv0DVxiedxWgqDlov31JoGaaffpBs8OO3LhtYqIixQPFbjq2wPrEcHPLgM40eYtJfduPI6exc%2BkKlxFGOyB44XjDuC4VHBPmCCFH%2FguBAatG%2FSZU1z%2Fj%2FJ0YDIVedDDdPg2NtQXjjjidSW8ISbfOk1SoLSFz04F9BmmMnPVsg9Dvtbbf%2Bz%2FhudrAo9Ys%2Fa6OzksFXxwQ%2FcSIDYVAsYkRjDMcgRv6erm8bBqgABiSF7SwBLkL75mI18fA3qCxgYDrcXZJYCIbS%2BQg9QiROf7PnRBcrnAg0G2ArfRY5gQE69DA4hvUFuXZvCbVbqQGZs7TrKNqBH40DzPqKFqhBKawuCF84zc08QzWVdbl92rAUl%2FbGi6RYzgx27pPzu7LbYLl4G8a5vtVZjuK7SchY0B7FfMvF3uQA%2FY4G%2FjqDGqGshadxalKPmwfUNbDSaatepav%2Bx4zfzQhn6cV2r8t1qz1TfHypR%2BCaAEVhEa36reVmWrAKXjr0JFOSSAQJTti%2BKhNRhaVPTgVI%2BsX%2F0pf8Fn0Zvv%2FbPL9C9L1pEAco%2FGIOV9AHNoh5E18zHcmINA2HmoZWha91ONomoIGvWnlM5USb%2FYSrXZuJDsSFFU9oal%2F45NDUNWlNVsXD%2B8RvuVsl1DY7i9iftU%2FtZpskuIldUFYmXWgMWCwk6sQAaARQoQKBEvCL6OV8UcD3bsde0ubcUG9oH140jsAW6Yh7okoKYZlL2xtp4ba7o8CS3R%2FduPuJLFY6fUexkHpvKj1Nn%2B31oQSjRywNhDdNvlczG4Z2LI73TdsZuCKnSPHNF7DNtOxmeGKZl9z9utufWZIb1FetBPy97bOOVKx69nZYTjmfv7hzBuEd5SweBD9QA2WspaycH9H01R4IXXcnrWKHkkaaVS3jDR%2F%2Bll4S0yGKlVT8EiRqLcZVX6mP2C7tmpbTE1tE%2F5ydEXkHMQ4Q75MDhO6F24ahX2rF%2FyfzuAMnR784wtXAM2E3hvVbCzu1rS9Xy1O7uSL%2Fzw1PxRlBZ%2FTwP00bUw22fQfnye%2Fb5s1NmvpWcrSX6tUNlK%2BrCHlfKSxWVhMWiZOqjMq9chUja87UzhcVXYBWZqhfuGsbRIoDQ40P6k7LDTuuzR7UuMU0nPFvGXsfwyu4UQzQppBmjwdQQlpo9GK2XAR7M2Wj5XNB5yZ3n8uMfW%2BktjiC0yW9bo0BVtvvmEOayXYwXyndHauAcJ0HpHnRLtnzNKnTKI3IY%2Fl4kYFS%2BiYUk6n0nd2eVKroYdrMjKZehZmpwmXfU3%2FWpwmt6HK%2FWKAWZzjlEUaN5zDbG%2BtGNxrjYaVvJuDn2uVtmozVU8dbCdz82O6sukqV5QZ86FFImnlZPOKcSHIFq%2F%2B1AdBG%2FUEKZ28aaadpm11H4ovyjAawjFwoWhtDsJB%2F1YbGDIqlKJ40ZOav8gu1Q%2Bv9UtpaQsDfm84FjlzlmwRQn2LF%2FBZLNmAjc8uug0sItSc2bX9d7gR9EWc3KML3PiBecc%2B6LfUkd5WyqHKPP%2FHDETbor16YGv%2Bt3d6KNtQgY3p%2B2Y8kVRCqtngKNzuid%2FXOmNTpwgKgj69id3uo8asDGcs%2B%2FVu5WjbkDNF%2FJlg2TWyTzwpr53wOKmm6tsWwf2FYScCHzXvfWjxHIR9qyGtIOembCqhaK%2Bv7NYDhaI8dAOtvz2su0yzecbzGa65MlwPIyRmv458OLvCMd1BLubANPxC3YfpMHm7x0JllAwNm4K%2BfM73Qkk6jsLwAr28YC1rvMCRONv4Q0sqEpuXfGbS212hv2LeVMq9wrORW353yq2MeRDxFnc2v0oTtVL9D7nlAlBXotJu4rT%2FzhFkH%2Be%2Fbmcbe1sgbaR4BIqrp65Nwq7RjjbB8FX8fi3xA%2BVE68b9DwmAMsub7oVbmI%2B09Wf85hjYjV5fS1xHdKqT6GRTqF9HhkiRxSIDKXzMM7pBXvzwuG%2BOWTVEBOgctSA2alhhyKvUBizsrW6TO%2FSPoX8n%2Fg3qUfufYGrb05PuoeDayC9iZEzmYc%3D"
     ):
         return True
@@ -239,12 +258,8 @@ def test_examples_telerik_knownkey_argparsing(monkeypatch, capsys):
 
 def test_non_telerik_ui(monkeypatch, capsys):
     # Non-Telerk UI is detected
-    with requests_mock.Mocker() as m:
-        m.get(
-            f"http://nottelerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            status_code=200,
-            text="<html><p>Just a regular website</p></html>",
-        )
+    with respx.mock:
+        respx.get("http://nottelerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text="<html><p>Just a regular website</p></html>")
         monkeypatch.setattr(
             "sys.argv",
             ["python", "--url", "http://nottelerik.com/Telerik.Web.UI.DialogHandler.aspx"],
@@ -256,10 +271,10 @@ def test_non_telerik_ui(monkeypatch, capsys):
 
 
 def test_url_not_up(monkeypatch, capsys):
-    with requests_mock.Mocker() as m:
+    with respx.mock:
         # URL is down - handled correctly
         with patch("sys.exit") as exit_mock:
-            m.get(f"http://notreal.com/", exc=requests.exceptions.ConnectTimeout)
+            respx.get("http://notreal.com/").mock(side_effect=httpx.ConnectTimeout("error"))
             monkeypatch.setattr("sys.argv", ["python", "--url", "http://notreal.com"])
             telerik_knownkey.main()
             captured = capsys.readouterr()
@@ -280,40 +295,22 @@ def test_fullrun_PBKDF2(monkeypatch, capsys, mocker):
     mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
     mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
         # Basic Probe Detects Telerik
-        m.get(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", status_code=200, text=partial_dialog_page
-        )
+        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
 
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_found_key_matcher,
-            status_code=200,
-            text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array",
-        )
+        def _post_dispatcher(request):
+            if PBKDF2_version_probe_matcher_incorrect(request):
+                return httpx.Response(200, text="Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)")
+            if PBKDF2_version_probe_matcher(request):
+                return httpx.Response(200, text="DoesntMatter")
+            if PBKDF2_found_key_matcher_negative(request):
+                return httpx.Response(200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>")
+            if PBKDF2_found_key_matcher(request):
+                return httpx.Response(200, text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array")
+            return httpx.Response(200)
 
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_found_key_matcher_negative,
-            status_code=200,
-            text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>",
-        )
-
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_version_probe_matcher,
-            status_code=200,
-            text="DoesntMatter",
-        )
-
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_version_probe_matcher_incorrect,
-            status_code=200,
-            text="Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
-        )
-
+        respx.post("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             ["python", "--url", "http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx"],
@@ -342,40 +339,22 @@ def test_fullrun_PBKDF2_version_customkeys(monkeypatch, capsys, mocker):
     mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
     mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
         # Basic Probe Detects Telerik
-        m.get(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", status_code=200, text=partial_dialog_page
-        )
+        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
 
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_found_key_matcher,
-            status_code=200,
-            text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array",
-        )
+        def _post_dispatcher(request):
+            if PBKDF2_version_probe_matcher_incorrect(request):
+                return httpx.Response(200, text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)")
+            if PBKDF2_version_probe_matcher(request):
+                return httpx.Response(200, text="DoesntMatter")
+            if PBKDF2_found_key_matcher_negative(request):
+                return httpx.Response(200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>")
+            if PBKDF2_found_key_matcher(request):
+                return httpx.Response(200, text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array")
+            return httpx.Response(200)
 
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_found_key_matcher_negative,
-            status_code=200,
-            text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>",
-        )
-
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_version_probe_matcher,
-            status_code=200,
-            text="DoesntMatter",
-        )
-
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_version_probe_matcher_incorrect,
-            status_code=200,
-            text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
-        )
-
+        respx.post("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             [
@@ -414,40 +393,22 @@ def test_fullrun_PBKDF2_modern_dialog_params(monkeypatch, capsys, mocker):
     mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
     mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
         # Basic Probe Detects Telerik
-        m.get(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", status_code=200, text=partial_dialog_page
-        )
+        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
 
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_found_key_matcher,
-            status_code=200,
-            text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array",
-        )
+        def _post_dispatcher(request):
+            if PBKDF2_version_probe_matcher_incorrect_modern(request):
+                return httpx.Response(200, text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)")
+            if PBKDF2_version_probe_matcher_modern(request):
+                return httpx.Response(200, text="DoesntMatter")
+            if PBKDF2_found_key_matcher_negative(request):
+                return httpx.Response(200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>")
+            if PBKDF2_found_key_matcher(request):
+                return httpx.Response(200, text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array")
+            return httpx.Response(200)
 
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_found_key_matcher_negative,
-            status_code=200,
-            text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>",
-        )
-
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_version_probe_matcher_modern,
-            status_code=200,
-            text="DoesntMatter",
-        )
-
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_version_probe_matcher_incorrect_modern,
-            status_code=200,
-            text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
-        )
-
+        respx.post("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             [
@@ -485,40 +446,22 @@ def test_nomatch_PBKDF2(monkeypatch, capsys, mocker):
     mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
     mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
         # Basic Probe Detects Telerik presence
-        m.get(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", status_code=200, text=partial_dialog_page
-        )
+        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
 
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_found_key_matcher,
-            status_code=200,
-            text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array",
-        )
+        def _post_dispatcher(request):
+            if PBKDF2_version_probe_matcher_incorrect(request):
+                return httpx.Response(200, text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)")
+            if PBKDF2_version_probe_matcher(request):
+                return httpx.Response(200, text="DoesntMatter")
+            if PBKDF2_found_key_matcher_negative(request):
+                return httpx.Response(200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>")
+            if PBKDF2_found_key_matcher(request):
+                return httpx.Response(200, text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array")
+            return httpx.Response(200)
 
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_found_key_matcher_negative,
-            status_code=200,
-            text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>",
-        )
-
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_version_probe_matcher,
-            status_code=200,
-            text="DoesntMatter",
-        )
-
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_version_probe_matcher_incorrect,
-            status_code=200,
-            text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
-        )
-
+        respx.post("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             [
@@ -554,49 +497,24 @@ def test_fullrun_PBKDF1_MS(monkeypatch, capsys, mocker):
         return_value=iter(["Not_The_Real_HaSh_Key", "YOUR_ENCRYPTION_KEY_TO_GO_HERE", "Y3t_anoth3r_f@k3_key"]),
     )
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
         # Basic Probe Detects Telerik
-        m.get(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            status_code=200,
-            text=partial_dialog_page,
-        )
+        respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
 
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_found_key_matcher,
-            status_code=200,
-            text="<div>Error Message:The input data is not a complete block.</div>",
-        )
+        def _post_dispatcher(request):
+            if PBKDF1_MS_version_probe_matcher_incorrect(request):
+                return httpx.Response(200, text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)")
+            if PBKDF1_MS_encryption_probe_matcher(request):
+                return httpx.Response(200, text="<div>Error Message:Index was outside the bounds of the array.</div>")
+            if PBKDF1_MS_probe_matcher(request):
+                return httpx.Response(200, text="Error Message:Length cannot be less than zero")
+            if PBKDF1_MS_found_key_matcher_negative(request):
+                return httpx.Response(200, text="<div>Error Message:The hash is not valid!</div>")
+            if PBKDF1_MS_found_key_matcher(request):
+                return httpx.Response(200, text="<div>Error Message:The input data is not a complete block.</div>")
+            return httpx.Response(200)
 
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_found_key_matcher_negative,
-            status_code=200,
-            text="<div>Error Message:The hash is not valid!</div>",
-        )
-
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_probe_matcher,
-            status_code=200,
-            text="Error Message:Length cannot be less than zero",
-        )
-
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_encryption_probe_matcher,
-            status_code=200,
-            text="<div>Error Message:Index was outside the bounds of the array.</div>",
-        )
-
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_version_probe_matcher_incorrect,
-            status_code=200,
-            text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
-        )
-
+        respx.post("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--debug"],
@@ -639,48 +557,24 @@ def test_misctest_PBKDF1_MS(monkeypatch, capsys, mocker):
         return_value=iter(["Not_The_Real_HaSh_Key", "YOUR_ENCRYPTION_KEY_TO_GO_HERE", "Y3t_anoth3r_f@k3_key"]),
     )
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
 
-        m.get(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            status_code=200,
-            text=partial_dialog_page,
-        )
+        respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
 
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_found_key_matcher,
-            status_code=200,
-            text="<div>Error Message:The input data is not a complete block.</div>",
-        )
+        def _post_dispatcher(request):
+            if PBKDF1_MS_version_probe_matcher_incorrect(request):
+                return httpx.Response(500)
+            if PBKDF1_MS_encryption_probe_matcher(request):
+                return httpx.Response(200, text="<div>Error Message:Index was outside the bounds of the array.</div>")
+            if PBKDF1_MS_probe_matcher(request):
+                return httpx.Response(200, text="Error Message:Length cannot be less than zero")
+            if PBKDF1_MS_found_key_matcher_negative(request):
+                return httpx.Response(200, text="<div>Error Message:The hash is not valid!</div>")
+            if PBKDF1_MS_found_key_matcher(request):
+                return httpx.Response(200, text="<div>Error Message:The input data is not a complete block.</div>")
+            return httpx.Response(200)
 
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_found_key_matcher_negative,
-            status_code=200,
-            text="<div>Error Message:The hash is not valid!</div>",
-        )
-
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_probe_matcher,
-            status_code=200,
-            text="Error Message:Length cannot be less than zero",
-        )
-
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_encryption_probe_matcher,
-            status_code=200,
-            text="<div>Error Message:Index was outside the bounds of the array.</div>",
-        )
-
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_version_probe_matcher_incorrect,
-            status_code=500,
-        )
-
+        respx.post("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--debug"],
@@ -707,28 +601,18 @@ def test_nomatch_PBKDF1_MS(monkeypatch, capsys, mocker):
     mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
     mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
 
-        m.get(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            status_code=200,
-            text=partial_dialog_page,
-        )
+        respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
 
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=pre2017_matcher_probe,
-            status_code=200,
-            text="<div style='color:red'>Cannot deserialize dialog parameters. Please refresh the editor page.</div><div>Error Message:The input is not a valid Base-64 string as it contains a non-base 64 character, more than two padding characters, or an illegal character among the padding characters. </div>",
-        )
+        def _post_dispatcher(request):
+            if pre2017_matcher_probe(request):
+                return httpx.Response(200, text="<div style='color:red'>Cannot deserialize dialog parameters. Please refresh the editor page.</div><div>Error Message:The input is not a valid Base-64 string as it contains a non-base 64 character, more than two padding characters, or an illegal character among the padding characters. </div>")
+            if pre2017_matcher(request):
+                return httpx.Response(200, text="<div style='color:red'>Cannot deserialize dialog parameters. Please refresh the editor page.</div><div>Error Message:Invalid length for a Base-64 char array or string.</div>")
+            return httpx.Response(200)
 
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=pre2017_matcher,
-            status_code=200,
-            text="<div style='color:red'>Cannot deserialize dialog parameters. Please refresh the editor page.</div><div>Error Message:Invalid length for a Base-64 char array or string.</div>",
-        )
-
+        respx.post("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--debug"],
@@ -751,28 +635,18 @@ def test_badoutput_PBKDF1_MS(monkeypatch, capsys, mocker):
     mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
     mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
         with patch("sys.exit") as exit_mock:
-            m.get(
-                f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-                status_code=200,
-                text=partial_dialog_page,
-            )
+            respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
 
-            m.post(
-                f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-                additional_matcher=pre2017_matcher_probe,
-                status_code=200,
-                text="garbage data",
-            )
+            def _post_dispatcher(request):
+                if pre2017_matcher_probe(request):
+                    return httpx.Response(200, text="garbage data")
+                if pre2017_matcher(request):
+                    return httpx.Response(200, text="garbage data")
+                return httpx.Response(200)
 
-            m.post(
-                f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-                additional_matcher=pre2017_matcher,
-                status_code=200,
-                text="garbage data",
-            )
-
+            respx.post("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
             monkeypatch.setattr(
                 "sys.argv",
                 ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--debug"],
@@ -797,28 +671,19 @@ def test_fullrun_asyncupload_earlydetection(monkeypatch, capsys, mocker):
     mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
     mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
 
         # Basic Probe Detects Telerik
-        m.get(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            status_code=200,
-            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
-        )
+        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }')
 
-        m.post(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            additional_matcher=asyncupload_early_result_matcher,
-            status_code=500,
-            text="<title>telerik</title><b> Exception Details: </b>System.IO.FileLoadException: Could not load file or assembly 'Telerik.Web.UI, Version=2022.3.1109, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)<br><br>",
-        )
+        def _post_dispatcher(request):
+            if asyncupload_early_result_matcher_incorrect(request):
+                return httpx.Response(500)
+            if asyncupload_early_result_matcher(request):
+                return httpx.Response(500, text="<title>telerik</title><b> Exception Details: </b>System.IO.FileLoadException: Could not load file or assembly 'Telerik.Web.UI, Version=2022.3.1109, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)<br><br>")
+            return httpx.Response(200)
 
-        m.post(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            additional_matcher=asyncupload_early_result_matcher_incorrect,
-            status_code=500,
-        )
-
+        respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force", "--debug"],
@@ -845,28 +710,19 @@ def test_fullrun_asyncupload_success(monkeypatch, capsys, mocker):
     mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
     mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
 
         # Basic Probe Detects Telerik
-        m.get(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            status_code=200,
-            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
-        )
+        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }')
 
-        m.post(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            additional_matcher=asyncupload_found_key_matcher,
-            status_code=200,
-            text='{"fileInfo":{"FileName":"1c72ebb0","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}, "metaData":"a+pkVM70XskLLvpXsOGH+RUEWaNgrvi2EGIZcUrVQ4rr7hIwpIcHtxyJsGCQYWy5tgSKmK58kIk/HpDDs9Gh2qnaFi3m+pe0kb4xb8s6zIkxQYrYGrfj7EesKwvuY6HUn+y3GwesijRrVsPpt0/N5FYxu4ptrsmjWfIM65XOe8b47kLO/Rpx/4/lfJyT9ZFsFuvSZmJzWDdoV40wu5ROK9DVnU26ztRRCwpnqqxmeKvdSGpYwd/d1gisJy0i5UVNFuvRT2XC32eDiw3Kn9GOrRldOHtq5WAQWu2YzVmxr/NOmvjg3NpRLtbxU+h9D0u0K/B3kRYliO+XlCpG+l/QMLh2nAjQehNvaCG3wJ4dkW9JHHeNzbPyd+tNrlSBj6/Z+b/Ld2HCk3XydTRHuUyzqk8bC6rEHGdclNPmTIS2X0IZaI0wTctsnPHxiruwdWVNjepnaSv5IHHYFH3WhCzKy6cLPES0cAuVgxycs+49nuj7kL/JzqT6iJm0YZd/Qjo4" }',
-        )
+        def _post_dispatcher(request):
+            if asyncupload_found_key_matcher_incorrect(request):
+                return httpx.Response(500)
+            if asyncupload_found_key_matcher(request):
+                return httpx.Response(200, text='{"fileInfo":{"FileName":"1c72ebb0","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}, "metaData":"a+pkVM70XskLLvpXsOGH+RUEWaNgrvi2EGIZcUrVQ4rr7hIwpIcHtxyJsGCQYWy5tgSKmK58kIk/HpDDs9Gh2qnaFi3m+pe0kb4xb8s6zIkxQYrYGrfj7EesKwvuY6HUn+y3GwesijRrVsPpt0/N5FYxu4ptrsmjWfIM65XOe8b47kLO/Rpx/4/lfJyT9ZFsFuvSZmJzWDdoV40wu5ROK9DVnU26ztRRCwpnqqxmeKvdSGpYwd/d1gisJy0i5UVNFuvRT2XC32eDiw3Kn9GOrRldOHtq5WAQWu2YzVmxr/NOmvjg3NpRLtbxU+h9D0u0K/B3kRYliO+XlCpG+l/QMLh2nAjQehNvaCG3wJ4dkW9JHHeNzbPyd+tNrlSBj6/Z+b/Ld2HCk3XydTRHuUyzqk8bC6rEHGdclNPmTIS2X0IZaI0wTctsnPHxiruwdWVNjepnaSv5IHHYFH3WhCzKy6cLPES0cAuVgxycs+49nuj7kL/JzqT6iJm0YZd/Qjo4" }')
+            return httpx.Response(200)
 
-        m.post(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            additional_matcher=asyncupload_found_key_matcher_incorrect,
-            status_code=500,
-        )
-
+        respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force", "--debug"],
@@ -891,28 +747,19 @@ def test_fullrun_asyncupload_success_version_customkeys(monkeypatch, capsys, moc
     mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
     mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
 
         # Basic Probe Detects Telerik
-        m.get(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            status_code=200,
-            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
-        )
+        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }')
 
-        m.post(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            additional_matcher=asyncupload_found_key_matcher,
-            status_code=200,
-            text='{"fileInfo":{"FileName":"1c72ebb0","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}, "metaData":"a+pkVM70XskLLvpXsOGH+RUEWaNgrvi2EGIZcUrVQ4rr7hIwpIcHtxyJsGCQYWy5tgSKmK58kIk/HpDDs9Gh2qnaFi3m+pe0kb4xb8s6zIkxQYrYGrfj7EesKwvuY6HUn+y3GwesijRrVsPpt0/N5FYxu4ptrsmjWfIM65XOe8b47kLO/Rpx/4/lfJyT9ZFsFuvSZmJzWDdoV40wu5ROK9DVnU26ztRRCwpnqqxmeKvdSGpYwd/d1gisJy0i5UVNFuvRT2XC32eDiw3Kn9GOrRldOHtq5WAQWu2YzVmxr/NOmvjg3NpRLtbxU+h9D0u0K/B3kRYliO+XlCpG+l/QMLh2nAjQehNvaCG3wJ4dkW9JHHeNzbPyd+tNrlSBj6/Z+b/Ld2HCk3XydTRHuUyzqk8bC6rEHGdclNPmTIS2X0IZaI0wTctsnPHxiruwdWVNjepnaSv5IHHYFH3WhCzKy6cLPES0cAuVgxycs+49nuj7kL/JzqT6iJm0YZd/Qjo4" }',
-        )
+        def _post_dispatcher(request):
+            if asyncupload_found_key_matcher_incorrect(request):
+                return httpx.Response(500)
+            if asyncupload_found_key_matcher(request):
+                return httpx.Response(200, text='{"fileInfo":{"FileName":"1c72ebb0","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}, "metaData":"a+pkVM70XskLLvpXsOGH+RUEWaNgrvi2EGIZcUrVQ4rr7hIwpIcHtxyJsGCQYWy5tgSKmK58kIk/HpDDs9Gh2qnaFi3m+pe0kb4xb8s6zIkxQYrYGrfj7EesKwvuY6HUn+y3GwesijRrVsPpt0/N5FYxu4ptrsmjWfIM65XOe8b47kLO/Rpx/4/lfJyT9ZFsFuvSZmJzWDdoV40wu5ROK9DVnU26ztRRCwpnqqxmeKvdSGpYwd/d1gisJy0i5UVNFuvRT2XC32eDiw3Kn9GOrRldOHtq5WAQWu2YzVmxr/NOmvjg3NpRLtbxU+h9D0u0K/B3kRYliO+XlCpG+l/QMLh2nAjQehNvaCG3wJ4dkW9JHHeNzbPyd+tNrlSBj6/Z+b/Ld2HCk3XydTRHuUyzqk8bC6rEHGdclNPmTIS2X0IZaI0wTctsnPHxiruwdWVNjepnaSv5IHHYFH3WhCzKy6cLPES0cAuVgxycs+49nuj7kL/JzqT6iJm0YZd/Qjo4" }')
+            return httpx.Response(200)
 
-        m.post(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            additional_matcher=asyncupload_found_key_matcher_incorrect,
-            status_code=500,
-        )
-
+        respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             [
@@ -937,28 +784,19 @@ def test_fullrun_asyncupload_success_version_customkeys(monkeypatch, capsys, moc
 
 
 def test_fullrun_asyncupload_PBKDF1_MS(monkeypatch, capsys, mocker):
-    with requests_mock.Mocker() as m:
+    with respx.mock:
 
         # Basic Probe Detects Telerik
-        m.get(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            status_code=200,
-            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
-        )
+        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }')
 
-        m.post(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            additional_matcher=asyncupload_found_key_matcher_PBKDF1_MS,
-            status_code=200,
-            text='{"fileInfo":{"FileName":"1c72ebb0","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}, "metaData":"a+pkVM70XskLLvpXsOGH+RUEWaNgrvi2EGIZcUrVQ4rr7hIwpIcHtxyJsGCQYWy5tgSKmK58kIk/HpDDs9Gh2qnaFi3m+pe0kb4xb8s6zIkxQYrYGrfj7EesKwvuY6HUn+y3GwesijRrVsPpt0/N5FYxu4ptrsmjWfIM65XOe8b47kLO/Rpx/4/lfJyT9ZFsFuvSZmJzWDdoV40wu5ROK9DVnU26ztRRCwpnqqxmeKvdSGpYwd/d1gisJy0i5UVNFuvRT2XC32eDiw3Kn9GOrRldOHtq5WAQWu2YzVmxr/NOmvjg3NpRLtbxU+h9D0u0K/B3kRYliO+XlCpG+l/QMLh2nAjQehNvaCG3wJ4dkW9JHHeNzbPyd+tNrlSBj6/Z+b/Ld2HCk3XydTRHuUyzqk8bC6rEHGdclNPmTIS2X0IZaI0wTctsnPHxiruwdWVNjepnaSv5IHHYFH3WhCzKy6cLPES0cAuVgxycs+49nuj7kL/JzqT6iJm0YZd/Qjo4" }',
-        )
+        def _post_dispatcher(request):
+            if asyncupload_found_key_matcher_PBKDF1_MS_incorrect(request):
+                return httpx.Response(500)
+            if asyncupload_found_key_matcher_PBKDF1_MS(request):
+                return httpx.Response(200, text='{"fileInfo":{"FileName":"1c72ebb0","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}, "metaData":"a+pkVM70XskLLvpXsOGH+RUEWaNgrvi2EGIZcUrVQ4rr7hIwpIcHtxyJsGCQYWy5tgSKmK58kIk/HpDDs9Gh2qnaFi3m+pe0kb4xb8s6zIkxQYrYGrfj7EesKwvuY6HUn+y3GwesijRrVsPpt0/N5FYxu4ptrsmjWfIM65XOe8b47kLO/Rpx/4/lfJyT9ZFsFuvSZmJzWDdoV40wu5ROK9DVnU26ztRRCwpnqqxmeKvdSGpYwd/d1gisJy0i5UVNFuvRT2XC32eDiw3Kn9GOrRldOHtq5WAQWu2YzVmxr/NOmvjg3NpRLtbxU+h9D0u0K/B3kRYliO+XlCpG+l/QMLh2nAjQehNvaCG3wJ4dkW9JHHeNzbPyd+tNrlSBj6/Z+b/Ld2HCk3XydTRHuUyzqk8bC6rEHGdclNPmTIS2X0IZaI0wTctsnPHxiruwdWVNjepnaSv5IHHYFH3WhCzKy6cLPES0cAuVgxycs+49nuj7kL/JzqT6iJm0YZd/Qjo4" }')
+            return httpx.Response(200)
 
-        m.post(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            additional_matcher=asyncupload_found_key_matcher_PBKDF1_MS_incorrect,
-            status_code=500,
-        )
-
+        respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             ["python", "--url", "http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd", "--force", "--debug"],
@@ -980,20 +818,12 @@ def test_verbose_error_parsing_PBKDF1_MS(monkeypatch, capsys, mocker):
         lambda x: None,
     )
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
 
         # Basic Probe Detects Telerik
-        m.get(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            status_code=200,
-            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
-        )
+        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }')
 
-        m.post(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            status_code=200,
-            text="<b> Exception Details: </b>System.Security.Cryptography.CryptographicException: Padding is invalid and cannot be removed.<br><br>",
-        )
+        respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text="<b> Exception Details: </b>System.Security.Cryptography.CryptographicException: Padding is invalid and cannot be removed.<br><br>")
 
         monkeypatch.setattr(
             "sys.argv",
@@ -1016,20 +846,12 @@ def test_verbose_error_parsing_notdetermined_PBKDF1_MS(monkeypatch, capsys, mock
         lambda x: None,
     )
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
 
         # Basic Probe Detects Telerik
-        m.get(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            status_code=200,
-            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
-        )
+        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }')
 
-        m.post(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            status_code=200,
-            text="<b> Exception Details: garbage",
-        )
+        respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text="<b> Exception Details: garbage")
 
         monkeypatch.setattr(
             "sys.argv",
@@ -1050,17 +872,12 @@ def test_verbose_error_parsing_PBKDF2(monkeypatch, capsys, mocker):
         lambda x: None,
     )
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
 
         # Basic Probe Detects Telerik
-        m.get(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            status_code=200,
-            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
-        )
+        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }')
 
-        m.post(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
+        respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(
             status_code=200,
             text='<b> Exception Details: </b>System.Security.Cryptography.CryptographicException: The cryptographic operation has failed!<br><br><b>Stack Trace:</b> <br><br><table width=100% bgcolor="#ffffcc"><tr><td>code><pre>[CryptographicException: The cryptographic operation has failed!]Telerik.Web.UI.CryptoExceptionThrower.ThrowGenericCryptoException() +62',
         )
@@ -1089,40 +906,22 @@ def test_fullrun_PBKDF2_onlyhashkeyfound(monkeypatch, capsys, mocker):
     mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
     mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
         # Basic Probe Detects Telerik
-        m.get(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", status_code=200, text=partial_dialog_page
-        )
+        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
 
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_found_key_matcher,
-            status_code=200,
-            text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array",
-        )
+        def _post_dispatcher(request):
+            if PBKDF2_version_probe_matcher_incorrect(request):
+                return httpx.Response(200, text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)")
+            if PBKDF2_version_probe_matcher(request):
+                return httpx.Response(200, text="DoesntMatter")
+            if PBKDF2_found_key_matcher_negative(request):
+                return httpx.Response(200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>")
+            if PBKDF2_found_key_matcher(request):
+                return httpx.Response(200, text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array")
+            return httpx.Response(200)
 
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_found_key_matcher_negative,
-            status_code=200,
-            text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>",
-        )
-
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_version_probe_matcher,
-            status_code=200,
-            text="DoesntMatter",
-        )
-
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_version_probe_matcher_incorrect,
-            status_code=200,
-            text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
-        )
-
+        respx.post("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             ["python", "--url", "http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx"],
@@ -1146,49 +945,24 @@ def test_fullrun_PBKDF1_MS_customkeys(monkeypatch, capsys, mocker):
         return_value=iter(["Not_The_Real_HaSh_Key", "Y3t_anoth3r_f@k3_key"]),
     )
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
         # Basic Probe Detects Telerik
-        m.get(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            status_code=200,
-            text=partial_dialog_page,
-        )
+        respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
 
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_found_key_matcher,
-            status_code=200,
-            text="<div>Error Message:The input data is not a complete block.</div>",
-        )
+        def _post_dispatcher(request):
+            if PBKDF1_MS_version_probe_matcher_incorrect(request):
+                return httpx.Response(200, text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)")
+            if PBKDF1_MS_encryption_probe_matcher(request):
+                return httpx.Response(200, text="<div>Error Message:Index was outside the bounds of the array.</div>")
+            if PBKDF1_MS_probe_matcher(request):
+                return httpx.Response(200, text="Error Message:Length cannot be less than zero")
+            if PBKDF1_MS_found_key_matcher_negative(request):
+                return httpx.Response(200, text="<div>Error Message:The hash is not valid!</div>")
+            if PBKDF1_MS_found_key_matcher(request):
+                return httpx.Response(200, text="<div>Error Message:The input data is not a complete block.</div>")
+            return httpx.Response(200)
 
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_found_key_matcher_negative,
-            status_code=200,
-            text="<div>Error Message:The hash is not valid!</div>",
-        )
-
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_probe_matcher,
-            status_code=200,
-            text="Error Message:Length cannot be less than zero",
-        )
-
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_encryption_probe_matcher,
-            status_code=200,
-            text="<div>Error Message:Index was outside the bounds of the array.</div>",
-        )
-
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_version_probe_matcher_incorrect,
-            status_code=200,
-            text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
-        )
-
+        respx.post("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             [
@@ -1225,49 +999,24 @@ def test_fullrun_PBKDF1_MS_customkeys_onlyhashkeyfound(monkeypatch, capsys, mock
         return_value=iter(["Not_The_Real_HaSh_Key", "Y3t_anoth3r_f@k3_key"]),
     )
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
         # Basic Probe Detects Telerik
-        m.get(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            status_code=200,
-            text=partial_dialog_page,
-        )
+        respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
 
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_found_key_matcher,
-            status_code=200,
-            text="<div>Error Message:The input data is not a complete block.</div>",
-        )
+        def _post_dispatcher(request):
+            if PBKDF1_MS_version_probe_matcher_incorrect(request):
+                return httpx.Response(200, text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)")
+            if PBKDF1_MS_encryption_probe_matcher(request):
+                return httpx.Response(200, text="<div>Error Message:Index was outside the bounds of the array.</div>")
+            if PBKDF1_MS_probe_matcher(request):
+                return httpx.Response(200, text="Error Message:Length cannot be less than zero")
+            if PBKDF1_MS_found_key_matcher_negative(request):
+                return httpx.Response(200, text="<div>Error Message:The hash is not valid!</div>")
+            if PBKDF1_MS_found_key_matcher(request):
+                return httpx.Response(200, text="<div>Error Message:The input data is not a complete block.</div>")
+            return httpx.Response(200)
 
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_found_key_matcher_negative,
-            status_code=200,
-            text="<div>Error Message:The hash is not valid!</div>",
-        )
-
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_probe_matcher,
-            status_code=200,
-            text="Error Message:Length cannot be less than zero",
-        )
-
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_encryption_probe_matcher,
-            status_code=200,
-            text="<div>Error Message:Index was outside the bounds of the array.</div>",
-        )
-
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_version_probe_matcher_incorrect,
-            status_code=200,
-            text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
-        )
-
+        respx.post("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             [
@@ -1298,40 +1047,22 @@ def test_fullrun_PBKDF2_version_customkeys_nogoodversion(monkeypatch, capsys, mo
     mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
     mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
         # Basic Probe Detects Telerik
-        m.get(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", status_code=200, text=partial_dialog_page
-        )
+        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
 
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_found_key_matcher,
-            status_code=200,
-            text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array",
-        )
+        def _post_dispatcher(request):
+            if PBKDF2_version_probe_matcher_incorrect(request):
+                return httpx.Response(200, text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)")
+            if PBKDF2_version_probe_matcher(request):
+                return httpx.Response(200, text="DoesntMatter")
+            if PBKDF2_found_key_matcher_negative(request):
+                return httpx.Response(200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>")
+            if PBKDF2_found_key_matcher(request):
+                return httpx.Response(200, text="Please refresh the editor page.</div><div>Error Message:Index was outside the bounds of the array")
+            return httpx.Response(200)
 
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_found_key_matcher_negative,
-            status_code=200,
-            text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>",
-        )
-
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_version_probe_matcher,
-            status_code=200,
-            text="DoesntMatter",
-        )
-
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF2_version_probe_matcher_incorrect,
-            status_code=200,
-            text="<title>telerik</title>Could not load file or assembly 'Telerik.Web.UI, Version=1984.5.622, Culture=neutral, PublicKeyToken=121fae78165ba3d4' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)",
-        )
-
+        respx.post("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             [
@@ -1365,20 +1096,12 @@ def test_asyncupload_failure_no_keys_found(monkeypatch, capsys, mocker):
     mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
     mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
         # Basic Probe Detects Telerik
-        m.get(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            status_code=200,
-            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
-        )
+        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }')
 
-        # All requests return failure
-        m.post(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            status_code=500,
-            text="Some error",
-        )
+        # All POST requests return failure
+        respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=500, text="Some error")
 
         monkeypatch.setattr(
             "sys.argv",
@@ -1402,20 +1125,12 @@ def test_asyncupload_success_with_hashkey(monkeypatch, capsys, mocker):
     mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
     mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
         # Basic Probe Detects Telerik
-        m.get(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            status_code=200,
-            text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }',
-        )
+        respx.get("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{ "message" : "RadAsyncUpload handler is registered succesfully, however, it may not be accessed directly." }')
 
         # Success response that includes fileInfo
-        m.post(
-            f"http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd",
-            status_code=200,
-            text='{"fileInfo":{"FileName":"test","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}}',
-        )
+        respx.post("http://asyncupload.telerik.com/Telerik.Web.UI.WebResource.axd").respond(status_code=200, text='{"fileInfo":{"FileName":"test","ContentType":"text/html","ContentLength":8,"DateJson":"2020-01-02T08:02:01.067Z","Index":0}}')
 
         monkeypatch.setattr(
             "sys.argv",
@@ -1456,12 +1171,12 @@ def test_dialoghandler_probe_version_with_title(monkeypatch, capsys, mocker):
     dh.telerik_hashkey = mocker.Mock()
     dh.telerik_hashkey.sign_enc_dialog_params.return_value = "signed_params"
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
         # Mock a response with title that has different size than baseline
-        def response_with_title(request, context):
-            return "<html><head><title>Test Telerik Page</title></head><body>Test response with different size</body></html>"
+        def response_with_title(request):
+            return httpx.Response(200, text="<html><head><title>Test Telerik Page</title></head><body>Test response with different size</body></html>")
 
-        m.post("http://test.com", text=response_with_title)
+        respx.post("http://test.com").mock(side_effect=response_with_title)
 
         # Call probe_version directly with a test version
         dh.probe_version("2018.1.117", baseline_size=100)
@@ -1476,20 +1191,15 @@ def test_dialoghandler_detect_derive_function_responses(monkeypatch, capsys, moc
     """Test DialogHandler detect_derive_function with different server error response messages"""
 
     # Test case 1: Exception response leading to PBKDF2 detection
-    with requests_mock.Mocker() as m:
-        m.get(
-            f"http://test.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            status_code=200,
-            text=partial_dialog_page,
-        )
+    with respx.mock:
+        respx.get("http://test.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
 
-        m.post(
-            f"http://test.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_probe_matcher,
-            status_code=200,
-            text="<div>Error Message:Exception of type 'System.Exception' was thrown</div>",
-        )
+        def _post_dispatcher(request):
+            if PBKDF1_MS_probe_matcher(request):
+                return httpx.Response(200, text="<div>Error Message:Exception of type 'System.Exception' was thrown</div>")
+            return httpx.Response(200)
 
+        respx.post("http://test.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             ["python", "--url", "http://test.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--debug"],
@@ -1507,20 +1217,15 @@ def test_dialoghandler_detect_derive_function_responses(monkeypatch, capsys, moc
         )
 
     # Test case 2: Length cannot be less than zero response leading to PBKDF1_MS detection
-    with requests_mock.Mocker() as m:
-        m.get(
-            f"http://test2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            status_code=200,
-            text=partial_dialog_page,
-        )
+    with respx.mock:
+        respx.get("http://test2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
 
-        m.post(
-            f"http://test2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_probe_matcher,
-            status_code=200,
-            text="Error Message:Length cannot be less than zero",
-        )
+        def _post_dispatcher(request):
+            if PBKDF1_MS_probe_matcher(request):
+                return httpx.Response(200, text="Error Message:Length cannot be less than zero")
+            return httpx.Response(200)
 
+        respx.post("http://test2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             ["python", "--url", "http://test2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--debug"],
@@ -1538,20 +1243,15 @@ def test_dialoghandler_detect_derive_function_responses(monkeypatch, capsys, moc
         )
 
     # Test case 3: Invalid Base-64 response causing early return
-    with requests_mock.Mocker() as m:
-        m.get(
-            f"http://test3.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            status_code=200,
-            text=partial_dialog_page,
-        )
+    with respx.mock:
+        respx.get("http://test3.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
 
-        m.post(
-            f"http://test3.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_probe_matcher,
-            status_code=200,
-            text="Error Message:Invalid length for a Base-64 char array or string",
-        )
+        def _post_dispatcher(request):
+            if PBKDF1_MS_probe_matcher(request):
+                return httpx.Response(200, text="Error Message:Invalid length for a Base-64 char array or string")
+            return httpx.Response(200)
 
+        respx.post("http://test3.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             ["python", "--url", "http://test3.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--debug"],
@@ -1577,47 +1277,26 @@ def test_dialoghandler_pbkdf1_ms_failed_encryption_key(monkeypatch, capsys, mock
         return_value=iter(["YOUR_ENCRYPTION_KEY_TO_GO_HERE"]),
     )
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
         # Basic Probe Detects Telerik
-        m.get(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            status_code=200,
-            text=partial_dialog_page,
-        )
+        respx.get("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
 
-        # Successful hash key discovery
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_found_key_matcher,
-            status_code=200,
-            text="<div>Error Message:The input data is not a complete block.</div>",
-        )
-
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_found_key_matcher_negative,
-            status_code=200,
-            text="<div>Error Message:The hash is not valid!</div>",
-        )
-
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_probe_matcher,
-            status_code=200,
-            text="Error Message:Length cannot be less than zero",
-        )
-
-        # All encryption key attempts fail
+        # Successful hash key discovery + All encryption key attempts fail
         def encryption_failure_matcher(request):
-            return "CaCbLSlA" in request.body
+            return "CaCbLSlA" in _body(request)
 
-        m.post(
-            f"http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=encryption_failure_matcher,
-            status_code=200,
-            text="<div>Error Message:Some other error that doesn't indicate success</div>",
-        )
+        def _post_dispatcher(request):
+            if encryption_failure_matcher(request):
+                return httpx.Response(200, text="<div>Error Message:Some other error that doesn't indicate success</div>")
+            if PBKDF1_MS_probe_matcher(request):
+                return httpx.Response(200, text="Error Message:Length cannot be less than zero")
+            if PBKDF1_MS_found_key_matcher_negative(request):
+                return httpx.Response(200, text="<div>Error Message:The hash is not valid!</div>")
+            if PBKDF1_MS_found_key_matcher(request):
+                return httpx.Response(200, text="<div>Error Message:The input data is not a complete block.</div>")
+            return httpx.Response(200)
 
+        respx.post("http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             ["python", "--url", "http://PBKDF1_MS.telerik.com/Telerik.Web.UI.DialogHandler.aspx"],
@@ -1640,31 +1319,22 @@ def test_dialoghandler_pbkdf2_mode_execution(monkeypatch, capsys, mocker):
     mocker.patch.object(Telerik_EncryptionKey, "prepare_keylist", side_effect=generate_keylist_enc)
     mocker.patch.object(Telerik_HashKey, "prepare_keylist", side_effect=generate_keylist_hash)
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
         # Basic Probe Detects Telerik
-        m.get(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", status_code=200, text=partial_dialog_page
-        )
+        respx.get("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").respond(status_code=200, text=partial_dialog_page)
 
-        # Detect PBKDF2 mode
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=PBKDF1_MS_probe_matcher,
-            status_code=200,
-            text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>",
-        )
-
-        # All key combination attempts fail - no match found
+        # Detect PBKDF2 mode + All key combination attempts fail - no match found
         def pbkdf2_failure_matcher(request):
-            return request.body != "dialogParametersHolder=AAAA"
+            return _body(request) != "dialogParametersHolder=AAAA"
 
-        m.post(
-            f"http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx",
-            additional_matcher=pbkdf2_failure_matcher,
-            status_code=200,
-            text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>",
-        )
+        def _post_dispatcher(request):
+            if pbkdf2_failure_matcher(request):
+                return httpx.Response(200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>")
+            if PBKDF1_MS_probe_matcher(request):
+                return httpx.Response(200, text="<div>Error Message:Exception of type 'System.Exception' was thrown.</div>")
+            return httpx.Response(200)
 
+        respx.post("http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx").mock(side_effect=_post_dispatcher)
         monkeypatch.setattr(
             "sys.argv",
             ["python", "--url", "http://PBKDF2.telerik.com/Telerik.Web.UI.DialogHandler.aspx", "--debug"],
@@ -1719,10 +1389,10 @@ def test_argument_parsing_machine_keys_and_force(monkeypatch, capsys, mocker):
         ["python", "--url", "http://test.com", "--machine-keys"],
     )
 
-    # Mock requests to prevent actual network calls
-    with requests_mock.Mocker() as m:
-        m.get("http://test.com", status_code=200, text="Loading the dialog...")
-        m.post("http://test.com", status_code=200, text="Error Message:Length cannot be less than zero")
+    # Mock HTTP calls to prevent actual network calls
+    with respx.mock:
+        respx.get("http://test.com").respond(status_code=200, text="Loading the dialog...")
+        respx.post("http://test.com").respond(status_code=200, text="Error Message:Length cannot be less than zero")
         # Mock solve_key to prevent full execution
         mocker.patch("badsecrets.examples.telerik_knownkey.DialogHandler.solve_key", return_value=False)
 
@@ -1774,9 +1444,9 @@ def test_asyncupload_network_connection_error(monkeypatch, capsys, mocker):
     # Mock version_probe to skip version checking
     mocker.patch.object(au, "version_probe")
 
-    with requests_mock.Mocker() as m:
+    with respx.mock:
         # Network error on POST request - this will trigger the exception handling
-        m.post("http://test.com", exc=requests.exceptions.ConnectionError("Connection failed"))
+        respx.post("http://test.com").mock(side_effect=httpx.ConnectError("Connection failed"))
 
         with patch("sys.exit") as exit_mock:
             try:
@@ -1811,8 +1481,8 @@ def test_dialoghandler_probe_version_baseline_network_error(monkeypatch, capsys,
     dh.telerik_hashkey = mocker.Mock()
     dh.telerik_hashkey.sign_enc_dialog_params.return_value = "signed_params"
 
-    # Mock requests.post to raise a connection error
-    with patch("requests.post", side_effect=requests.exceptions.ConnectionError("Connection failed")):
+    # Mock httpx.post to raise a connection error
+    with patch("httpx.post", side_effect=httpx.ConnectError("Connection failed")):
         with patch("sys.exit") as exit_mock:
             try:
                 dh.probe_version_baseline()
@@ -1843,8 +1513,8 @@ def test_dialoghandler_probe_version_network_error(monkeypatch, capsys, mocker):
     dh.telerik_hashkey = mocker.Mock()
     dh.telerik_hashkey.sign_enc_dialog_params.return_value = "signed_params"
 
-    # Mock requests.post to raise a connection error
-    with patch("requests.post", side_effect=requests.exceptions.ConnectTimeout("Connection timeout")):
+    # Mock httpx.post to raise a connection error
+    with patch("httpx.post", side_effect=httpx.ConnectTimeout("Connection timeout")):
         with patch("sys.exit") as exit_mock:
             try:
                 dh.probe_version("2018.1.117", baseline_size=100)
@@ -1864,8 +1534,8 @@ def test_dialoghandler_detect_derive_function_network_error(monkeypatch, capsys,
     dh = DialogHandler("http://test.com")
     dh.debug = True
 
-    # Mock requests.post to raise a TooManyRedirects error
-    with patch("requests.post", side_effect=requests.exceptions.TooManyRedirects("Too many redirects")):
+    # Mock httpx.post to raise a TooManyRedirects error
+    with patch("httpx.post", side_effect=httpx.TooManyRedirects("Too many redirects")):
         with patch("sys.exit") as exit_mock:
             try:
                 dh.detect_derive_function()
@@ -1897,11 +1567,8 @@ def test_dialoghandler_solve_key_pbkdf1_ms_network_error(monkeypatch, capsys, mo
     dh.telerik_hashkey = mocker.Mock()
     dh.telerik_hashkey.hashkey_probe_generator = mock_hashkey_probe_generator
 
-    # Mock requests.post to raise a MaxRetryError
-    from urllib3.exceptions import MaxRetryError
-    from urllib3 import PoolManager
-
-    with patch("requests.post", side_effect=MaxRetryError(PoolManager(), "http://test.com", "Max retries exceeded")):
+    # Mock httpx.post to raise a ConnectError (replaces MaxRetryError from urllib3)
+    with patch("httpx.post", side_effect=httpx.ConnectError("Max retries exceeded")):
         with patch("sys.exit") as exit_mock:
             try:
                 dh.solve_key()
@@ -1934,8 +1601,8 @@ def test_dialoghandler_solve_key_pbkdf1_ms_encryption_network_error(monkeypatch,
     dh.telerik_encryptionkey = mocker.Mock()
     dh.telerik_encryptionkey.encryptionkey_probe_generator = mock_encryptionkey_probe_generator
 
-    # Mock requests.post to raise a ConnectionError
-    with patch("requests.post", side_effect=requests.exceptions.ConnectionError("Connection failed")):
+    # Mock httpx.post to raise a ConnectionError
+    with patch("httpx.post", side_effect=httpx.ConnectError("Connection failed")):
         with patch("sys.exit") as exit_mock:
             try:
                 dh.solve_key()
@@ -1968,8 +1635,8 @@ def test_dialoghandler_solve_key_pbkdf2_network_error(monkeypatch, capsys, mocke
     dh.telerik_hashkey = mocker.Mock()
     dh.telerik_hashkey.sign_enc_dialog_params.return_value = "signed_params"
 
-    # Mock requests.post to raise a ConnectTimeout on baseline request
-    with patch("requests.post", side_effect=requests.exceptions.ConnectTimeout("Connection timeout")):
+    # Mock httpx.post to raise a ConnectTimeout on baseline request
+    with patch("httpx.post", side_effect=httpx.ConnectTimeout("Connection timeout")):
         with patch("sys.exit") as exit_mock:
             try:
                 dh.solve_key()
@@ -2026,9 +1693,9 @@ def test_dialoghandler_solve_key_pbkdf2_key_testing_network_error(monkeypatch, c
             return response
         else:
             # Second call for key testing - raise error
-            raise requests.exceptions.TooManyRedirects("Too many redirects")
+            raise httpx.TooManyRedirects("Too many redirects")
 
-    with patch("requests.post", side_effect=mock_post):
+    with patch("httpx.post", side_effect=mock_post):
         with patch("sys.exit") as exit_mock:
             try:
                 dh.solve_key()
@@ -2079,11 +1746,9 @@ def test_dialoghandler_pbkdf1_ms_encryption_key_final_network_error(monkeypatch,
         # Check if this is the encryption key testing request
         if "dialogParametersHolder" in kwargs.get("data", {}):
             # Raise network exception for encryption key testing
-            import requests.exceptions
-
-            raise requests.exceptions.ConnectionError("Network error during encryption key testing")
+            raise httpx.ConnectError("Network error during encryption key testing")
         else:
-            # For other requests, return success
+            # For other calls, return success
             response = mocker.Mock()
             response.text = "The input data is not a complete block"
             response.status_code = 200
@@ -2105,7 +1770,7 @@ def test_dialoghandler_pbkdf1_ms_encryption_key_final_network_error(monkeypatch,
     mocker.patch("sys.exit")
 
     # Apply the mock
-    mocker.patch("requests.post", side_effect=mock_post_sequence)
+    mocker.patch("httpx.post", side_effect=mock_post_sequence)
 
     # Call solve_key - this should trigger the network exception in encryption key testing
     dh.solve_key()
