@@ -37,7 +37,7 @@ class Jsf_viewstate(BadsecretsBase):
         )  # Theres no way to determine the IV, as it lives in server memory. So, we can pass anything in - we can still decrypt all except for block #1
         try:
             decrypted = cipher.decrypt(base64.b64decode(ct))
-            if b"java." in decrypted:
+            if decrypted.count(b"java.") >= 2:
                 return True
         except (ValueError, binascii.Error):
             return False
