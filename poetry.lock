@@ -1847,18 +1847,6 @@ socks = ["pysocks (>=1.5.6,!=1.5.7,<2.0)"]
 zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
-name = "viewstate"
-version = "0.7.0"
-description = "ASP.NET View State Decoder"
-optional = false
-python-versions = ">=3.8"
-groups = ["main"]
-files = [
-    {file = "viewstate-0.7.0-py3-none-any.whl", hash = "sha256:3d46bddd7832f80f7e5852b0c65c26dcf81b90069cc836ec4cd881addeb07d49"},
-    {file = "viewstate-0.7.0.tar.gz", hash = "sha256:6544ee05b528ecc2885627c55f10e32b7dfe3e1b71a4ecffb000c455dae8dee4"},
-]
-
-[[package]]
 name = "virtualenv"
 version = "20.36.1"
 description = "Virtual Python Environment builder"
@@ -2196,4 +2184,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.9"
-content-hash = "4430d76b0a61eb91c29b7bbb1dc1bd09bcac25c341e599e5ccf1e1fba30d9e74"
+content-hash = "09626a0e712441211d5e2b958b7d0e187246617663b8202ea271c8b2e8ac2847"

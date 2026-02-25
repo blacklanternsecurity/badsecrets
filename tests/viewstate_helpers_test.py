@@ -1,7 +1,18 @@
+import base64
+
+import pytest
+
 from badsecrets.helpers import (
+    _skip_vlq,
+    aspnet_resource_b64_to_standard_b64,
+    Csharp_pbkdf1,
+    Csharp_pbkdf1_exception,
     dotnet_get_sort_key,
     dotnet_legacy_hash,
     dotnet_string_hashcode,
+    print_status,
+    viewstate_signature_length,
+    write_vlq_string,
     Viewstate_Helpers,
 )
 
@@ -296,3 +307,274 @@ def test_get_all_specific_purposes_no_aspx_with_subpath():
     vh = Viewstate_Helpers("http://example.com/myapp/api")
     purposes = vh.get_all_specific_purposes()
     assert len(purposes) >= 1
+
+
+# --- viewstate_signature_length tests ---
+
+# Known MAC_DISABLED body (no trailing HMAC): Pair(Pair(String("874280290"), None), None)
+_MAC_DISABLED_BODY = base64.b64decode("/wEPDwUJODc0MjgwMjkwZGQ=")
+
+
+def test_viewstate_signature_length_sha1():
+    """Real SHA1-signed viewstate should report 20-byte signature."""
+    raw = base64.b64decode("/wEPDwUJODExMDE5NzY5ZGTX0g6r3svRDbR+eCZDnrj4MT4/FA==")
+    assert viewstate_signature_length(raw) == 20
+
+
+def test_viewstate_signature_length_mac_disabled():
+    """MAC_DISABLED viewstate (no HMAC appended) should report 0."""
+    assert viewstate_signature_length(_MAC_DISABLED_BODY) == 0
+
+
+def test_viewstate_signature_length_invalid():
+    """Garbage data should return None."""
+    assert viewstate_signature_length(b"\x00\x01\x02\x03") is None
+    assert viewstate_signature_length(b"") is None
+    # Valid preamble but unknown marker
+    assert viewstate_signature_length(b"\xff\x01\xfe") is None
+
+
+def test_viewstate_signature_length_all_hash_sizes():
+    """Appending fake signatures of various lengths should be correctly measured."""
+    for sig_len in (16, 32, 48, 64):
+        fake_sig = bytes(range(sig_len))
+        raw = _MAC_DISABLED_BODY + fake_sig
+        assert viewstate_signature_length(raw) == sig_len, f"Expected {sig_len}"
+
+
+# --- _skip_node marker-coverage tests ---
+# Each test crafts a minimal viewstate with a specific marker as the top-level node.
+
+_PREAMBLE = b"\xff\x01"
+_SIG = b"\xaa" * 20  # fake 20-byte signature appended after the node
+
+
+def _vs(body_after_preamble):
+    """Build raw viewstate: preamble + body + 20-byte fake signature."""
+    return _PREAMBLE + body_after_preamble + _SIG
+
+
+def test_skip_node_noop():
+    """Marker 0x01 (Noop) — consumes only the marker byte."""
+    assert viewstate_signature_length(_vs(b"\x01")) == 20
+
+
+def test_skip_node_constants():
+    """Markers 0x64-0x68 (None, Empty, Zero, True, False) — no extra bytes."""
+    for marker in (0x64, 0x65, 0x66, 0x67, 0x68):
+        assert viewstate_signature_length(_vs(bytes([marker]))) == 20
+
+
+def test_skip_node_integer():
+    """Marker 0x02 and 0x2B (Integer) — VLQ encoded value."""
+    # Single-byte VLQ: value 42 = 0x2A
+    assert viewstate_signature_length(_vs(b"\x02\x2a")) == 20
+    assert viewstate_signature_length(_vs(b"\x2b\x2a")) == 20
+
+
+def test_skip_node_string():
+    """Markers 0x05, 0x1E, 0x2A, 0x29 (String) — VLQ length + bytes."""
+    for marker in (0x05, 0x1E, 0x2A, 0x29):
+        # String of length 3: "abc"
+        assert viewstate_signature_length(_vs(bytes([marker]) + b"\x03abc")) == 20
+
+
+def test_skip_node_stringref():
+    """Marker 0x1F (StringRef) — VLQ index."""
+    assert viewstate_signature_length(_vs(b"\x1f\x05")) == 20
+
+
+def test_skip_node_pair():
+    """Marker 0x0F (Pair) — two recursive nodes (already covered, explicit check)."""
+    # Pair(None, None) = 0x0F 0x64 0x64
+    assert viewstate_signature_length(_vs(b"\x0f\x64\x64")) == 20
+
+
+def test_skip_node_triplet():
+    """Marker 0x10 (Triplet) — three recursive nodes."""
+    # Triplet(None, None, None) = 0x10 0x64 0x64 0x64
+    assert viewstate_signature_length(_vs(b"\x10\x64\x64\x64")) == 20
+
+
+def test_skip_node_array():
+    """Marker 0x16 (Array) — VLQ count + N nodes."""
+    # Array of 2 Nones: 0x16 0x02 0x64 0x64
+    assert viewstate_signature_length(_vs(b"\x16\x02\x64\x64")) == 20
+
+
+def test_skip_node_stringarray():
+    """Marker 0x15 (StringArray) — VLQ count + items (0x00=empty or VLQ+string)."""
+    # StringArray of 2: [empty, "ab"]
+    # 0x15, count=2, 0x00(empty), 0x02(len=2) + "ab"
+    assert viewstate_signature_length(_vs(b"\x15\x02\x00\x02ab")) == 20
+
+
+def test_skip_node_typedarray():
+    """Marker 0x14 (TypedArray) — recursive type + VLQ count + N nodes."""
+    # TypedArray(type=None, count=1, [None])
+    assert viewstate_signature_length(_vs(b"\x14\x64\x01\x64")) == 20
+
+
+def test_skip_node_dict():
+    """Marker 0x18 (Dict) — 1-byte count + N key-value pairs."""
+    # Dict with 1 entry: {None: None} = 0x18 0x01 0x64 0x64
+    assert viewstate_signature_length(_vs(b"\x18\x01\x64\x64")) == 20
+
+
+def test_skip_node_sparsearray():
+    """Marker 0x3C (SparseArray) — type + VLQ length + VLQ count + entries."""
+    # SparseArray(type=None, length=2, count=1, [(index=0, None)])
+    assert viewstate_signature_length(_vs(b"\x3c\x64\x02\x01\x00\x64")) == 20
+
+
+def test_skip_node_enum():
+    """Marker 0x0B (Enum) — recursive type + VLQ value."""
+    # Enum(type=None, value=5)
+    assert viewstate_signature_length(_vs(b"\x0b\x64\x05")) == 20
+
+
+def test_skip_node_color():
+    """Marker 0x0A (Color) — 1 byte index."""
+    assert viewstate_signature_length(_vs(b"\x0a\x03")) == 20
+
+
+def test_skip_node_rgba():
+    """Marker 0x09 (RGBA) — 4 bytes."""
+    assert viewstate_signature_length(_vs(b"\x09\x01\x02\x03\x04")) == 20
+
+
+def test_skip_node_datetime():
+    """Marker 0x06 (Datetime) — 8 bytes."""
+    assert viewstate_signature_length(_vs(b"\x06" + b"\x00" * 8)) == 20
+
+
+def test_skip_node_unit():
+    """Marker 0x1B (Unit) — 12 bytes."""
+    assert viewstate_signature_length(_vs(b"\x1b" + b"\x00" * 12)) == 20
+
+
+def test_skip_node_formattedstring():
+    """Marker 0x28 (FormattedString) — recursive type + VLQ-length string."""
+    # FormattedString(type=None, string="hi")
+    assert viewstate_signature_length(_vs(b"\x28\x64\x02hi")) == 20
+
+
+def test_skip_vlq_overflow():
+    """VLQ with 5 continuation bytes exercises the overflow return (bits >= 32)."""
+    # 5 continuation bytes — forces bits to 35, exiting the while loop via overflow
+    vlq_data = b"\x80\x80\x80\x80\x80"
+    n, pos = _skip_vlq(vlq_data, 0)
+    assert pos == 5  # consumed all 5 continuation bytes
+    # Wrap in an Integer marker to test via viewstate_signature_length
+    assert viewstate_signature_length(_vs(b"\x02" + vlq_data)) == 20
+
+
+def test_skip_node_indexerror():
+    """Truncated data should return None via IndexError catch."""
+    # Pair marker but only one child — second child read will IndexError
+    assert viewstate_signature_length(_PREAMBLE + b"\x0f\x64") is None
+
+
+# --- print_status coverage ---
+
+
+def test_print_status_passthru_with_color():
+    """passthru=True, colorenabled=True returns colored string."""
+    result = print_status("hello", passthru=True, color="red", colorenabled=True)
+    assert "hello" in result
+
+
+def test_print_status_passthru_no_color():
+    """passthru=True, colorenabled=False returns plain string."""
+    result = print_status("hello", passthru=True, colorenabled=False)
+    assert result == "hello"
+
+
+def test_print_status_print(capsys):
+    """passthru=False prints to stdout."""
+    print_status("hello", passthru=False, colorenabled=False)
+    assert "hello" in capsys.readouterr().out
+
+
+def test_print_status_none_msg():
+    """None message returns None."""
+    assert print_status(None) is None
+
+
+# --- write_vlq_string coverage (multi-byte VLQ for length >= 128) ---
+
+
+def test_write_vlq_string_long():
+    """String >= 128 chars exercises the multi-byte VLQ length encoding."""
+    s = "a" * 200
+    result = write_vlq_string(s)
+    # VLQ for 200: 200 = 0xC8 → 0xC8 & 0x7F = 0x48 | 0x80 = 0xC8, then 200 >> 7 = 1 → 0x01
+    assert result.endswith(s.encode("utf-8"))
+    assert len(result) == 200 + 2  # 2-byte VLQ + 200 bytes
+
+
+# --- Csharp_pbkdf1 coverage ---
+
+
+def test_csharp_pbkdf1_zero_iterations():
+    """iterations=0 should raise."""
+    with pytest.raises(Csharp_pbkdf1_exception, match="Iterations must be greater than 0"):
+        Csharp_pbkdf1(b"pass", b"salt", 0)
+
+
+def test_csharp_pbkdf1_non_bytes():
+    """Non-bytes password should raise TypeError path."""
+    with pytest.raises(Csharp_pbkdf1_exception, match="must be of type bytes"):
+        Csharp_pbkdf1(123, b"salt", 2)
+
+
+def test_csharp_pbkdf1_getbytes_non_int():
+    """Non-int keylen should raise."""
+    pbk = Csharp_pbkdf1(b"pass", b"salt", 2)
+    with pytest.raises(Csharp_pbkdf1_exception, match="must be called with an int"):
+        pbk.GetBytes("bad")
+
+
+def test_csharp_pbkdf1_getbytes_extra_path():
+    """Calling GetBytes twice exercises the extra-bytes reuse path (lines 112-124)."""
+    pbk = Csharp_pbkdf1(b"password", b"salt", 2)
+    # First call: request enough to generate extra bytes (derivedBytes is 20 from SHA1)
+    first = pbk.GetBytes(10)
+    assert len(first) == 10
+    # Second call: should reuse leftover extra bytes (lines 112-121)
+    second = pbk.GetBytes(5)
+    assert len(second) == 5
+
+
+def test_csharp_pbkdf1_getbytes_extra_exact():
+    """GetBytes where magic_number == keylen exactly (line 118-119: else branch)."""
+    pbk = Csharp_pbkdf1(b"password", b"salt", 2)
+    # First call with 10 leaves 10 extra bytes (derivedBytes=20, extra_count=10)
+    first = pbk.GetBytes(10)
+    assert len(first) == 10
+    # Second call requesting exactly 10 — magic_number (20-10=10) == keylen (10)
+    second = pbk.GetBytes(10)
+    assert len(second) == 10
+
+
+# --- aspnet_resource_b64_to_standard_b64 coverage ---
+
+
+def test_aspnet_resource_b64_to_standard_b64():
+    """Convert ASP.NET URL-safe base64 back to standard base64."""
+    # "abc-def_ghi2" → last char '2' means 2 padding chars
+    # '-' → '+', '_' → '/'
+    result = aspnet_resource_b64_to_standard_b64("abc-def_ghi2")
+    assert result == "abc+def/ghi=="
+
+
+# --- find_valid_path_params_by_generator: non-.aspx non-slash URL (lines 691-692) ---
+
+
+def test_find_path_no_aspx_no_slash():
+    """URL without .aspx and not ending in / exercises lines 691-692."""
+    vh = Viewstate_Helpers("http://example.com/endpoint")
+    # Calculate the generator for this path so we get a match
+    gen = vh.calculate_generator_value("/endpoint.aspx", "/")
+    vh2 = Viewstate_Helpers("http://example.com/endpoint", generator=gen)
+    assert vh2.verified_path is not None

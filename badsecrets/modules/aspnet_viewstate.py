@@ -7,7 +7,6 @@ import binascii
 from Crypto.Cipher import AES
 from Crypto.Cipher import DES
 from Crypto.Cipher import DES3
-from viewstate import ViewState
 from contextlib import suppress
 from urllib.parse import urlsplit
 from badsecrets.helpers import (
@@ -17,8 +16,8 @@ from badsecrets.helpers import (
     unpad,
     sp800_108_derivekey,
     sp800_108_get_key_derivation_parameters,
+    viewstate_signature_length,
 )
-from viewstate.exceptions import ViewStateException
 from badsecrets.base import BadsecretsBase
 
 
@@ -409,19 +408,17 @@ class ASPNET_Viewstate(BadsecretsBase):
         signature_len = None
         if self.valid_preamble(viewstate_bytes):
             encrypted = False
-            try:
-                vs = ViewState(viewstate_B64)
-                vs.decode()
-            except ViewStateException:
+            sig_len = viewstate_signature_length(viewstate_bytes)
+            if sig_len is None:
                 return None
 
             # Passive MAC_DISABLED detection: viewstate decodes but has no HMAC signature
-            if vs.signature is None or vs.signature == b"":
+            if sig_len == 0:
                 return {
                     "secret": "MAC is disabled - no secret needed, use LosFormatter from YSoSerial.Net",
                     "details": "MAC_DISABLED",
                 }
-            signature_len = len(vs.signature)
+            signature_len = sig_len
         else:
             encrypted = True
 
