@@ -317,6 +317,135 @@ def dotnet_string_hashcode(s, db=None):
     return dotnet_legacy_hash(dotnet_get_sort_key(s, db))
 
 
+def _skip_vlq(data, pos):
+    """Skip a variable-length quantity (7-bit encoded int) and return the value and new position."""
+    n = 0
+    bits = 0
+    while bits < 32:
+        b = data[pos]
+        pos += 1
+        n |= (b & 0x7F) << bits
+        if not (b & 0x80):
+            return n, pos
+        bits += 7
+    return n, pos
+
+
+def _skip_node(data, pos):
+    """Skip one viewstate node at *pos* and return the new position past it."""
+    marker = data[pos]
+    pos += 1
+
+    # Constants: None, Empty, Zero, True, False
+    if marker in (0x64, 0x65, 0x66, 0x67, 0x68):
+        return pos
+    # Noop
+    if marker == 0x01:
+        return pos
+    # Integer (VLQ)
+    if marker in (0x02, 0x2B):
+        _, pos = _skip_vlq(data, pos)
+        return pos
+    # String (VLQ length + bytes)
+    if marker in (0x05, 0x1E, 0x2A, 0x29):
+        n, pos = _skip_vlq(data, pos)
+        return pos + n
+    # StringRef (VLQ index)
+    if marker == 0x1F:
+        _, pos = _skip_vlq(data, pos)
+        return pos
+    # Pair (2 recursive nodes)
+    if marker == 0x0F:
+        pos = _skip_node(data, pos)
+        return _skip_node(data, pos)
+    # Triplet (3 recursive nodes)
+    if marker == 0x10:
+        pos = _skip_node(data, pos)
+        pos = _skip_node(data, pos)
+        return _skip_node(data, pos)
+    # Array (VLQ count + N recursive nodes)
+    if marker == 0x16:
+        n, pos = _skip_vlq(data, pos)
+        for _ in range(n):
+            pos = _skip_node(data, pos)
+        return pos
+    # StringArray (VLQ count + N items; 0x00 = empty, else String.parse)
+    if marker == 0x15:
+        n, pos = _skip_vlq(data, pos)
+        for _ in range(n):
+            if data[pos] == 0x00:
+                pos += 1
+            else:
+                slen, pos = _skip_vlq(data, pos)
+                pos += slen
+        return pos
+    # TypedArray (recursive type + VLQ count + N recursive nodes)
+    if marker == 0x14:
+        pos = _skip_node(data, pos)
+        n, pos = _skip_vlq(data, pos)
+        for _ in range(n):
+            pos = _skip_node(data, pos)
+        return pos
+    # Dict (1-byte count + N key-value pairs)
+    if marker == 0x18:
+        n = data[pos]
+        pos += 1
+        for _ in range(n):
+            pos = _skip_node(data, pos)
+            pos = _skip_node(data, pos)
+        return pos
+    # SparseArray (recursive type + VLQ length + VLQ count + N index-value pairs)
+    if marker == 0x3C:
+        pos = _skip_node(data, pos)
+        _, pos = _skip_vlq(data, pos)
+        n, pos = _skip_vlq(data, pos)
+        for _ in range(n):
+            _, pos = _skip_vlq(data, pos)
+            pos = _skip_node(data, pos)
+        return pos
+    # Enum (recursive type + VLQ value)
+    if marker == 0x0B:
+        pos = _skip_node(data, pos)
+        _, pos = _skip_vlq(data, pos)
+        return pos
+    # Color (1 byte index)
+    if marker == 0x0A:
+        return pos + 1
+    # RGBA (4 bytes)
+    if marker == 0x09:
+        return pos + 4
+    # Datetime (8 bytes)
+    if marker == 0x06:
+        return pos + 8
+    # Unit (12 bytes)
+    if marker == 0x1B:
+        return pos + 12
+    # FormattedString (recursive type + String)
+    if marker == 0x28:
+        pos = _skip_node(data, pos)
+        n, pos = _skip_vlq(data, pos)
+        return pos + n
+    # Unknown marker
+    return None
+
+
+def viewstate_signature_length(viewstate_bytes):
+    """Return the HMAC signature byte count from a raw viewstate, or None on parse failure.
+
+    Skips through the serialized viewstate tree without decoding values.
+    Returns 0 for MAC_DISABLED viewstates (no trailing signature bytes).
+    """
+    if len(viewstate_bytes) < 3 or viewstate_bytes[0:2] != b"\xff\x01":
+        return None
+    try:
+        pos = _skip_node(viewstate_bytes, 2)
+    except (IndexError, TypeError):
+        return None
+    if pos is None:
+        return None
+    return len(viewstate_bytes) - pos
+
+
 class Viewstate_Helpers:
     """Computes __VIEWSTATEGENERATOR values and KDF purpose strings from URLs.
 
