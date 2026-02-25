@@ -187,7 +187,6 @@ def test_resource_decrypt_3des_des_branches():
     # 8 (iv) + 8 (data) + 20 (hash) = 36 bytes -> data part = 16 which is div by both
     # 8 (iv) + 16 (data) + 20 (hash) = 44 bytes -> data part = 24 which is div by 8 only
     fake_bytes = b"\x00" * 44
-    vkey = "0074D9E5776602E629B362073918A43AD0D631800111D0453DB3416D3827C95B81F575B388A6B425E39AC49BCDC2DC8A57AD2207DC726E78544525A83AB4FE08"
     ekey = "245EDC5AAF1F32D0087178F7409370AF0A2C1FDDE1240212C73604E0DE509029"
     from badsecrets.helpers import Purpose
 

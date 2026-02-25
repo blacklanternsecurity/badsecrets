@@ -586,9 +586,7 @@ class Viewstate_Helpers:
                 for default_page in self.DEFAULT_PAGES_LARGE:
                     default_path = f"/{apppath}/{common_dir}/{default_page}".replace("//", "/")
                     default_path = re.sub(r"/+", "/", default_path)
-                    dp_path, dp_apppaths = self._extract_path_and_apppaths(
-                        f"http://x{default_path}"
-                    )
+                    dp_path, dp_apppaths = self._extract_path_and_apppaths(f"http://x{default_path}")
                     for dp_apppath in dp_apppaths:
                         combo = (dp_path, dp_apppath)
                         if combo in seen:
@@ -603,9 +601,7 @@ class Viewstate_Helpers:
             for common_page in combined_pages:
                 common_path = f"/{common_dir}/{common_page}".replace("//", "/")
                 common_path = re.sub(r"/+", "/", common_path)
-                cp_path, cp_apppaths = self._extract_path_and_apppaths(
-                    f"http://x{common_path}"
-                )
+                cp_path, cp_apppaths = self._extract_path_and_apppaths(f"http://x{common_path}")
                 for apppath in cp_apppaths:
                     combo = (cp_path, apppath)
                     if combo in seen:

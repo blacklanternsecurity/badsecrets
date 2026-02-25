@@ -7,7 +7,6 @@ import base64
 import binascii
 from Crypto.Cipher import AES, DES, DES3
 from contextlib import suppress
-from badsecrets.base import BadsecretsBase
 from badsecrets.helpers import (
     unpad,
     sp800_108_derivekey,
@@ -30,9 +29,7 @@ class ASPNET_Resource(ASPNET_Viewstate):
     description = {"product": "ASP.NET Resource", "secret": "ASP.NET MachineKey", "severity": "HIGH"}
 
     def carve_regex(self):
-        return re.compile(
-            r"(?:WebResource|ScriptResource)\.axd\?d=([A-Za-z0-9_\-]{16,}[0-2])", re.IGNORECASE
-        )
+        return re.compile(r"(?:WebResource|ScriptResource)\.axd\?d=([A-Za-z0-9_\-]{16,}[0-2])", re.IGNORECASE)
 
     def carve_to_check_secret(self, s, **kwargs):
         if s.groups():

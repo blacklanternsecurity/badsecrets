@@ -3,7 +3,6 @@ from badsecrets.helpers import (
     dotnet_legacy_hash,
     dotnet_string_hashcode,
     Viewstate_Helpers,
-    DOTNET_SORT_KEY_DB,
 )
 
 

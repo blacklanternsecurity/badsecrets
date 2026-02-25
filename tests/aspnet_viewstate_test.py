@@ -359,6 +359,24 @@ def test_mac_disabled_detection():
     assert "MAC is disabled" in found_key["secret"]
 
 
+def test_mac_disabled_carve():
+    """MAC_DISABLED viewstate should be detected through the full carve path (short b64)."""
+    x = ASPNETViewstate()
+    # This viewstate is only 24 chars of base64 - must pass identify() to reach check_secret
+    viewstate = "/wEPDwUJODExMDE5NzY5ZGQ="
+    html_body = f"""
+    <html>
+    <input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="{viewstate}" />
+    <input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="CA0B0334" />
+    </html>
+    """
+    r_list = x.carve(body=html_body, url="http://10.1.1.43")
+    assert len(r_list) == 1
+    assert r_list[0]["type"] == "SecretFound"
+    assert r_list[0]["details"] == "MAC_DISABLED"
+    assert "MAC is disabled" in r_list[0]["secret"]
+
+
 def test_split_viewstate_carve():
     """Split viewstate should be reassembled and detected via carve."""
     x = ASPNETViewstate()
@@ -579,7 +597,7 @@ def test_reassemble_split_viewstate_bad_fieldcount():
     <input type="hidden" name="__VIEWSTATEFIELDCOUNT" value="abc" />
     <input type="hidden" name="__VIEWSTATEGENERATOR" value="DEADBEEF" />
     """
-    split_match = re.search(x._carve_re_split, html_body)
+
     # The regex requires \d+ for fieldcount, so "abc" won't match the split regex
     # We need to test the ValueError path differently
     # Create a mock match object

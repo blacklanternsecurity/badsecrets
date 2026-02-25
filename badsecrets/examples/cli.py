@@ -191,7 +191,6 @@ def main():
         help="Custom header (e.g., -H 'Cookie: foo=bar'). Can be specified multiple times",
     )
 
-
     parser.add_argument(
         "-d",
         "--debug",
@@ -251,7 +250,12 @@ def main():
 
         try:
             res = httpx.get(
-                args.url, proxy=proxy, headers=headers, verify=False, follow_redirects=allow_redirects, timeout=args.timeout
+                args.url,
+                proxy=proxy,
+                headers=headers,
+                verify=False,
+                follow_redirects=allow_redirects,
+                timeout=args.timeout,
             )
         except (httpx.ConnectError, httpx.ConnectTimeout):
             if not json_mode:

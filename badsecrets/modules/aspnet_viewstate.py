@@ -19,12 +19,15 @@ from badsecrets.helpers import (
     sp800_108_get_key_derivation_parameters,
 )
 from viewstate.exceptions import ViewStateException
-from badsecrets.base import BadsecretsBase, generic_base64_regex
+from badsecrets.base import BadsecretsBase
 
 
 class ASPNET_Viewstate(BadsecretsBase):
     check_secret_args = 3
-    identify_regex = generic_base64_regex
+    # Lower minimum than generic_base64_regex (8 groups) to match short MAC_DISABLED viewstates
+    identify_regex = re.compile(
+        r"^(?:[A-Za-z0-9+\/]{4}){4,}(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}={2})$"
+    )
     # Compound: __VIEWSTATE AND (__VIEWSTATEGENERATOR OR __VIEWSTATEFIELDCOUNT)
     yara_carve_rule = (
         "rule ASPNET_Viewstate_carve {"
@@ -48,14 +51,14 @@ class ASPNET_Viewstate(BadsecretsBase):
     )
 
     # Regex to extract individual __VIEWSTATE and __VIEWSTATE{N} fields
-    _carve_re_viewstate_fields = re.compile(
-        r'<input[^>]+__VIEWSTATE(\d*)"[^>]*\svalue="([^"]*)"'
-    )
+    _carve_re_viewstate_fields = re.compile(r'<input[^>]+__VIEWSTATE(\d*)"[^>]*\svalue="([^"]*)"')
 
     # Regex for __VIEWSTATE_KEY hidden field
-    _carve_re_viewstate_key = re.compile(
-        r'<input[^>]+__VIEWSTATE_KEY"[^>]*\svalue="([^"]*)"'
-    )
+    _carve_re_viewstate_key = re.compile(r'<input[^>]+__VIEWSTATE_KEY"[^>]*\svalue="([^"]*)"')
+
+    # Pre-compiled regexes for resolve_args
+    _url_pattern = re.compile(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
+    _generator_pattern = re.compile(r"^[A-F0-9]{8}$")
 
     def carve_regex(self):
         return self._carve_re_normal
@@ -115,7 +118,9 @@ class ASPNET_Viewstate(BadsecretsBase):
                     s = re.search(self.carve_regex(), header_value)
                     if s:
                         if not self.validate_carve or self.identify(s.groups()[0]):
-                            r = self.carve_to_check_secret(s, url=kwargs.get("url", None), body=body, cookies=cookies, headers=headers)
+                            r = self.carve_to_check_secret(
+                                s, url=kwargs.get("url", None), body=body, cookies=cookies, headers=headers
+                            )
                             if r:
                                 r["type"] = "SecretFound"
                             else:
@@ -145,7 +150,12 @@ class ASPNET_Viewstate(BadsecretsBase):
                     if viewstate and generator:
                         # Build a synthetic regex match for carve_to_check_secret
                         r = self._carve_to_check_secret_direct(
-                            viewstate, generator, url=kwargs.get("url", None), body=body, cookies=cookies, headers=headers
+                            viewstate,
+                            generator,
+                            url=kwargs.get("url", None),
+                            body=body,
+                            cookies=cookies,
+                            headers=headers,
                         )
                         if r:
                             r["type"] = "SecretFound"
@@ -156,7 +166,7 @@ class ASPNET_Viewstate(BadsecretsBase):
                             r["product"] = viewstate
                         r["location"] = "body"
                         results.append(r)
-                # Try normal viewstate regex
+                # Try normal viewstate regex (requires __VIEWSTATEGENERATOR)
                 elif self.carve_regex():
                     s = re.search(self.carve_regex(), body)
                     if s:
@@ -261,9 +271,7 @@ class ASPNET_Viewstate(BadsecretsBase):
             return True
         return False
 
-    def viewstate_decrypt(self, ekey_bytes, hash_alg, viewstate_B64, specific_purposes, mode):
-        viewstate_bytes = base64.b64decode(viewstate_B64)
-
+    def viewstate_decrypt(self, ekey_bytes, hash_alg, viewstate_bytes, specific_purposes, mode):
         vs_size = len(viewstate_bytes)
         dec_algos = set()
         hash_size = self.hash_sizes[hash_alg]
@@ -319,17 +327,21 @@ class ASPNET_Viewstate(BadsecretsBase):
                         continue
 
     def viewstate_validate(
-        self, vkey_bytes, encrypted, viewstate_B64, generator, specific_purposes, mode, viewstate_userkey=None
+        self,
+        vkey_bytes,
+        encrypted,
+        viewstate_bytes,
+        generator,
+        specific_purposes,
+        mode,
+        viewstate_userkey=None,
+        signature_len=None,
     ):
         original_vkey_bytes = vkey_bytes
-        viewstate_bytes = base64.b64decode(viewstate_B64)
 
         if encrypted:
             candidate_hash_algs = list(self.hash_sizes.keys())
         else:
-            vs = ViewState(viewstate_B64)
-            vs.decode()
-            signature_len = len(vs.signature)
             candidate_hash_algs = self.search_dict(self.hash_sizes, signature_len)
 
         modifier_bytes = b"\x00" * 4
@@ -368,18 +380,15 @@ class ASPNET_Viewstate(BadsecretsBase):
         return None
 
     def resolve_args(self, args):
-        url_pattern = re.compile(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
-        generator_pattern = re.compile(r"^[A-F0-9]{8}$")
-
         url = None
         viewstate_userkey = None
         generator = "0000"
 
         for arg in args:
             if arg:
-                if generator_pattern.match(arg):
+                if self._generator_pattern.match(arg):
                     generator = arg
-                elif url_pattern.match(arg):
+                elif self._url_pattern.match(arg):
                     url = arg
                 else:
                     viewstate_userkey = arg
@@ -393,11 +402,12 @@ class ASPNET_Viewstate(BadsecretsBase):
 
         # Try to decode for MAC_DISABLED check (before identify, since MAC_DISABLED viewstates can be short)
         try:
-            raw_bytes = base64.b64decode(viewstate_B64)
+            viewstate_bytes = base64.b64decode(viewstate_B64)
         except Exception:
             return None
 
-        if self.valid_preamble(raw_bytes):
+        signature_len = None
+        if self.valid_preamble(viewstate_bytes):
             encrypted = False
             try:
                 vs = ViewState(viewstate_B64)
@@ -411,6 +421,7 @@ class ASPNET_Viewstate(BadsecretsBase):
                     "secret": "MAC is disabled - no secret needed, use LosFormatter from YSoSerial.Net",
                     "details": "MAC_DISABLED",
                 }
+            signature_len = len(vs.signature)
         else:
             encrypted = True
 
@@ -422,8 +433,12 @@ class ASPNET_Viewstate(BadsecretsBase):
 
         # Set up Viewstate_Helpers for purpose computation
         viewstate_helpers = None
+        dotnet45_purposes = [None]
+        dotnet40_hashcodes = []
         if url:
             viewstate_helpers = Viewstate_Helpers(url, generator_hex)
+            dotnet45_purposes = viewstate_helpers.get_all_specific_purposes()
+            dotnet40_hashcodes = viewstate_helpers.get_apppaths_hashcodes()
 
         for line in self.load_resources(["aspnet_machinekeys.txt"]):
             try:
@@ -435,39 +450,38 @@ class ASPNET_Viewstate(BadsecretsBase):
                 decryptionAlgo = None
 
                 for mode in ["DOTNET40", "DOTNET45"]:
-                    if mode == "DOTNET45" and viewstate_helpers:
-                        # Try all candidate purpose strings
-                        all_purposes = viewstate_helpers.get_all_specific_purposes()
-                    else:
-                        all_purposes = [None]
+                    all_purposes = dotnet45_purposes if mode == "DOTNET45" and viewstate_helpers else [None]
 
                     for specific_purposes in all_purposes:
                         vkey_hex_to_use = vkey
 
                         # IsolateApps support for DOTNET40
                         vkey_variants = [vkey_hex_to_use]
-                        if mode == "DOTNET40" and viewstate_helpers:
-                            for hashcode in viewstate_helpers.get_apppaths_hashcodes():
+                        if mode == "DOTNET40" and dotnet40_hashcodes:
+                            for hashcode in dotnet40_hashcodes:
                                 isolated = isolate_app_process(vkey_hex_to_use, hashcode)
                                 if isolated:
-                                    vkey_variants.append(isolated.decode() if isinstance(isolated, bytes) else isolated)
+                                    vkey_variants.append(
+                                        isolated.decode() if isinstance(isolated, bytes) else isolated
+                                    )
 
                         for vk in vkey_variants:
                             validationAlgo = self.viewstate_validate(
                                 binascii.unhexlify(vk),
                                 encrypted,
-                                viewstate_B64,
+                                viewstate_bytes,
                                 generator,
                                 specific_purposes,
                                 mode,
                                 viewstate_userkey,
+                                signature_len,
                             )
                             if validationAlgo:
                                 if encrypted:
                                     with suppress(binascii.Error):
                                         ekey_bytes = binascii.unhexlify(ekey)
                                         decryptionAlgo = self.viewstate_decrypt(
-                                            ekey_bytes, validationAlgo, viewstate_B64, specific_purposes, mode
+                                            ekey_bytes, validationAlgo, viewstate_bytes, specific_purposes, mode
                                         )
                                         if decryptionAlgo:
                                             confirmed_ekey = ekey
