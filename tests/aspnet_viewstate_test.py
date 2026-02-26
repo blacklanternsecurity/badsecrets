@@ -714,3 +714,93 @@ def test_carve_named_cookie_userkey():
     r_list = x.carve(body=html_body, cookies={"ASP.NET_SessionId": userkey})
     found_secret = any(r["type"] == "SecretFound" for r in r_list) if r_list else False
     assert found_secret
+
+
+# --- MobilePage / no __VIEWSTATEGENERATOR tests ---
+
+# validationKey from machinekeys line 876
+mobile_vkey = "3DA7A917DF10B92A642434F1532E639C8EB81E8667289F2068A18B24DD8269AE7759FE23B3158EAC6955308D42B5B74CBD49CEDB3F3929D6C769DC4081CC1986"
+
+
+def test_mobilepage_no_generator_carve():
+    """MobilePage viewstate with no __VIEWSTATEGENERATOR should be detected via URL-derived generator."""
+    x = ASPNETViewstate()
+    html_body = """<html><body>
+<form id="Form1" name="Form1" method="post" action="mobile.aspx?__ufps=063326">
+<input type="hidden" name="__VIEWSTATE" value="/wEXAQUDX19QD2QPBnK814Bedd6IZpHhjAiljufJk4ldrq0DcJnG0+E4">
+Page loaded at 5:43:08 PM</form></body></html>"""
+
+    r_list = x.carve(body=html_body, url="http://10.1.1.43/mac/mobile/mobile.aspx")
+    assert r_list
+    assert r_list[0]["type"] == "SecretFound"
+    assert mobile_vkey in r_list[0]["secret"]
+    assert "SHA1" in r_list[0]["secret"]
+    assert r_list[0]["details"] == "Mode [DOTNET40]"
+
+
+def test_mobilepage_direct_check_with_computed_generator():
+    """Direct check_secret with generator computed from URL should find the key."""
+    x = ASPNETViewstate()
+    viewstate = "/wEXAQUDX19QD2QPBnK814Bedd6IZpHhjAiljufJk4ldrq0DcJnG0+E4"
+    # Generator 4BC26F45 corresponds to path=/mac/mobile/mobile.aspx, apppath=/mac/mobile
+    found_key = x.check_secret(viewstate, "4BC26F45", "http://10.1.1.43/mac/mobile/mobile.aspx")
+    assert found_key
+    assert mobile_vkey in found_key["secret"]
+    assert "SHA1" in found_key["secret"]
+
+
+def test_hashtable_viewstate_signature_length():
+    """Viewstate with Hashtable root node (marker 0x17) should be parseable."""
+    import base64
+    from badsecrets.helpers import viewstate_signature_length
+
+    # This viewstate uses a Hashtable (0x17) as root node
+    vs = "/wEXAQUDX19QD2QPBnK814Bedd6IZpHhjAiljufJk4ldrq0DcJnG0+E4"
+    data = base64.b64decode(vs)
+    sig_len = viewstate_signature_length(data)
+    assert sig_len == 20  # SHA1
+
+
+def test_no_generator_no_url_fallback():
+    """Viewstate with no generator and no URL should still try default generator."""
+    x = ASPNETViewstate()
+    html_body = """<html><body>
+<input type="hidden" name="__VIEWSTATE" value="/wEPDwUJODc0MjgwMjkwZGQ=">
+</body></html>"""
+
+    # MAC_DISABLED viewstate - should be detected even without generator or URL
+    r_list = x.carve(body=html_body)
+    assert r_list
+    assert r_list[0]["type"] == "SecretFound"
+    assert r_list[0]["details"] == "MAC_DISABLED"
+
+
+def test_compute_generators_from_url():
+    """_compute_generators_from_url should return generators for all apppath levels."""
+    generators = ASPNETViewstate._compute_generators_from_url("http://10.1.1.43/mac/mobile/mobile.aspx")
+    # Should include generators for apppath=/, /mac, /mac/mobile
+    assert len(generators) >= 2
+    assert "4BC26F45" in generators  # apppath=/mac/mobile
+
+
+def test_no_generator_identify_only():
+    """Viewstate without generator that doesn't match any key should return IdentifyOnly."""
+    x = ASPNETViewstate()
+    # Valid-looking viewstate with no generator and no matching key
+    html_body = """<html><body>
+<input type="hidden" name="__VIEWSTATE" value="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=">
+</body></html>"""
+
+    r_list = x.carve(body=html_body, url="http://example.com/test.aspx")
+    if r_list:
+        found_io = any(r["type"] == "IdentifyOnly" and r["location"] == "body" for r in r_list)
+        assert found_io
+
+
+def test_no_generator_carve_no_match():
+    """_carve_no_generator returns None when no computed generator matches."""
+    x = ASPNETViewstate()
+    # Use a viewstate that parses fine but won't match any key in the wordlist
+    viewstate = "/wEPDwUJODExMDE5NzY5ZGSglOSr1rG6xN5rzh/4C9UEuwa64w=="
+    result = x._carve_no_generator(viewstate, url="http://example.com/unlikely/path/page.aspx")
+    assert result is None

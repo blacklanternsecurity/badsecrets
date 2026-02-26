@@ -27,11 +27,10 @@ class ASPNET_Viewstate(BadsecretsBase):
     identify_regex = re.compile(
         r"^(?:[A-Za-z0-9+\/]{4}){4,}(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}={2})$"
     )
-    # Compound: __VIEWSTATE AND (__VIEWSTATEGENERATOR OR __VIEWSTATEFIELDCOUNT)
     yara_carve_rule = (
         "rule ASPNET_Viewstate_carve {"
-        ' strings: $vs = "__VIEWSTATE" $gen = "__VIEWSTATEGENERATOR" $split = "__VIEWSTATEFIELDCOUNT"'
-        " condition: $vs and ($gen or $split) }"
+        ' strings: $vs = "__VIEWSTATE"'
+        " condition: $vs }"
     )
     description = {"product": "ASP.NET Viewstate", "secret": "ASP.NET MachineKey", "severity": "CRITICAL"}
 
@@ -51,6 +50,9 @@ class ASPNET_Viewstate(BadsecretsBase):
 
     # Regex to extract individual __VIEWSTATE and __VIEWSTATE{N} fields
     _carve_re_viewstate_fields = re.compile(r'<input[^>]+__VIEWSTATE(\d*)"[^>]*\svalue="([^"]*)"')
+
+    # Regex for viewstate without generator (e.g. MobilePage)
+    _carve_re_no_generator = re.compile(r'<input[^>]+__VIEWSTATE"[^>]*\svalue="([^"]+)"')
 
     # Regex for __VIEWSTATE_KEY hidden field
     _carve_re_viewstate_key = re.compile(r'<input[^>]+__VIEWSTATE_KEY"[^>]*\svalue="([^"]*)"')
@@ -182,6 +184,28 @@ class ASPNET_Viewstate(BadsecretsBase):
                                 r["product"] = self.get_product_from_carve(s)
                             r["location"] = "body"
                             results.append(r)
+                    # Fallback: viewstate without generator (e.g. MobilePage)
+                    elif not results:
+                        s = re.search(self._carve_re_no_generator, body)
+                        if s:
+                            viewstate = s.group(1)
+                            if not self.validate_carve or self.identify(viewstate):
+                                r = self._carve_no_generator(
+                                    viewstate,
+                                    url=kwargs.get("url", None),
+                                    body=body,
+                                    cookies=cookies,
+                                    headers=headers,
+                                )
+                                if r:
+                                    r["type"] = "SecretFound"
+                                else:
+                                    r = {"type": "IdentifyOnly"}
+                                    r["hashcat"] = self.get_hashcat_commands(viewstate)
+                                if "product" not in r:
+                                    r["product"] = viewstate
+                                r["location"] = "body"
+                                results.append(r)
 
         for r in results:
             r["description"] = self.get_description()
@@ -263,6 +287,41 @@ class ASPNET_Viewstate(BadsecretsBase):
             if r:
                 return r
         return None
+
+    def _carve_no_generator(self, viewstate, url=None, **kwargs):
+        """Handle viewstate carve when no __VIEWSTATEGENERATOR is present (e.g. MobilePage).
+
+        Computes generator candidates from the URL and tries each one.
+        """
+        generator_candidates = self._compute_generators_from_url(url) if url else []
+        # Also try the default "00000000" as fallback
+        if "00000000" not in generator_candidates:
+            generator_candidates.append("00000000")
+
+        for gen_hex in generator_candidates:
+            r = self._carve_to_check_secret_direct(viewstate, gen_hex, url=url, **kwargs)
+            if r:
+                return r
+        return None
+
+    @staticmethod
+    def _compute_generators_from_url(url):
+        """Compute all possible __VIEWSTATEGENERATOR hex values from a URL's path/apppath combos."""
+        from badsecrets.helpers import Viewstate_Helpers, DOTNET_SORT_KEY_DB
+
+        vh = Viewstate_Helpers.__new__(Viewstate_Helpers)
+        vh.url = Viewstate_Helpers._normalize_url(url)
+        vh.db = DOTNET_SORT_KEY_DB
+        path, apppaths = vh._extract_path_and_apppaths(vh.url)
+
+        generators = []
+        seen = set()
+        for apppath in apppaths:
+            gen = vh.calculate_generator_value(path, apppath)
+            if gen not in seen:
+                seen.add(gen)
+                generators.append(gen)
+        return generators
 
     @staticmethod
     def valid_preamble(sourcebytes):

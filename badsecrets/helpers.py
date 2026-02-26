@@ -386,10 +386,9 @@ def _skip_node(data, pos):
         for _ in range(n):
             pos = _skip_node(data, pos)
         return pos
-    # Dict (1-byte count + N key-value pairs)
-    if marker == 0x18:
-        n = data[pos]
-        pos += 1
+    # Hashtable / HybridDictionary (VLQ count + N key-value pairs)
+    if marker in (0x17, 0x18):
+        n, pos = _skip_vlq(data, pos)
         for _ in range(n):
             pos = _skip_node(data, pos)
             pos = _skip_node(data, pos)
