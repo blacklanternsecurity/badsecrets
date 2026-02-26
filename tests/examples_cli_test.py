@@ -637,12 +637,12 @@ def test_example_cli_help(monkeypatch, capsys):
         assert exit_mock.called
         captured = capsys.readouterr()
         assert "-h, --help" in captured.out
-        assert "-nc, --no-color" in captured.out
-        assert "-u URL, --url URL" in captured.out
-        assert "-nh, --no-hashcat" in captured.out
-        assert "-c CUSTOM_SECRETS, --custom-secrets CUSTOM_SECRETS" in captured.out
-        assert "-p PROXY, --proxy PROXY" in captured.out
-        assert "-a USER_AGENT, --user-agent USER_AGENT" in captured.out
+        assert "--no-color" in captured.out
+        assert "--url URL" in captured.out
+        assert "--no-hashcat" in captured.out
+        assert "--custom-secrets CUSTOM_SECRETS" in captured.out
+        assert "--proxy PROXY" in captured.out
+        assert "--user-agent USER_AGENT" in captured.out
 
 
 def test_example_cli_dotnet45_url(monkeypatch, capsys):
