@@ -329,7 +329,10 @@ class ASPNET_Viewstate(BadsecretsBase):
             return True
         return False
 
-    def viewstate_decrypt(self, ekey_bytes, hash_alg, viewstate_bytes, specific_purposes, mode):
+    def viewstate_decrypt(
+        self, ekey_bytes, hash_alg, viewstate_bytes, specific_purposes, mode, viewstate_userkey=None
+    ):
+        effective_purposes = self._effective_purposes(specific_purposes, mode, viewstate_userkey)
         vs_size = len(viewstate_bytes)
         dec_algos = set()
         hash_size = self.hash_sizes[hash_alg]
@@ -345,10 +348,10 @@ class ASPNET_Viewstate(BadsecretsBase):
                 if dec_algo == "AES":
                     block_size = AES.block_size
                     iv = viewstate_bytes[0:block_size]
-                    if mode == "DOTNET45" and specific_purposes:
+                    if mode == "DOTNET45" and effective_purposes:
                         label, context = sp800_108_get_key_derivation_parameters(
                             Purpose.WebForms_HiddenFieldPageStatePersister_ClientState.value,
-                            specific_purposes,
+                            effective_purposes,
                         )
                         derived_ekey = sp800_108_derivekey(ekey_bytes, label, context, (len(ekey_bytes) * 8))
                     cipher = AES.new(derived_ekey, AES.MODE_CBC, iv)
@@ -384,6 +387,13 @@ class ASPNET_Viewstate(BadsecretsBase):
                     else:
                         continue
 
+    @staticmethod
+    def _effective_purposes(specific_purposes, mode, viewstate_userkey):
+        """Build effective purpose list, appending ViewStateUserKey for DOTNET45 KDF."""
+        if mode == "DOTNET45" and specific_purposes and viewstate_userkey and viewstate_userkey.strip():
+            return specific_purposes + [f"ViewStateUserKey: {viewstate_userkey}"]
+        return specific_purposes
+
     def viewstate_validate(
         self,
         vkey_bytes,
@@ -401,6 +411,8 @@ class ASPNET_Viewstate(BadsecretsBase):
             candidate_hash_algs = list(self.hash_sizes.keys())
         else:
             candidate_hash_algs = self.search_dict(self.hash_sizes, signature_len)
+
+        effective_purposes = self._effective_purposes(specific_purposes, mode, viewstate_userkey)
 
         modifier_bytes = b"\x00" * 4
         if viewstate_userkey and viewstate_userkey.strip():
@@ -420,10 +432,10 @@ class ASPNET_Viewstate(BadsecretsBase):
                 if not encrypted:
                     vs_data_bytes += generator
                     vs_data_bytes += modifier_bytes[4:]
-                if mode == "DOTNET45" and specific_purposes:
+                if mode == "DOTNET45" and effective_purposes:
                     label, context = sp800_108_get_key_derivation_parameters(
                         Purpose.WebForms_HiddenFieldPageStatePersister_ClientState.value,
-                        specific_purposes,
+                        effective_purposes,
                     )
                     vkey_bytes = sp800_108_derivekey(vkey_bytes, label, context, (len(vkey_bytes) * 8))
                 h = hmac.new(
@@ -537,7 +549,12 @@ class ASPNET_Viewstate(BadsecretsBase):
                                     with suppress(binascii.Error):
                                         ekey_bytes = binascii.unhexlify(ekey)
                                         decryptionAlgo = self.viewstate_decrypt(
-                                            ekey_bytes, validationAlgo, viewstate_bytes, specific_purposes, mode
+                                            ekey_bytes,
+                                            validationAlgo,
+                                            viewstate_bytes,
+                                            specific_purposes,
+                                            mode,
+                                            viewstate_userkey,
                                         )
                                         if decryptionAlgo:
                                             confirmed_ekey = ekey

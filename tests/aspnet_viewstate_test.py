@@ -804,3 +804,52 @@ def test_no_generator_carve_no_match():
     viewstate = "/wEPDwUJODExMDE5NzY5ZGSglOSr1rG6xN5rzh/4C9UEuwa64w=="
     result = x._carve_no_generator(viewstate, url="http://example.com/unlikely/path/page.aspx")
     assert result is None
+
+
+# --- DOTNET45 ViewStateUserKey in KDF purpose tests ---
+
+# Captured from /mac/vsk/test/default.aspx with ViewStateUserKey=Session.SessionID
+vsk_viewstate = "7ir5mtqZunytBPczxZoTSbqiqNob4udW/Hgsw/o3Q5gLgmovvmdZaHS5EDdHbqrk408hRX3FwD8MA8Rlo6e0ta0R+Zc8KIsUEO01jXHnMBE7es73jYNsqEFKa3E6JJ1Qt1Pn48quS79NPhyr4m7wkE9wBT+a00nqTp4r7IrI/7hvBSY1i7Ebv/xrWRu84OuS1bp51TYzcbcq33yYXT/aSg=="
+vsk_generator = "2037ECEB"
+vsk_session_id = "gni5hmwi11rclr1hvj2q55kh"
+vsk_url = "http://10.1.1.43/mac/vsk/test/default.aspx"
+
+
+def test_dotnet45_viewstate_userkey_in_purpose():
+    """DOTNET45 encrypted viewstate with ViewStateUserKey should be detected via KDF purpose."""
+    x = ASPNETViewstate()
+    found_key = x.check_secret(vsk_viewstate, vsk_generator, vsk_url, vsk_session_id)
+    assert found_key
+    assert mobile_vkey in found_key["secret"]
+    assert "SHA256" in found_key["secret"]
+    assert f"ViewStateUserKey: {vsk_session_id}" in found_key["product"]
+    assert found_key["details"] == "Mode [DOTNET45]"
+
+
+def test_dotnet45_viewstate_userkey_wrong_key_fails():
+    """DOTNET45 encrypted viewstate with wrong ViewStateUserKey should not match."""
+    x = ASPNETViewstate()
+    found_key = x.check_secret(vsk_viewstate, vsk_generator, vsk_url, "wrongsessionid1234567890")
+    assert not found_key
+
+
+def test_dotnet45_viewstate_userkey_no_key_fails():
+    """DOTNET45 encrypted viewstate that needs ViewStateUserKey should fail without it."""
+    x = ASPNETViewstate()
+    found_key = x.check_secret(vsk_viewstate, vsk_generator, vsk_url)
+    assert not found_key
+
+
+def test_dotnet45_viewstate_userkey_carve():
+    """Full carve path should detect DOTNET45 ViewState with ViewStateUserKey from session cookie."""
+    x = ASPNETViewstate()
+    html_body = f"""<html>
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="{vsk_viewstate}" />
+<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="{vsk_generator}" />
+<input type="hidden" name="__VIEWSTATEENCRYPTED" id="__VIEWSTATEENCRYPTED" value="" />
+</html>"""
+
+    r_list = x.carve(body=html_body, cookies={"ASP.NET_SessionId": vsk_session_id}, url=vsk_url)
+    assert r_list
+    found_secret = any(r["type"] == "SecretFound" for r in r_list)
+    assert found_secret
