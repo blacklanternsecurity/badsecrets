@@ -7,6 +7,7 @@ from badsecrets.base import check_all_modules, carve_all_modules, hashcat_all_mo
 from badsecrets.helpers import print_status
 import httpx
 import argparse
+import json as json_module
 import sys
 import os
 import re
@@ -119,19 +120,27 @@ def main():
         help="Disable color message in the console",
     )
 
+    color_parser.add_argument(
+        "-j",
+        "--json",
+        action="store_true",
+        help="Output results as JSON only (no banner, no color). Outputs nothing on no detection",
+    )
+
     args, unknown_args = color_parser.parse_known_args()
-    colorenabled = not args.no_color
+    json_mode = args.json
+    colorenabled = not args.no_color and not json_mode
 
     parser = CustomArgumentParser(
         description="Check cryptographic products against badsecrets library", parents=[color_parser]
     )
 
-    if colorenabled:
-        print_status(ascii_art_banner, color="green")
-
-    else:
-        print(ascii_art_banner)
-    print_version()
+    if not json_mode:
+        if colorenabled:
+            print_status(ascii_art_banner, color="green")
+        else:
+            print(ascii_art_banner)
+        print_version()
 
     parser.add_argument(
         "-u",
@@ -175,6 +184,28 @@ def main():
         help="Optionally follow HTTP redirects. Off by default",
     )
 
+    parser.add_argument(
+        "-H",
+        "--header",
+        action="append",
+        help="Custom header (e.g., -H 'Cookie: foo=bar'). Can be specified multiple times",
+    )
+
+    parser.add_argument(
+        "-d",
+        "--debug",
+        action="store_true",
+        help="Enable debug output (request URL, response status, headers, etc.)",
+    )
+
+    parser.add_argument(
+        "-t",
+        "--timeout",
+        type=int,
+        default=10,
+        help="Request timeout in seconds (default: 10)",
+    )
+
     args = parser.parse_args(unknown_args)
 
     if not args.url and not args.product:
@@ -201,45 +232,111 @@ def main():
     custom_resource = None
     if args.custom_secrets:
         custom_resource = args.custom_secrets
-        print_status(f"Including custom secrets list [{custom_resource}]\n", color="yellow")
+        if not json_mode:
+            print_status(f"Including custom secrets list [{custom_resource}]\n", color="yellow")
 
     if args.url:
         headers = {}
         if args.user_agent:
             headers["User-agent"] = args.user_agent
+        if args.header:
+            for h in args.header:
+                if ":" in h:
+                    name, value = h.split(":", 1)
+                    headers[name.strip()] = value.strip()
+
+        if args.debug and not json_mode:
+            print_status(f"[DEBUG] Request URL: {args.url}", color="blue")
 
         try:
-            res = httpx.get(args.url, proxy=proxy, headers=headers, verify=False, follow_redirects=allow_redirects)
+            res = httpx.get(
+                args.url,
+                proxy=proxy,
+                headers=headers,
+                verify=False,
+                follow_redirects=allow_redirects,
+                timeout=args.timeout,
+            )
+            # Auto-follow trailing-slash redirects (e.g. /path -> /path/)
+            if not allow_redirects and res.is_redirect:
+                location = res.headers.get("location", "")
+                if location.rstrip("/") == args.url.rstrip("/") and location.endswith("/"):
+                    if args.debug and not json_mode:
+                        print_status(f"[DEBUG] Auto-following trailing-slash redirect to: {location}", color="blue")
+                    res = httpx.get(
+                        location,
+                        proxy=proxy,
+                        headers=headers,
+                        verify=False,
+                        follow_redirects=False,
+                        timeout=args.timeout,
+                    )
         except (httpx.ConnectError, httpx.ConnectTimeout):
-            print_status(f"Error connecting to URL: [{args.url}]", color="red")
+            if not json_mode:
+                print_status(f"Error connecting to URL: [{args.url}]", color="red")
             return
 
+        if args.debug and not json_mode:
+            print_status(f"[DEBUG] Response status: {res.status_code}", color="blue")
+            print_status(f"[DEBUG] Response headers: {dict(res.headers)}", color="blue")
+            if res.cookies:
+                print_status(f"[DEBUG] Cookies: {list(res.cookies.keys())}", color="blue")
+            print_status(f"[DEBUG] Response body length: {len(res.text)} chars", color="blue")
+
         r_list = carve_all_modules(httpx_response=res, custom_resource=custom_resource, url=args.url)
+        if args.debug and not json_mode:
+            if r_list:
+                modules_hit = set(r["detecting_module"] for r in r_list)
+                secret_count = sum(1 for r in r_list if r["type"] == "SecretFound")
+                identify_count = sum(1 for r in r_list if r["type"] == "IdentifyOnly")
+                print_status(
+                    f"[DEBUG] Carve results: {len(r_list)} total ({secret_count} secrets, {identify_count} identify-only) from modules: {', '.join(modules_hit)}",
+                    color="blue",
+                )
+            else:
+                print_status("[DEBUG] Carve results: none", color="blue")
         if r_list:
-            for r in r_list:
-                if r["type"] == "SecretFound":
-                    report = ReportSecret(r)
-                else:
-                    if not args.no_hashcat:
-                        hashcat_candidates = hashcat_all_modules(r["product"], detecting_module=r["detecting_module"])
-                        if hashcat_candidates:
-                            r["hashcat"] = hashcat_candidates
-                    report = ReportIdentify(r)
-                report.report()
+            if json_mode:
+                print(json_module.dumps(r_list))
+            else:
+                for r in r_list:
+                    if r["type"] == "SecretFound":
+                        report = ReportSecret(r)
+                    else:
+                        if not args.no_hashcat:
+                            hashcat_candidates = hashcat_all_modules(
+                                r["product"], detecting_module=r["detecting_module"]
+                            )
+                            if hashcat_candidates:
+                                r["hashcat"] = hashcat_candidates
+                        report = ReportIdentify(r)
+                    report.report()
         else:
-            print_status("No secrets found :(", color="red")
+            if not json_mode:
+                print_status("No secrets found :(", color="red")
 
     else:
+        if args.debug and not json_mode:
+            print_status(f"[DEBUG] Checking product(s): {args.product}", color="blue")
         x = check_all_modules(*args.product, custom_resource=custom_resource)
+        if args.debug and not json_mode:
+            if x:
+                print_status(f"[DEBUG] Match found by module: {x.get('detecting_module', 'unknown')}", color="blue")
+            else:
+                print_status("[DEBUG] No match from any module", color="blue")
         if x:
-            report = ReportSecret(x)
-            report.report()
+            if json_mode:
+                print(json_module.dumps(x))
+            else:
+                report = ReportSecret(x)
+                report.report()
         else:
-            print_status("No secrets found :(", color="red")
-            if not args.no_hashcat:
-                hashcat_candidates = hashcat_all_modules(*args.product)
-                if hashcat_candidates:
-                    print_hashcat_results(hashcat_candidates)
+            if not json_mode:
+                print_status("No secrets found :(", color="red")
+                if not args.no_hashcat:
+                    hashcat_candidates = hashcat_all_modules(*args.product)
+                    if hashcat_candidates:
+                        print_hashcat_results(hashcat_candidates)
 
 
 if __name__ == "__main__":

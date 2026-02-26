@@ -1,7 +1,7 @@
 import httpx
 import respx
 
-from badsecrets.base import check_all_modules, carve_all_modules, BadsecretsBase, yara_carve_scan
+from badsecrets.base import check_all_modules, carve_all_modules, BadsecretsBase, yara_carve_scan, _all_subclasses
 import badsecrets.base
 
 tests = [
@@ -167,7 +167,7 @@ Sys.Application.add_init(function() {
 
 def test_yara_carve_coverage():
     """Every module with a carve_regex must have a YARA carve pattern or rule."""
-    for cls in BadsecretsBase.__subclasses__():
+    for cls in _all_subclasses(BadsecretsBase):
         if cls().carve_regex() is not None:
             has_yara = getattr(cls, "yara_carve_pattern", None) or getattr(cls, "yara_carve_rule", None)
             assert has_yara, f"{cls.__name__} has carve_regex() but no yara_carve_pattern or yara_carve_rule"
@@ -180,7 +180,7 @@ def test_yara_carve_scan_no_rules():
         badsecrets.base._compiled_yara_carve_rules = None
         # Temporarily clear all yara patterns so compilation produces no rules
         patches = []
-        for cls in BadsecretsBase.__subclasses__():
+        for cls in _all_subclasses(BadsecretsBase):
             patches.append((cls, getattr(cls, "yara_carve_pattern", None), getattr(cls, "yara_carve_rule", None)))
             cls.yara_carve_pattern = None
             cls.yara_carve_rule = None

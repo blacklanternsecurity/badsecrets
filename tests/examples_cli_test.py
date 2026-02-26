@@ -906,6 +906,41 @@ def test_example_cli_redirects_default(monkeypatch, capsys):
         assert "your-256-bit-secret" in captured.out
 
 
+def test_example_cli_trailing_slash_redirect(monkeypatch, capsys):
+    """Trailing-slash redirect (e.g. /path -> /path/) should be auto-followed without -r."""
+    with respx.mock:
+        respx.get("http://example.com/vulnerablejwt").respond(
+            status_code=301,
+            headers={"Location": "http://example.com/vulnerablejwt/"},
+        )
+
+        respx.get("http://example.com/vulnerablejwt/").respond(
+            status_code=200,
+            text=base_vulnerable_page,
+        )
+
+        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerablejwt"])
+        cli.main()
+        captured = capsys.readouterr()
+        assert "your-256-bit-secret" in captured.out
+
+
+def test_example_cli_trailing_slash_redirect_not_followed_for_different_path(monkeypatch, capsys):
+    """Non-trailing-slash redirects should NOT be auto-followed without -r."""
+    with respx.mock:
+        respx.get("http://example.com/old-page").respond(
+            status_code=301,
+            text=base_vulnerable_page,
+            headers={"Location": "http://example.com/new-page/"},
+        )
+
+        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/old-page"])
+        cli.main()
+        captured = capsys.readouterr()
+        # Should detect from the redirect response body itself, not follow the redirect
+        assert "your-256-bit-secret" in captured.out
+
+
 serverside_jsfviewstate_html = '<input type="hidden" name="javax.faces.ViewState" id="javax.faces.ViewState" value="-7521159484971427124:9144573339387850859" autocomplete="off" /></form>'
 
 

@@ -185,6 +185,15 @@ class BadsecretsBase:
             return items
 
 
+def _all_subclasses(cls):
+    """Recursively collect all subclasses of cls."""
+    result = []
+    for sub in cls.__subclasses__():
+        result.append(sub)
+        result.extend(_all_subclasses(sub))
+    return result
+
+
 _compiled_yara_carve_rules = None
 
 
@@ -192,7 +201,7 @@ def _compile_yara_carve_rules():
     """Compile YARA rules from all loaded modules' yara_carve_pattern/yara_carve_rule attributes."""
     global _compiled_yara_carve_rules
     rules_parts = []
-    for cls in BadsecretsBase.__subclasses__():
+    for cls in _all_subclasses(BadsecretsBase):
         custom_rule = getattr(cls, "yara_carve_rule", None)
         if custom_rule:
             rules_parts.append(custom_rule)
@@ -247,7 +256,7 @@ def yara_carve_scan(text):
 
 def hashcat_all_modules(product, detecting_module=None, *args):
     hashcat_candidates = []
-    for m in BadsecretsBase.__subclasses__():
+    for m in _all_subclasses(BadsecretsBase):
         if detecting_module == m.__name__ or detecting_module == None:
             x = m()
             if x.identify(product):
@@ -264,7 +273,7 @@ def hashcat_all_modules(product, detecting_module=None, *args):
 
 
 def check_all_modules(*args, **kwargs):
-    for m in BadsecretsBase.__subclasses__():
+    for m in _all_subclasses(BadsecretsBase):
         x = m(custom_resource=kwargs.get("custom_resource", None))
         r = x.check_secret(*args[0 : x.check_secret_args])
         if r:
@@ -294,7 +303,7 @@ def carve_all_modules(**kwargs):
         yara_results = yara_carve_scan(scan_body)
         yara_body_matches = set(yara_results.keys())
 
-    for m in BadsecretsBase.__subclasses__():
+    for m in _all_subclasses(BadsecretsBase):
         x = m(custom_resource=kwargs.get("custom_resource", None))
 
         yara_hit = m.__name__ in yara_body_matches

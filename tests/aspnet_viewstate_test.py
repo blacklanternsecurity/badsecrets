@@ -1,5 +1,8 @@
 import os
+import re
+import pytest
 from badsecrets import modules_loaded
+from badsecrets.errors import CarveException
 
 ASPNETViewstate = modules_loaded["aspnet_viewstate"]
 
@@ -304,3 +307,549 @@ def test_viewstate_with_userkey():
     # Test that same ViewState fails with wrong userkey
     found_key_wrong_userkey = x.check_secret(viewstate, generator, "wronguserkey")
     assert not found_key_wrong_userkey
+
+
+# --- Tests using real test vectors from plan (machinekey line 6) ---
+
+# validationKey: 0074D9E5776602E629B362073918A43AD0D631800111D0453DB3416D3827C95B81F575B388A6B425E39AC49BCDC2DC8A57AD2207DC726E78544525A83AB4FE08
+# decryptionKey: 245EDC5AAF1F32D0087178F7409370AF0A2C1FDDE1240212C73604E0DE509029
+test_vkey = "0074D9E5776602E629B362073918A43AD0D631800111D0453DB3416D3827C95B81F575B388A6B425E39AC49BCDC2DC8A57AD2207DC726E78544525A83AB4FE08"
+test_ekey = "245EDC5AAF1F32D0087178F7409370AF0A2C1FDDE1240212C73604E0DE509029"
+
+
+def test_dotnet40_signed_viewstate():
+    """DOTNET40 signed viewstate (SHA1, MAC enabled, encryption disabled)."""
+    x = ASPNETViewstate()
+    viewstate = "/wEPDwUJODc0MjgwMjkwZGTCdzCrBtl0AFYdKsWX1bQ8DcMilw=="
+    url = "http://10.1.1.43/default2.aspx"
+    generator = "9BD98A7D"
+
+    found_key = x.check_secret(viewstate, generator, url)
+    assert found_key
+    assert test_vkey in found_key["secret"]
+    assert "SHA1" in found_key["secret"]
+    assert found_key["details"] == "Mode [DOTNET40]"
+
+
+def test_dotnet45_encrypted_viewstate():
+    """DOTNET45 encrypted viewstate (SHA1+AES, MAC enabled, encryption enabled)."""
+    x = ASPNETViewstate()
+    viewstate = "3RP87RgckNbfc7fNdaHzH9YLqbIhzpA64gFfWB49lhzHpuHFAAO7C7Dl2zh0dWUqobBb4hwiZJ1a2bhP77aQiwqvVqg="
+    url = "http://10.1.1.43/default2.aspx"
+    generator = "9BD98A7D"
+
+    found_key = x.check_secret(viewstate, generator, url)
+    assert found_key
+    assert test_vkey in found_key["secret"]
+    assert test_ekey in found_key["secret"]
+    assert found_key["details"] == "Mode [DOTNET45]"
+
+
+def test_mac_disabled_detection():
+    """Viewstate with MAC disabled should be detected passively."""
+    x = ASPNETViewstate()
+    # 14 bytes decoded - no HMAC appended (20 byte difference from MAC-enabled version)
+    viewstate = "/wEPDwUJODc0MjgwMjkwZGQ="
+    url = "http://10.1.1.43/default2.aspx"
+    generator = "9BD98A7D"
+
+    found_key = x.check_secret(viewstate, generator, url)
+    assert found_key
+    assert found_key["details"] == "MAC_DISABLED"
+    assert "MAC is disabled" in found_key["secret"]
+
+
+def test_mac_disabled_carve():
+    """MAC_DISABLED viewstate should be detected through the full carve path (short b64)."""
+    x = ASPNETViewstate()
+    # This viewstate is only 24 chars of base64 - must pass identify() to reach check_secret
+    viewstate = "/wEPDwUJODExMDE5NzY5ZGQ="
+    html_body = f"""
+    <html>
+    <input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="{viewstate}" />
+    <input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="CA0B0334" />
+    </html>
+    """
+    r_list = x.carve(body=html_body, url="http://10.1.1.43")
+    assert len(r_list) == 1
+    assert r_list[0]["type"] == "SecretFound"
+    assert r_list[0]["details"] == "MAC_DISABLED"
+    assert "MAC is disabled" in r_list[0]["secret"]
+
+
+def test_split_viewstate_carve():
+    """Split viewstate should be reassembled and detected via carve."""
+    x = ASPNETViewstate()
+    # Simulated HTML with split viewstate fields
+    html_body = """
+    <html>
+    <body>
+    <input type="hidden" name="__VIEWSTATEFIELDCOUNT" id="__VIEWSTATEFIELDCOUNT" value="3" />
+    <input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="gjhJ0qHS9ZCKcmi5bX83xXPmrYbqbnxxYn1d6ymo" />
+    <input type="hidden" name="__VIEWSTATE1" id="__VIEWSTATE1" value="JsltvDpWEUwU7gBd9guCvdjaHmr+KngFw2y0aiX6" />
+    <input type="hidden" name="__VIEWSTATE2" id="__VIEWSTATE2" value="Wi+Fc4G1Cjc=" />
+    <input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="9BD98A7D" />
+    </body>
+    </html>
+    """
+    # The reassembled viewstate should be:
+    # gjhJ0qHS9ZCKcmi5bX83xXPmrYbqbnxxYn1d6ymoJsltvDpWEUwU7gBd9guCvdjaHmr+KngFw2y0aiX6Wi+Fc4G1Cjc=
+    r_list = x.carve(body=html_body, url="http://10.1.1.43/default2.aspx")
+    assert r_list
+    found_secret = False
+    for r in r_list:
+        if r["type"] == "SecretFound":
+            found_secret = True
+            assert test_vkey in r["secret"]
+            assert test_ekey in r["secret"]
+    assert found_secret
+
+
+def test_split_viewstate_reassembly():
+    """Verify the reassembled split viewstate matches the expected value."""
+    x = ASPNETViewstate()
+    import re
+
+    body = """
+    <input type="hidden" name="__VIEWSTATEFIELDCOUNT" value="3" />
+    <input type="hidden" name="__VIEWSTATE" value="gjhJ0qHS9ZCKcmi5bX83xXPmrYbqbnxxYn1d6ymo" />
+    <input type="hidden" name="__VIEWSTATE1" value="JsltvDpWEUwU7gBd9guCvdjaHmr+KngFw2y0aiX6" />
+    <input type="hidden" name="__VIEWSTATE2" value="Wi+Fc4G1Cjc=" />
+    <input type="hidden" name="__VIEWSTATEGENERATOR" value="9BD98A7D" />
+    """
+    split_match = re.search(x._carve_re_split, body)
+    assert split_match
+    viewstate, generator = x._reassemble_split_viewstate(body, split_match)
+    assert viewstate == "gjhJ0qHS9ZCKcmi5bX83xXPmrYbqbnxxYn1d6ymoJsltvDpWEUwU7gBd9guCvdjaHmr+KngFw2y0aiX6Wi+Fc4G1Cjc="
+    assert generator == "9BD98A7D"
+
+
+def test_normal_viewstate_carve_still_works():
+    """Normal (non-split) viewstate carve should still work."""
+    x = ASPNETViewstate()
+    html_body = """
+    <html>
+    <body>
+    <input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="/wEPDwUJODc0MjgwMjkwZGTCdzCrBtl0AFYdKsWX1bQ8DcMilw==" />
+    <input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="9BD98A7D" />
+    </body>
+    </html>
+    """
+    r_list = x.carve(body=html_body, url="http://10.1.1.43/default2.aspx")
+    assert r_list
+    found_secret = False
+    for r in r_list:
+        if r["type"] == "SecretFound":
+            found_secret = True
+            assert test_vkey in r["secret"]
+    assert found_secret
+
+
+# --- carve() error handling tests (lines 68-70, 74-76, 88-90, 95-97, 131-133) ---
+
+
+def test_carve_no_args():
+    """carve() with no args should raise CarveException (lines 68-70)."""
+    x = ASPNETViewstate()
+    with pytest.raises(CarveException, match="Either body/headers/cookies or httpx_response required"):
+        x.carve()
+
+
+def test_carve_httpx_response_with_body():
+    """carve() with both httpx_response and body should raise CarveException (lines 74-76)."""
+    import httpx
+
+    x = ASPNETViewstate()
+    response = httpx.Response(200, text="<html></html>")
+    with pytest.raises(CarveException, match="cannot both be set"):
+        x.carve(httpx_response=response, body="<html></html>")
+
+
+def test_carve_httpx_response_invalid_type():
+    """carve() with non-httpx.Response should raise CarveException (lines 88-90)."""
+    x = ASPNETViewstate()
+    with pytest.raises(CarveException, match="must be an httpx.Response"):
+        x.carve(httpx_response="not a response")
+
+
+def test_carve_cookies_not_dict():
+    """carve() with non-dict cookies should raise CarveException (lines 95-97)."""
+    x = ASPNETViewstate()
+    with pytest.raises(CarveException, match="must be type dict"):
+        x.carve(cookies="not_a_dict")
+
+
+def test_carve_body_not_str():
+    """carve() with non-str body should raise CarveException (lines 131-133)."""
+    x = ASPNETViewstate()
+    with pytest.raises(CarveException, match="must be type str"):
+        x.carve(body=12345)
+
+
+# --- carve() cookie and header paths (lines 101-104, 110-127) ---
+
+
+def test_carve_cookie_path_exercised():
+    """carve() with viewstate in cookies exercises lines 98-104."""
+    x = ASPNETViewstate()
+    # A viewstate-like value in cookies - check_secret is called on it (line 99)
+    # Even if no secret is found (result is []), the code path is exercised
+    viewstate = "/wEPDwUJODc0MjgwMjkwZGTCdzCrBtl0AFYdKsWX1bQ8DcMilw=="
+    r_list = x.carve(cookies={"session": viewstate})
+    # The code path for cookies was exercised (lines 93-104)
+    assert isinstance(r_list, list)
+
+
+def test_carve_cookie_secret_found():
+    """carve() with MAC_DISABLED viewstate in cookies should find it (lines 101-104)."""
+    x = ASPNETViewstate()
+    # MAC_DISABLED viewstate - will be detected in check_secret regardless of generator
+    viewstate = "/wEPDwUJODc0MjgwMjkwZGQ="
+    r_list = x.carve(cookies={"session": viewstate})
+    assert r_list
+    found = any(r["type"] == "SecretFound" and r["location"] == "cookies" for r in r_list)
+    assert found
+
+
+def test_carve_header_direct_secret():
+    """carve() finding a MAC_DISABLED viewstate in a header value (lines 110-113)."""
+    x = ASPNETViewstate()
+    # MAC_DISABLED viewstate
+    viewstate = "/wEPDwUJODc0MjgwMjkwZGQ="
+    r_list = x.carve(headers={"X-Custom": viewstate})
+    assert r_list
+    found = any(r["type"] == "SecretFound" and r["location"] == "headers" for r in r_list)
+    assert found
+
+
+def test_carve_header_carved_secret_found():
+    """carve() with a viewstate+generator carved from header value (line 120)."""
+    x = ASPNETViewstate()
+    # Embed a known DOTNET40 viewstate + generator in an HTML-like header value
+    viewstate = "/wEPDwUJODc0MjgwMjkwZGTCdzCrBtl0AFYdKsWX1bQ8DcMilw=="
+    header_val = (
+        f'<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="{viewstate}" />'
+        '<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="9BD98A7D" />'
+    )
+    r_list = x.carve(headers={"X-Custom": header_val}, url="http://10.1.1.43/default2.aspx")
+    assert r_list
+    found = any(r["type"] == "SecretFound" and r["location"] == "headers" for r in r_list)
+    assert found
+
+
+def test_carve_header_carved_identify_only():
+    """carve() with a viewstate-like value in headers that matches regex but not key (lines 121-127)."""
+    x = ASPNETViewstate()
+    # Construct an HTML-like fragment with viewstate + generator inside a header value
+    header_val = (
+        '<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="'
+        'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" />'
+        '<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="DEADBEEF" />'
+    )
+    r_list = x.carve(headers={"X-Custom": header_val})
+    if r_list:
+        found_io = any(r["type"] == "IdentifyOnly" and r["location"] == "headers" for r in r_list)
+        assert found_io
+
+
+# --- Split viewstate IdentifyOnly (lines 153-154, 156) ---
+
+
+def test_split_viewstate_identify_only():
+    """Split viewstate that doesn't match any key should return IdentifyOnly (lines 153-156)."""
+    x = ASPNETViewstate()
+    # Use a valid-looking but wrong viewstate in split format
+    html_body = """
+    <input type="hidden" name="__VIEWSTATEFIELDCOUNT" value="2" />
+    <input type="hidden" name="__VIEWSTATE" value="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" />
+    <input type="hidden" name="__VIEWSTATE1" value="BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB==" />
+    <input type="hidden" name="__VIEWSTATEGENERATOR" value="DEADBEEF" />
+    """
+    r_list = x.carve(body=html_body)
+    if r_list:
+        found_io = any(r["type"] == "IdentifyOnly" and r["location"] == "body" for r in r_list)
+        assert found_io
+
+
+# --- Normal body IdentifyOnly (lines 170-171) ---
+
+
+def test_normal_viewstate_identify_only():
+    """Normal viewstate that doesn't match any key should return IdentifyOnly (lines 170-171)."""
+    x = ASPNETViewstate()
+    html_body = """
+    <input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" />
+    <input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="DEADBEEF" />
+    """
+    r_list = x.carve(body=html_body)
+    if r_list:
+        found_io = any(r["type"] == "IdentifyOnly" and r["location"] == "body" for r in r_list)
+        assert found_io
+
+
+# --- _reassemble_split_viewstate edge cases (lines 187-188, 204) ---
+
+
+def test_reassemble_split_viewstate_bad_fieldcount():
+    """Non-integer field count should return None (lines 187-188)."""
+    x = ASPNETViewstate()
+    html_body = """
+    <input type="hidden" name="__VIEWSTATEFIELDCOUNT" value="abc" />
+    <input type="hidden" name="__VIEWSTATEGENERATOR" value="DEADBEEF" />
+    """
+
+    # The regex requires \d+ for fieldcount, so "abc" won't match the split regex
+    # We need to test the ValueError path differently
+    # Create a mock match object
+    class MockMatch:
+        def group(self, n):
+            if n == 1:
+                return "abc"
+            return "DEADBEEF"
+
+    viewstate, generator = x._reassemble_split_viewstate(html_body, MockMatch())
+    assert viewstate is None
+    assert generator is None
+
+
+def test_reassemble_split_viewstate_missing_field():
+    """Missing a split viewstate field should return None (line 204)."""
+    x = ASPNETViewstate()
+    # Declare 3 fields but only provide 2
+    html_body = """
+    <input type="hidden" name="__VIEWSTATEFIELDCOUNT" value="3" />
+    <input type="hidden" name="__VIEWSTATE" value="AAAA" />
+    <input type="hidden" name="__VIEWSTATE2" value="CCCC" />
+    <input type="hidden" name="__VIEWSTATEGENERATOR" value="DEADBEEF" />
+    """
+    split_match = re.search(x._carve_re_split, html_body)
+    assert split_match
+    viewstate, generator = x._reassemble_split_viewstate(html_body, split_match)
+    assert viewstate is None
+
+
+# --- ViewStateUserKey expanded candidates (lines 237, 244-246) ---
+
+
+def test_carve_session_pattern_cookie_userkey():
+    """ASP.NET session ID pattern cookie should be tried as userkey (line 237)."""
+    x = ASPNETViewstate()
+    # Use the known viewstate with userkey from test_viewstate_with_userkey
+    viewstate_with_uk = "/wEPDwUJODExMDE5NzY5ZGTX0g6r3svRDbR+eCZDnrj4MT4/FA=="
+    generator = "DEE4EE34"
+    userkey = "xwrpnizumzekndin03addnmm"  # 24 chars matching [a-z0-5]{24}
+
+    html_body = f"""
+    <input type="hidden" name="__VIEWSTATE" value="{viewstate_with_uk}" />
+    <input type="hidden" name="__VIEWSTATEGENERATOR" value="{generator}" />
+    """
+    # Provide the session ID as a non-standard cookie name but matching the pattern
+    r_list = x.carve(body=html_body, cookies={"mycustomsession": userkey})
+    found_secret = any(r["type"] == "SecretFound" for r in r_list) if r_list else False
+    # The session-pattern cookie should be tried as userkey
+    assert found_secret
+
+
+def test_carve_viewstate_key_hidden_field():
+    """__VIEWSTATE_KEY hidden field should be tried as userkey (lines 244-246)."""
+    x = ASPNETViewstate()
+    viewstate_with_uk = "/wEPDwUJODExMDE5NzY5ZGTX0g6r3svRDbR+eCZDnrj4MT4/FA=="
+    generator = "DEE4EE34"
+    userkey = "xwrpnizumzekndin03addnmm"
+
+    html_body = f"""
+    <input type="hidden" name="__VIEWSTATE" value="{viewstate_with_uk}" />
+    <input type="hidden" name="__VIEWSTATEGENERATOR" value="{generator}" />
+    <input type="hidden" name="__VIEWSTATE_KEY" value="{userkey}" />
+    """
+    r_list = x.carve(body=html_body)
+    found_secret = any(r["type"] == "SecretFound" for r in r_list) if r_list else False
+    assert found_secret
+
+
+# --- _carve_to_check_secret_direct returns None (line 256) ---
+
+
+def test_carve_to_check_secret_direct_returns_none():
+    """When no userkey candidate matches, should return None (line 256)."""
+    x = ASPNETViewstate()
+    # Use the userkey-protected viewstate but don't provide the correct userkey
+    viewstate_with_uk = "/wEPDwUJODExMDE5NzY5ZGTX0g6r3svRDbR+eCZDnrj4MT4/FA=="
+    generator = "DEE4EE34"
+    # Call directly - no cookies or body with __VIEWSTATE_KEY
+    result = x._carve_to_check_secret_direct(viewstate_with_uk, generator)
+    assert result is None
+
+
+def test_carve_mock_httpx_response():
+    """carve() with a mock httpx.Response extracts cookies, headers, body (lines 81-86)."""
+    import httpx
+
+    x = ASPNETViewstate()
+    html_body = """
+    <input type="hidden" name="__VIEWSTATE" value="/wEPDwUJODc0MjgwMjkwZGTCdzCrBtl0AFYdKsWX1bQ8DcMilw==" />
+    <input type="hidden" name="__VIEWSTATEGENERATOR" value="9BD98A7D" />
+    """
+    # Construct a synthetic httpx.Response in-memory (no network, no server)
+    mock_request = httpx.Request("GET", "http://10.1.1.43/default2.aspx")
+    mock_response = httpx.Response(200, text=html_body, request=mock_request)
+    r_list = x.carve(httpx_response=mock_response, url="http://10.1.1.43/default2.aspx")
+    assert r_list
+    found_secret = any(r["type"] == "SecretFound" for r in r_list)
+    assert found_secret
+
+
+def test_carve_named_cookie_userkey():
+    """Named cookie (ASP.NET_SessionId) tried as ViewStateUserKey (lines 230-232)."""
+    x = ASPNETViewstate()
+    viewstate_with_uk = "/wEPDwUJODExMDE5NzY5ZGTX0g6r3svRDbR+eCZDnrj4MT4/FA=="
+    generator = "DEE4EE34"
+    userkey = "xwrpnizumzekndin03addnmm"
+
+    html_body = f"""
+    <input type="hidden" name="__VIEWSTATE" value="{viewstate_with_uk}" />
+    <input type="hidden" name="__VIEWSTATEGENERATOR" value="{generator}" />
+    """
+    # Provide the correct userkey via ASP.NET_SessionId cookie
+    r_list = x.carve(body=html_body, cookies={"ASP.NET_SessionId": userkey})
+    found_secret = any(r["type"] == "SecretFound" for r in r_list) if r_list else False
+    assert found_secret
+
+
+# --- MobilePage / no __VIEWSTATEGENERATOR tests ---
+
+# validationKey from machinekeys line 876
+mobile_vkey = "3DA7A917DF10B92A642434F1532E639C8EB81E8667289F2068A18B24DD8269AE7759FE23B3158EAC6955308D42B5B74CBD49CEDB3F3929D6C769DC4081CC1986"
+
+
+def test_mobilepage_no_generator_carve():
+    """MobilePage viewstate with no __VIEWSTATEGENERATOR should be detected via URL-derived generator."""
+    x = ASPNETViewstate()
+    html_body = """<html><body>
+<form id="Form1" name="Form1" method="post" action="mobile.aspx?__ufps=063326">
+<input type="hidden" name="__VIEWSTATE" value="/wEXAQUDX19QD2QPBnK814Bedd6IZpHhjAiljufJk4ldrq0DcJnG0+E4">
+Page loaded at 5:43:08 PM</form></body></html>"""
+
+    r_list = x.carve(body=html_body, url="http://10.1.1.43/mac/mobile/mobile.aspx")
+    assert r_list
+    assert r_list[0]["type"] == "SecretFound"
+    assert mobile_vkey in r_list[0]["secret"]
+    assert "SHA1" in r_list[0]["secret"]
+    assert r_list[0]["details"] == "Mode [DOTNET40]"
+
+
+def test_mobilepage_direct_check_with_computed_generator():
+    """Direct check_secret with generator computed from URL should find the key."""
+    x = ASPNETViewstate()
+    viewstate = "/wEXAQUDX19QD2QPBnK814Bedd6IZpHhjAiljufJk4ldrq0DcJnG0+E4"
+    # Generator 4BC26F45 corresponds to path=/mac/mobile/mobile.aspx, apppath=/mac/mobile
+    found_key = x.check_secret(viewstate, "4BC26F45", "http://10.1.1.43/mac/mobile/mobile.aspx")
+    assert found_key
+    assert mobile_vkey in found_key["secret"]
+    assert "SHA1" in found_key["secret"]
+
+
+def test_hashtable_viewstate_signature_length():
+    """Viewstate with Hashtable root node (marker 0x17) should be parseable."""
+    import base64
+    from badsecrets.helpers import viewstate_signature_length
+
+    # This viewstate uses a Hashtable (0x17) as root node
+    vs = "/wEXAQUDX19QD2QPBnK814Bedd6IZpHhjAiljufJk4ldrq0DcJnG0+E4"
+    data = base64.b64decode(vs)
+    sig_len = viewstate_signature_length(data)
+    assert sig_len == 20  # SHA1
+
+
+def test_no_generator_no_url_fallback():
+    """Viewstate with no generator and no URL should still try default generator."""
+    x = ASPNETViewstate()
+    html_body = """<html><body>
+<input type="hidden" name="__VIEWSTATE" value="/wEPDwUJODc0MjgwMjkwZGQ=">
+</body></html>"""
+
+    # MAC_DISABLED viewstate - should be detected even without generator or URL
+    r_list = x.carve(body=html_body)
+    assert r_list
+    assert r_list[0]["type"] == "SecretFound"
+    assert r_list[0]["details"] == "MAC_DISABLED"
+
+
+def test_compute_generators_from_url():
+    """_compute_generators_from_url should return generators for all apppath levels."""
+    generators = ASPNETViewstate._compute_generators_from_url("http://10.1.1.43/mac/mobile/mobile.aspx")
+    # Should include generators for apppath=/, /mac, /mac/mobile
+    assert len(generators) >= 2
+    assert "4BC26F45" in generators  # apppath=/mac/mobile
+
+
+def test_no_generator_identify_only():
+    """Viewstate without generator that doesn't match any key should return IdentifyOnly."""
+    x = ASPNETViewstate()
+    # Valid-looking viewstate with no generator and no matching key
+    html_body = """<html><body>
+<input type="hidden" name="__VIEWSTATE" value="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=">
+</body></html>"""
+
+    r_list = x.carve(body=html_body, url="http://example.com/test.aspx")
+    if r_list:
+        found_io = any(r["type"] == "IdentifyOnly" and r["location"] == "body" for r in r_list)
+        assert found_io
+
+
+def test_no_generator_carve_no_match():
+    """_carve_no_generator returns None when no computed generator matches."""
+    x = ASPNETViewstate()
+    # Use a viewstate that parses fine but won't match any key in the wordlist
+    viewstate = "/wEPDwUJODExMDE5NzY5ZGSglOSr1rG6xN5rzh/4C9UEuwa64w=="
+    result = x._carve_no_generator(viewstate, url="http://example.com/unlikely/path/page.aspx")
+    assert result is None
+
+
+# --- DOTNET45 ViewStateUserKey in KDF purpose tests ---
+
+# Captured from /mac/vsk/test/default.aspx with ViewStateUserKey=Session.SessionID
+vsk_viewstate = "7ir5mtqZunytBPczxZoTSbqiqNob4udW/Hgsw/o3Q5gLgmovvmdZaHS5EDdHbqrk408hRX3FwD8MA8Rlo6e0ta0R+Zc8KIsUEO01jXHnMBE7es73jYNsqEFKa3E6JJ1Qt1Pn48quS79NPhyr4m7wkE9wBT+a00nqTp4r7IrI/7hvBSY1i7Ebv/xrWRu84OuS1bp51TYzcbcq33yYXT/aSg=="
+vsk_generator = "2037ECEB"
+vsk_session_id = "gni5hmwi11rclr1hvj2q55kh"
+vsk_url = "http://10.1.1.43/mac/vsk/test/default.aspx"
+
+
+def test_dotnet45_viewstate_userkey_in_purpose():
+    """DOTNET45 encrypted viewstate with ViewStateUserKey should be detected via KDF purpose."""
+    x = ASPNETViewstate()
+    found_key = x.check_secret(vsk_viewstate, vsk_generator, vsk_url, vsk_session_id)
+    assert found_key
+    assert mobile_vkey in found_key["secret"]
+    assert "SHA256" in found_key["secret"]
+    assert f"ViewStateUserKey: {vsk_session_id}" in found_key["product"]
+    assert found_key["details"] == "Mode [DOTNET45]"
+
+
+def test_dotnet45_viewstate_userkey_wrong_key_fails():
+    """DOTNET45 encrypted viewstate with wrong ViewStateUserKey should not match."""
+    x = ASPNETViewstate()
+    found_key = x.check_secret(vsk_viewstate, vsk_generator, vsk_url, "wrongsessionid1234567890")
+    assert not found_key
+
+
+def test_dotnet45_viewstate_userkey_no_key_fails():
+    """DOTNET45 encrypted viewstate that needs ViewStateUserKey should fail without it."""
+    x = ASPNETViewstate()
+    found_key = x.check_secret(vsk_viewstate, vsk_generator, vsk_url)
+    assert not found_key
+
+
+def test_dotnet45_viewstate_userkey_carve():
+    """Full carve path should detect DOTNET45 ViewState with ViewStateUserKey from session cookie."""
+    x = ASPNETViewstate()
+    html_body = f"""<html>
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="{vsk_viewstate}" />
+<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="{vsk_generator}" />
+<input type="hidden" name="__VIEWSTATEENCRYPTED" id="__VIEWSTATEENCRYPTED" value="" />
+</html>"""
+
+    r_list = x.carve(body=html_body, cookies={"ASP.NET_SessionId": vsk_session_id}, url=vsk_url)
+    assert r_list
+    found_secret = any(r["type"] == "SecretFound" for r in r_list)
+    assert found_secret

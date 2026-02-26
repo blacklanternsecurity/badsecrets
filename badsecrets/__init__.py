@@ -1,6 +1,7 @@
 import os
 import importlib
 from pathlib import Path
+from contextlib import suppress
 from .base import BadsecretsBase
 
 module_dir = Path(__file__).parent / "modules"
@@ -12,8 +13,7 @@ for file in module_files:
         modules = importlib.import_module(f"badsecrets.modules.{file.stem}", "badsecrets")
         for m in modules.__dict__.keys():
             module = getattr(modules, m)
-            try:
-                if BadsecretsBase in module.__bases__:
-                    modules_loaded[file.stem] = module
-            except AttributeError:
-                continue
+            with suppress(AttributeError, TypeError):
+                if isinstance(module, type) and issubclass(module, BadsecretsBase) and module is not BadsecretsBase:
+                    if module.__module__ == modules.__name__:
+                        modules_loaded[file.stem] = module

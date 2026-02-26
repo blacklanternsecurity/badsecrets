@@ -22,6 +22,7 @@ Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a de
 | Name     | Description |
 | ----------- | ----------- |
 | ASPNET_Viewstate      | Checks the viewstate/generator against a list of known machine keys. |
+| ASPNET_Resource       | Checks `WebResource.axd` and `ScriptResource.axd` encrypted URLs against a list of known machine keys. Useful when `__VIEWSTATE` is not present on a page. |
 | Telerik_HashKey   | Checks patched (2017+) versions of Telerik UI for a known Telerik.Upload.ConfigurationHashKey |
 | Telerik_EncryptionKey   | Checks patched (2017+) versions of Telerik UI for a known Telerik.Web.UI.DialogParametersEncryptionKey |
 | Flask_SignedCookies  | Checks for weak Flask cookie signing password. Wrapper for [flask-unsign](https://github.com/Paradoxis/Flask-Unsign) |
@@ -306,6 +307,7 @@ Express_SignedCookies_ES = modules_loaded["express_signedcookies_es"]
 Express_SignedCookies_CS = modules_loaded["express_signedcookies_cs"]
 Laravel_SignedCookies = modules_loaded["laravel_signedcookies"]
 ASPNET_Compressed_Viewstate = modules_loaded["aspnet_compressedvstate"]
+ASPNET_Resource = modules_loaded["aspnet_resource"]
 Rack2_SignedCookies = modules_loaded["rack2_signedcookies"]
 Yii2_SignedCookies = modules_loaded["yii2_signedcookies"]
 
@@ -313,6 +315,14 @@ Yii2_SignedCookies = modules_loaded["yii2_signedcookies"]
 x = ASPNET_Viewstate()
 print(f"###{str(x.__class__.__name__)}###")
 r = x.check_secret("AgF5WuyVO11CsYJ1K5rjyuLXqUGCITSOapG1cYNiriYQ6VTKochMpn8ws4eJRvft81nQIA==","EDD8C9AE")
+if r:
+    print(r)
+else:
+    print("KEY NOT FOUND :(")
+
+x = ASPNET_Resource()
+print(f"###{str(x.__class__.__name__)}###")
+r = x.check_secret("csxgANq6A8wDXhKZYWeOxTn12X5UGyMiDbr-_rZsj1_Cg6UVSJFYesWU78zHhAVtCyLGHu3-2T_yBK-Qpp1SMtNG6Iw1")
 if r:
     print(r)
 else:
@@ -537,4 +547,17 @@ Requests for modules are always very welcome as well!
 - ~~Laravel~~
 - ~~Express~~
 - Research into network devices with default keys that are detectable via a cryptographic product (For example, Palo Alto Global Protect default masterkeys)
+
+### Acknowledgements
+
+Several features in badsecrets were inspired by [crapsecrets](https://github.com/irsdl/crapsecrets), a fork of badsecrets by [@irsdl](https://github.com/irsdl) (Soroush Dalili):
+
+- `ASPNET_Resource` module for WebResource.axd/ScriptResource.axd detection
+- `Purpose` enum for SP800-108 key derivation purpose strings
+- `isolate_app_process()` for IsolateApps key modification
+- `aspnet_resource_b64_to_standard_b64()` for ASP.NET custom URL-safe base64 conversion
+- `Viewstate_Helpers` class: .NET sort key / hashcode computation, `__VIEWSTATEGENERATOR` calculation, path/apppath brute-force, KDF purpose string generation
+- Split viewstate (`__VIEWSTATEFIELDCOUNT`) reassembly
+- Passive `MAC_DISABLED` detection
+- Expanded `ViewStateUserKey` candidate list
 

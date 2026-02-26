@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "badsecrets"
-version = "0.14.0"
+version = "1.0.0"
 description = "About"
 authors = ["A library for detecting known or weak secrets on across many platforms"]
 license = "GPL-3.0"
@@ -17,7 +17,6 @@ poetry-dynamic-versioning = {extras = ["plugin"], version = "^1.8.2"}
 [tool.poetry.dependencies]
 python = "^3.9"
 pycryptodome = "^3.21.0"
-viewstate = ">=0.5.3,<0.8.0"
 flask-unsign = "^1.2.1"
 Django = "^4.1.2"
 pyjwt = {extras = ["crypto"], version = "^2.6.0"}
@@ -44,4 +43,4 @@ build-backend = "poetry_dynamic_versioning.backend"
 [tool.poetry-dynamic-versioning]
 enable = true
 metadata = true
-format = 'v0.14.{distance}'
+format = 'v1.0.{distance}'
