@@ -257,6 +257,20 @@ def main():
                 follow_redirects=allow_redirects,
                 timeout=args.timeout,
             )
+            # Auto-follow trailing-slash redirects (e.g. /path -> /path/)
+            if not allow_redirects and res.is_redirect:
+                location = res.headers.get("location", "")
+                if location.rstrip("/") == args.url.rstrip("/") and location.endswith("/"):
+                    if args.debug and not json_mode:
+                        print_status(f"[DEBUG] Auto-following trailing-slash redirect to: {location}", color="blue")
+                    res = httpx.get(
+                        location,
+                        proxy=proxy,
+                        headers=headers,
+                        verify=False,
+                        follow_redirects=False,
+                        timeout=args.timeout,
+                    )
         except (httpx.ConnectError, httpx.ConnectTimeout):
             if not json_mode:
                 print_status(f"Error connecting to URL: [{args.url}]", color="red")
