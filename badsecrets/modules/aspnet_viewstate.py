@@ -27,11 +27,7 @@ class ASPNET_Viewstate(BadsecretsBase):
     identify_regex = re.compile(
         r"^(?:[A-Za-z0-9+\/]{4}){4,}(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}={2})$"
     )
-    yara_carve_rule = (
-        "rule ASPNET_Viewstate_carve {"
-        ' strings: $vs = "__VIEWSTATE"'
-        " condition: $vs }"
-    )
+    yara_carve_rule = 'rule ASPNET_Viewstate_carve { strings: $vs = "__VIEWSTATE" condition: $vs }'
     description = {"product": "ASP.NET Viewstate", "secret": "ASP.NET MachineKey", "severity": "CRITICAL"}
 
     # Regex for normal viewstate (non-split)
