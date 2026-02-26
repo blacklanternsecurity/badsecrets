@@ -2,7 +2,7 @@ import os
 import sys
 import tempfile
 import respx
-from mock import patch
+from unittest.mock import patch
 from importlib.metadata import PackageNotFoundError
 
 from badsecrets.modules.generic_jwt import Generic_JWT
@@ -270,7 +270,7 @@ def test_example_cli_hashcat_omittedonmatch(monkeypatch, capsys):
 
     cli.main()
     captured = capsys.readouterr()
-    assert not "Potential matching hashcat commands:" in captured.out
+    assert "Potential matching hashcat commands:" not in captured.out
     assert "your-256-bit-secret" in captured.out
 
     print(captured.out)
@@ -284,7 +284,7 @@ def test_example_cli_hashcat_noresult(monkeypatch, capsys):
 
     cli.main()
     captured = capsys.readouterr()
-    assert not "Potential matching hashcat commands" in captured.out
+    assert "Potential matching hashcat commands" not in captured.out
     print(captured.out)
 
 
@@ -298,7 +298,7 @@ def test_example_cli_hashcat_matchnomodule(monkeypatch, capsys):
 
     cli.main()
     captured = capsys.readouterr()
-    assert not "Potential matching hashcat commands" in captured.out
+    assert "Potential matching hashcat commands" not in captured.out
     print(captured.out)
 
 
@@ -378,7 +378,7 @@ def test_example_cli_hashcat_disabled(monkeypatch, capsys):
     captured = capsys.readouterr()
 
     assert (
-        not "Module: [Telerik_HashKey] Telerik Hash Key Signature Command: [hashcat -m 1450 -a 0 d63e" in captured.out
+        "Module: [Telerik_HashKey] Telerik Hash Key Signature Command: [hashcat -m 1450 -a 0 d63e" not in captured.out
     )
 
 
@@ -394,7 +394,7 @@ def test_example_cli_hashcat_telerikhashkey_invalid(monkeypatch, capsys):
     cli.main()
     captured = capsys.readouterr()
 
-    assert not "Module: [Telerik_HashKey] Telerik Hash Key Signature Command" in captured.out
+    assert "Module: [Telerik_HashKey] Telerik Hash Key Signature Command" not in captured.out
 
 
 def test_example_cli_hashcat_telerikhashkey_invalid2(monkeypatch, capsys):
@@ -409,7 +409,7 @@ def test_example_cli_hashcat_telerikhashkey_invalid2(monkeypatch, capsys):
     cli.main()
     captured = capsys.readouterr()
 
-    assert not "Module: [Telerik_HashKey] Telerik Hash Key Signature Command" in captured.out
+    assert "Module: [Telerik_HashKey] Telerik Hash Key Signature Command" not in captured.out
 
 
 def test_example_cli_hashcat_symfony_sha1(monkeypatch, capsys):
@@ -956,9 +956,9 @@ def test_example_cli_jsfviewstate_serverside(monkeypatch, capsys):
         cli.main()
         captured = capsys.readouterr()
         assert (
-            not "Cryptographic Product Identified (no vulnerability)" in captured.out
+            "Cryptographic Product Identified (no vulnerability)" not in captured.out
         )  # make sure we didn't report it at all
-        assert not "Potential matching hashcat commands:" in captured.out
+        assert "Potential matching hashcat commands:" not in captured.out
 
 
 def test_example_cli_no_args(monkeypatch, capsys):

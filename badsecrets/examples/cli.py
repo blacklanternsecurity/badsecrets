@@ -17,10 +17,10 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
 ascii_art_banner = r"""
- __ )              |                                |         
- __ \    _` |   _` |   __|   _ \   __|   __|   _ \  __|   __| 
- |   |  (   |  (   | \__ \   __/  (     |      __/  |   \__ \ 
-____/  \__,_| \__,_| ____/ \___| \___| _|    \___| \__| ____/ 
+ __ )              |                                |
+ __ \    _` |   _` |   __|   _ \   __|   __|   _ \  __|   __|
+ |   |  (   |  (   | \__ \   __/  (     |      __/  |   \__ \
+____/  \__,_| \__,_| ____/ \___| \___| _|    \___| \__| ____/
 """
 
 
@@ -286,7 +286,7 @@ def main():
         r_list = carve_all_modules(httpx_response=res, custom_resource=custom_resource, url=args.url)
         if args.debug and not json_mode:
             if r_list:
-                modules_hit = set(r["detecting_module"] for r in r_list)
+                modules_hit = {r["detecting_module"] for r in r_list}
                 secret_count = sum(1 for r in r_list if r["type"] == "SecretFound")
                 identify_count = sum(1 for r in r_list if r["type"] == "IdentifyOnly")
                 print_status(

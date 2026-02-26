@@ -54,7 +54,7 @@ class ASPNET_Viewstate(BadsecretsBase):
     _carve_re_viewstate_key = re.compile(r'<input[^>]+__VIEWSTATE_KEY"[^>]*\svalue="([^"]*)"')
 
     # Pre-compiled regexes for resolve_args
-    _url_pattern = re.compile(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
+    _url_pattern = re.compile(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$\-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
     _generator_pattern = re.compile(r"^[A-F0-9]{8}$")
 
     def carve_regex(self):
@@ -91,11 +91,11 @@ class ASPNET_Viewstate(BadsecretsBase):
 
         # Check cookies and headers via parent class logic
         if cookies:
-            if type(cookies) != dict:
+            if not isinstance(cookies, dict):
                 from badsecrets.errors import CarveException
 
                 raise CarveException("Header argument must be type dict")
-            for k, v in cookies.items():
+            for _k, v in cookies.items():
                 r = self.check_secret(v)
                 if r:
                     r["type"] = "SecretFound"
@@ -116,20 +116,20 @@ class ASPNET_Viewstate(BadsecretsBase):
                     if s:
                         if not self.validate_carve or self.identify(s.groups()[0]):
                             r = self.carve_to_check_secret(
-                                s, url=kwargs.get("url", None), body=body, cookies=cookies, headers=headers
+                                s, url=kwargs.get("url"), body=body, cookies=cookies, headers=headers
                             )
                             if r:
                                 r["type"] = "SecretFound"
                             else:
                                 r = {"type": "IdentifyOnly"}
                                 r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
-                            if "product" not in r.keys():
+                            if "product" not in r:
                                 r["product"] = self.get_product_from_carve(s)
                             r["location"] = "headers"
                             results.append(r)
 
         if body:
-            if type(body) != str:
+            if not isinstance(body, str):
                 from badsecrets.errors import CarveException
 
                 raise CarveException("Body argument must be type str")
@@ -149,7 +149,7 @@ class ASPNET_Viewstate(BadsecretsBase):
                         r = self._carve_to_check_secret_direct(
                             viewstate,
                             generator,
-                            url=kwargs.get("url", None),
+                            url=kwargs.get("url"),
                             body=body,
                             cookies=cookies,
                             headers=headers,
@@ -169,14 +169,14 @@ class ASPNET_Viewstate(BadsecretsBase):
                     if s:
                         if not self.validate_carve or self.identify(s.groups()[0]):
                             r = self.carve_to_check_secret(
-                                s, url=kwargs.get("url", None), body=body, cookies=cookies, headers=headers
+                                s, url=kwargs.get("url"), body=body, cookies=cookies, headers=headers
                             )
                             if r:
                                 r["type"] = "SecretFound"
                             else:
                                 r = {"type": "IdentifyOnly"}
                                 r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
-                            if "product" not in r.keys():
+                            if "product" not in r:
                                 r["product"] = self.get_product_from_carve(s)
                             r["location"] = "body"
                             results.append(r)
@@ -188,7 +188,7 @@ class ASPNET_Viewstate(BadsecretsBase):
                             if not self.validate_carve or self.identify(viewstate):
                                 r = self._carve_no_generator(
                                     viewstate,
-                                    url=kwargs.get("url", None),
+                                    url=kwargs.get("url"),
                                     body=body,
                                     cookies=cookies,
                                     headers=headers,
@@ -206,7 +206,7 @@ class ASPNET_Viewstate(BadsecretsBase):
         for r in results:
             r["description"] = self.get_description()
 
-        secret_found_results = set(d["product"] for d in results if d["type"] == "SecretFound")
+        secret_found_results = {d["product"] for d in results if d["type"] == "SecretFound"}
         return [d for d in results if not (d["type"] == "IdentifyOnly" and d["product"] in secret_found_results)]
 
     def _reassemble_split_viewstate(self, body, split_match):
@@ -260,7 +260,7 @@ class ASPNET_Viewstate(BadsecretsBase):
                     if val and val not in userkey_candidates:
                         userkey_candidates.append(val)
             # Check for ASP.NET session ID format cookies (24 lowercase alphanumeric)
-            for cookie_name, cookie_value in cookies.items():
+            for _cookie_name, cookie_value in cookies.items():
                 if cookie_value and re.match(r"^[a-z0-5]{24}$", cookie_value):
                     if cookie_value not in userkey_candidates:
                         userkey_candidates.append(cookie_value)

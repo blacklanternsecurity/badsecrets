@@ -631,7 +631,7 @@ class DialogHandler:
                     custom_keys=custom_keys,
                 )
 
-                for encryption_key_probe, encryption_key in encryptionkey_generator:
+                for _encryption_key_probe, encryption_key in encryptionkey_generator:
                     count += 1
                     # For PBKDF2, we need to properly encrypt and hash the parameters
                     derivedKey, derivedIV = self.telerik_encryptionkey.telerik_derivekeys(

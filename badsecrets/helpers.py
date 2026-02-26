@@ -92,12 +92,12 @@ class Csharp_pbkdf1:
 
         try:
             self.lasthash = hashlib.sha1(passwordBytes + saltBytes).digest()
-        except TypeError:
-            raise Csharp_pbkdf1_exception("Password and Salt must be of type bytes")
+        except TypeError as e:
+            raise Csharp_pbkdf1_exception("Password and Salt must be of type bytes") from e
 
         self.iterations -= 1
 
-        for i in range(self.iterations - 1):
+        for _i in range(self.iterations - 1):
             self.lasthash = hashlib.sha1(self.lasthash).digest()
 
         self.derivedBytes = hashlib.sha1(self.lasthash).digest()
@@ -164,7 +164,7 @@ class Java_sha1prng:
         outputBytesArray = bytearray(output)
         newState = bytearray()
 
-        for c, n in zip(self.state, outputBytesArray):
+        for c, n in zip(self.state, outputBytesArray, strict=False):
             v = twos_compliment(c) + twos_compliment(n) + last
             finalv = v & 255
             newState.append(finalv)

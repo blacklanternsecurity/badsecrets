@@ -56,8 +56,8 @@ class BadsecretsBase:
         return uncompressed
 
     @classmethod
-    def get_description(self):
-        return self.description
+    def get_description(cls):
+        return cls.description
 
     def get_product_from_carve(self, regex_search):
         return regex_search.groups()[0]
@@ -73,9 +73,9 @@ class BadsecretsBase:
             filepaths.append(f"{os.path.dirname(os.path.abspath(__file__))}/resources/{r}")
         for filepath in filepaths:
             with open(filepath) as r:
-                for l in r.readlines():
-                    if len(l) > 0:
-                        yield l
+                for line in r.readlines():
+                    if len(line) > 0:
+                        yield line
 
     def carve_to_check_secret(self, s, **kwargs):
         if s.groups():
@@ -89,10 +89,10 @@ class BadsecretsBase:
     def carve(self, body=None, cookies=None, headers=None, httpx_response=None, _yara_body_hit=None, **kwargs):
         results = []
 
-        if not body and not cookies and not headers and httpx_response == None:
+        if not body and not cookies and not headers and httpx_response is None:
             raise badsecrets.errors.CarveException("Either body/headers/cookies or httpx_response required")
 
-        if httpx_response != None:
+        if httpx_response is not None:
             if body or cookies or headers:
                 raise badsecrets.errors.CarveException("Body/cookies/headers and httpx_response cannot both be set")
 
@@ -107,9 +107,9 @@ class BadsecretsBase:
                 raise badsecrets.errors.CarveException("httpx_response must be an httpx.Response object")
 
         if cookies:
-            if type(cookies) != dict:
+            if not isinstance(cookies, dict):
                 raise badsecrets.errors.CarveException("Header argument must be type dict")
-            for k, v in cookies.items():
+            for _k, v in cookies.items():
                 r = self.check_secret(v)
                 if r:
                     r["type"] = "SecretFound"
@@ -138,13 +138,13 @@ class BadsecretsBase:
                             else:
                                 r = {"type": "IdentifyOnly"}
                                 r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
-                            if "product" not in r.keys():
+                            if "product" not in r:
                                 r["product"] = self.get_product_from_carve(s)
                             r["location"] = "headers"
                             results.append(r)
 
         if body:
-            if type(body) != str:
+            if not isinstance(body, str):
                 raise badsecrets.errors.CarveException("Body argument must be type str")
             if _yara_body_hit is None:
                 _yara_body_hit = type(self).__name__ in yara_carve_scan(body)
@@ -153,14 +153,14 @@ class BadsecretsBase:
                 if s:
                     if not self.validate_carve or self.identify(s.groups()[0]):
                         r = self.carve_to_check_secret(
-                            s, url=kwargs.get("url", None), body=body, cookies=cookies, headers=headers
+                            s, url=kwargs.get("url"), body=body, cookies=cookies, headers=headers
                         )
                         if r:
                             r["type"] = "SecretFound"
                         else:
                             r = {"type": "IdentifyOnly"}
                             r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
-                        if "product" not in r.keys():
+                        if "product" not in r:
                             r["product"] = self.get_product_from_carve(s)
                         r["location"] = "body"
                         results.append(r)
@@ -169,12 +169,12 @@ class BadsecretsBase:
             r["description"] = self.get_description()
 
         # Don't report an IdentifyOnly result if we have a SecretFound result for the same 'product'
-        secret_found_results = set(d["product"] for d in results if d["type"] == "SecretFound")
+        secret_found_results = {d["product"] for d in results if d["type"] == "SecretFound"}
         return [d for d in results if not (d["type"] == "IdentifyOnly" and d["product"] in secret_found_results)]
 
     @classmethod
-    def identify(self, product):
-        if re.match(self.identify_regex, product):
+    def identify(cls, product):
+        if re.match(cls.identify_regex, product):
             return True
         return False
 
@@ -257,7 +257,7 @@ def yara_carve_scan(text):
 def hashcat_all_modules(product, detecting_module=None, *args):
     hashcat_candidates = []
     for m in _all_subclasses(BadsecretsBase):
-        if detecting_module == m.__name__ or detecting_module == None:
+        if detecting_module == m.__name__ or detecting_module is None:
             x = m()
             if x.identify(product):
                 hashcat_commands = x.get_hashcat_commands(product)
@@ -274,14 +274,14 @@ def hashcat_all_modules(product, detecting_module=None, *args):
 
 def check_all_modules(*args, **kwargs):
     for m in _all_subclasses(BadsecretsBase):
-        x = m(custom_resource=kwargs.get("custom_resource", None))
+        x = m(custom_resource=kwargs.get("custom_resource"))
         r = x.check_secret(*args[0 : x.check_secret_args])
         if r:
             r["detecting_module"] = m.__name__
             r["description"] = x.get_description()
 
             # allow the module to provide an amended product, if needed
-            if "product" not in r.keys():
+            if "product" not in r:
                 r["product"] = args[0]
             r["location"] = "manual"
             return r
@@ -292,8 +292,8 @@ def carve_all_modules(**kwargs):
     results = []
 
     # Determine body text for YARA pre-scanning
-    scan_body = kwargs.get("body", None)
-    httpx_resp = kwargs.get("httpx_response", None)
+    scan_body = kwargs.get("body")
+    httpx_resp = kwargs.get("httpx_response")
     if not scan_body and httpx_resp is not None and isinstance(httpx_resp, httpx.Response):
         scan_body = getattr(httpx_resp, "text", None)
 
@@ -304,7 +304,7 @@ def carve_all_modules(**kwargs):
         yara_body_matches = set(yara_results.keys())
 
     for m in _all_subclasses(BadsecretsBase):
-        x = m(custom_resource=kwargs.get("custom_resource", None))
+        x = m(custom_resource=kwargs.get("custom_resource"))
 
         yara_hit = m.__name__ in yara_body_matches
         r_list = x.carve(_yara_body_hit=yara_hit, **kwargs)

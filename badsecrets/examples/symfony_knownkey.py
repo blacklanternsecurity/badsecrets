@@ -78,7 +78,7 @@ def main():
     negative_test_url = f"{args.url.rstrip('/')}/AAAAAAAA"
     res_random = httpx.get(f"{negative_test_url}", proxy=proxy, headers=headers, verify=False, follow_redirects=True)
 
-    if (res_fragment.status_code != 403) or not (res_random.status_code != res_fragment.status_code):
+    if (res_fragment.status_code != 403) or res_random.status_code == res_fragment.status_code:
         print(f"Not a Symfony app, or _fragment functionality not enabled...")
         return
 
