@@ -9,12 +9,12 @@ from badsecrets.base import BadsecretsBase
 
 
 class Symfony_SignedURL(BadsecretsBase):
-    identify_regex = re.compile(r"http(?:s)?:\/\/[^\/]+\/_fragment[^\s]+_hash=[\/a-zA-z-0-9\+=%]{24,132}")
-    yara_carve_pattern = r"https?:\/\/[^\/]+\/_fragment[^\s]+_hash=[\/a-zA-z\-0-9\+=%]{24,132}"
+    identify_regex = re.compile(r"http(?:s)?:\/\/[^\/]+\/_fragment[^\s]+_hash=[\/a-zA-Z0-9\+=%\-]{24,132}")
+    yara_carve_pattern = r"https?:\/\/[^\/]+\/_fragment[^\s]+_hash=[\/a-zA-Z0-9\+=%\-]{24,132}"
     description = {"product": "Symfony Signed URL", "secret": "Symfony APP_SECRET", "severity": "CRITICAL"}
 
     def carve_regex(self):
-        return re.compile(r"(http(?:s)?:\/\/[^\/]+\/_fragment[^\s]+_hash=[\/a-zA-z-0-9\+=%]{24,132})")
+        return re.compile(r"(http(?:s)?:\/\/[^\/]+\/_fragment[^\s]+_hash=[\/a-zA-Z0-9\+=%\-]{24,132})")
 
     def symfonyHMAC(self, url, secret, hash_algorithm):
         return base64.b64encode(hmac.HMAC(secret.encode(), url.encode(), hash_algorithm).digest())

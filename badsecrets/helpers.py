@@ -13,15 +13,10 @@ from badsecrets.errors import BadsecretsException
 
 init(autoreset=True)  # Automatically reset the color to default after each print statement
 
-_url_validate_re = re.compile(
-    r"^https?://((?:[A-Z0-9_]|[A-Z0-9_][A-Z0-9\-_]*[A-Z0-9_])[\.]?)+(?:[A-Z0-9_][A-Z0-9\-_]*[A-Z0-9_]|[A-Z0-9_])(?::[0-9]{1,5})?.*$",
-    re.IGNORECASE,
-)
-
-
 def validate_url(arg_value):
     """Argparse type validator for URLs."""
-    if not _url_validate_re.match(arg_value):
+    parsed = urlparse(arg_value)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
         raise argparse.ArgumentTypeError("URL is not formatted correctly")
     return arg_value
 
