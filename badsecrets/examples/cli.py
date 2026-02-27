@@ -4,23 +4,22 @@
 # @paulmmueller
 
 from badsecrets.base import check_all_modules, carve_all_modules, hashcat_all_modules
-from badsecrets.helpers import print_status
+from badsecrets.helpers import print_status, validate_url
 import httpx
 import argparse
 import json as json_module
 import sys
 import os
-from urllib.parse import urlparse
 from importlib.metadata import version, PackageNotFoundError
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
 ascii_art_banner = r"""
- __ )              |                                |         
- __ \    _` |   _` |   __|   _ \   __|   __|   _ \  __|   __| 
- |   |  (   |  (   | \__ \   __/  (     |      __/  |   \__ \ 
-____/  \__,_| \__,_| ____/ \___| \___| _|    \___| \__| ____/ 
+ __ )              |                                |
+ __ \    _` |   _` |   __|   _ \   __|   __|   _ \  __|   __|
+ |   |  (   |  (   | \__ \   __/  (     |      __/  |   \__ \
+____/  \__,_| \__,_| ____/ \___| \___| _|    \___| \__| ____/
 """
 
 
@@ -34,8 +33,8 @@ def print_version():
 
 class CustomArgumentParser(argparse.ArgumentParser):
     def error(self, message):
-        self.print_usage()
-        self.exit(1)
+        self.print_usage(sys.stderr)
+        self.exit(2, f"error: {message}\n")
 
 
 class BaseReport:
@@ -73,13 +72,6 @@ class ReportIdentify(BaseReport):
         )
         if self.x["hashcat"] is not None:
             print_hashcat_results(self.x["hashcat"])
-
-
-def validate_url(arg_value):
-    parsed = urlparse(arg_value)
-    if parsed.scheme not in ("http", "https") or not parsed.hostname:
-        raise argparse.ArgumentTypeError(print_status("URL is not formatted correctly", color="red"))
-    return arg_value
 
 
 def validate_file(file):
@@ -281,7 +273,7 @@ def main():
         r_list = carve_all_modules(httpx_response=res, custom_resource=custom_resource, url=args.url)
         if args.debug and not json_mode:
             if r_list:
-                modules_hit = set(r["detecting_module"] for r in r_list)
+                modules_hit = {r["detecting_module"] for r in r_list}
                 secret_count = sum(1 for r in r_list if r["type"] == "SecretFound")
                 identify_count = sum(1 for r in r_list if r["type"] == "IdentifyOnly")
                 print_status(

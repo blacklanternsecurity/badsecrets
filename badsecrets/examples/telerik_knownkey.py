@@ -23,6 +23,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
 from badsecrets import modules_loaded
+from badsecrets.helpers import validate_url
 
 Telerik_HashKey = modules_loaded["telerik_hashkey"]
 Telerik_EncryptionKey = modules_loaded["telerik_encryptionkey"]
@@ -31,18 +32,6 @@ Telerik_EncryptionKey = modules_loaded["telerik_encryptionkey"]
 def random_hex_string(length):
     random_digits = [random.choice(string.hexdigits) for _ in range(length)]
     return "".join(random_digits).lower()
-
-
-def validate_url(
-    arg_value,
-    pattern=re.compile(
-        r"^https?://((?:[A-Z0-9_]|[A-Z0-9_][A-Z0-9\-_]*[A-Z0-9_])[\.]?)+(?:[A-Z0-9_][A-Z0-9\-_]*[A-Z0-9_]|[A-Z0-9_])(?::[0-9]{1,5})?.*$",
-        re.IGNORECASE,
-    ),
-):
-    if not pattern.match(arg_value):
-        raise argparse.ArgumentTypeError("URL is not formatted correctly")
-    return arg_value
 
 
 telerik_versions = [
@@ -631,7 +620,7 @@ class DialogHandler:
                     custom_keys=custom_keys,
                 )
 
-                for encryption_key_probe, encryption_key in encryptionkey_generator:
+                for _encryption_key_probe, encryption_key in encryptionkey_generator:
                     count += 1
                     # For PBKDF2, we need to properly encrypt and hash the parameters
                     derivedKey, derivedIV = self.telerik_encryptionkey.telerik_derivekeys(

@@ -3,7 +3,6 @@
 # Black Lantern Security - https://www.blacklanternsecurity.com
 # @paulmmueller
 
-import re
 import os
 import sys
 import hashlib
@@ -15,20 +14,9 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
 from badsecrets import modules_loaded
+from badsecrets.helpers import validate_url
 
 Symfony_SignedURL = modules_loaded["symfony_signedurl"]
-
-
-def validate_url(
-    arg_value,
-    pattern=re.compile(
-        r"^https?://((?:[A-Z0-9_]|[A-Z0-9_][A-Z0-9\-_]*[A-Z0-9_])[\.]?)+(?:[A-Z0-9_][A-Z0-9\-_]*[A-Z0-9_]|[A-Z0-9_])(?::[0-9]{1,5})?.*$",
-        re.IGNORECASE,
-    ),
-):
-    if not pattern.match(arg_value):
-        raise argparse.ArgumentTypeError("URL is not formatted correctly")
-    return arg_value
 
 
 def main():
@@ -78,7 +66,7 @@ def main():
     negative_test_url = f"{args.url.rstrip('/')}/AAAAAAAA"
     res_random = httpx.get(f"{negative_test_url}", proxy=proxy, headers=headers, verify=False, follow_redirects=True)
 
-    if (res_fragment.status_code != 403) or not (res_random.status_code != res_fragment.status_code):
+    if (res_fragment.status_code != 403) or res_random.status_code == res_fragment.status_code:
         print(f"Not a Symfony app, or _fragment functionality not enabled...")
         return
 

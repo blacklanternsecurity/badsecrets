@@ -151,7 +151,7 @@ def test_encryptionkey_probe_generator():
     test_hashkey = "6YXEG7IH4XYNKdt772p2ni6nbeDT772P2NI6NBE4@"
 
     for key_derive_mode in ["PBKDF1_MS", "PBKDF2"]:
-        for encryption_key_probe, encryption_key in x.encryptionkey_probe_generator(
+        for encryption_key_probe, _encryption_key in x.encryptionkey_probe_generator(
             test_hashkey, key_derive_mode, include_machinekeys=False
         ):
             r = x.check_secret(encryption_key_probe, key_derive_mode, include_machinekeys=False)

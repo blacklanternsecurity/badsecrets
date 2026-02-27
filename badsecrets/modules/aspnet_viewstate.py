@@ -31,16 +31,17 @@ class ASPNET_Viewstate(BadsecretsBase):
     description = {"product": "ASP.NET Viewstate", "secret": "ASP.NET MachineKey", "severity": "CRITICAL"}
 
     # Regex for normal viewstate (non-split)
+    # Limit gap between fields to 256KB to prevent excessive backtracking on pages without generator
     _carve_re_normal = re.compile(
         r'<input[^>]+__VIEWSTATE"[^>]*\svalue="([^"]+)"'
-        r"[\S\s]+?"
+        r"[\S\s]{1,262144}?"
         r'<input[^>]+?__VIEWSTATEGENERATOR"[^>]*\svalue="(\w+)"'
     )
 
     # Regex for split viewstate: capture field count, then we reassemble in carve_to_check_secret
     _carve_re_split = re.compile(
         r'<input[^>]+__VIEWSTATEFIELDCOUNT"[^>]*\svalue="(\d+)"'
-        r"[\S\s]+?"
+        r"[\S\s]{1,262144}?"
         r'<input[^>]+__VIEWSTATEGENERATOR"[^>]*\svalue="(\w+)"'
     )
 
@@ -54,102 +55,64 @@ class ASPNET_Viewstate(BadsecretsBase):
     _carve_re_viewstate_key = re.compile(r'<input[^>]+__VIEWSTATE_KEY"[^>]*\svalue="([^"]*)"')
 
     # Pre-compiled regexes for resolve_args
-    _url_pattern = re.compile(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
+    _url_pattern = re.compile(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$\-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
     _generator_pattern = re.compile(r"^[A-F0-9]{8}$")
 
     def carve_regex(self):
         return self._carve_re_normal
 
-    def carve(self, body=None, cookies=None, headers=None, httpx_response=None, _yara_body_hit=None, **kwargs):
-        """Override carve to handle split viewstate detection before the normal regex path."""
+    def _carve_body(self, body, cookies, headers, **kwargs):
+        """Override body carving to handle split viewstate and no-generator fallback."""
         results = []
 
-        if not body and not cookies and not headers and httpx_response is None:
-            from badsecrets.errors import CarveException
-
-            raise CarveException("Either body/headers/cookies or httpx_response required")
-
-        if httpx_response is not None:
-            if body or cookies or headers:
-                from badsecrets.errors import CarveException
-
-                raise CarveException("Body/cookies/headers and httpx_response cannot both be set")
-
-            import httpx
-
-            if isinstance(httpx_response, httpx.Response):
-                if not cookies:
-                    cookies = dict(httpx_response.cookies)
-                if not headers:
-                    headers = httpx_response.headers
-                if not body and hasattr(httpx_response, "text"):
-                    body = httpx_response.text
-            else:
-                from badsecrets.errors import CarveException
-
-                raise CarveException("httpx_response must be an httpx.Response object")
-
-        # Check cookies and headers via parent class logic
-        if cookies:
-            if type(cookies) != dict:
-                from badsecrets.errors import CarveException
-
-                raise CarveException("Header argument must be type dict")
-            for k, v in cookies.items():
-                r = self.check_secret(v)
+        # Try split viewstate first
+        split_match = re.search(self._carve_re_split, body)
+        if split_match:
+            viewstate, generator = self._reassemble_split_viewstate(body, split_match)
+            if viewstate and generator:
+                r = self._carve_to_check_secret_direct(
+                    viewstate,
+                    generator,
+                    url=kwargs.get("url"),
+                    body=body,
+                    cookies=cookies,
+                    headers=headers,
+                )
                 if r:
                     r["type"] = "SecretFound"
-                    r["product"] = v
-                    r["location"] = "cookies"
+                else:
+                    r = {"type": "IdentifyOnly"}
+                    r["hashcat"] = self.get_hashcat_commands(viewstate)
+                if "product" not in r:
+                    r["product"] = viewstate
+                r["location"] = "body"
+                results.append(r)
+        # Try normal viewstate regex (requires __VIEWSTATEGENERATOR)
+        elif self.carve_regex():
+            s = re.search(self.carve_regex(), body)
+            if s:
+                if not self.validate_carve or self.identify(s.groups()[0]):
+                    r = self.carve_to_check_secret(
+                        s, url=kwargs.get("url"), body=body, cookies=cookies, headers=headers
+                    )
+                    if r:
+                        r["type"] = "SecretFound"
+                    else:
+                        r = {"type": "IdentifyOnly"}
+                        r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
+                    if "product" not in r:
+                        r["product"] = self.get_product_from_carve(s)
+                    r["location"] = "body"
                     results.append(r)
-
-        if headers:
-            for header_value in headers.values():
-                r = self.check_secret(header_value)
-                if r:
-                    r["type"] = "SecretFound"
-                    r["product"] = header_value
-                    r["location"] = "headers"
-                    results.append(r)
-                elif self.carve_regex():
-                    s = re.search(self.carve_regex(), header_value)
-                    if s:
-                        if not self.validate_carve or self.identify(s.groups()[0]):
-                            r = self.carve_to_check_secret(
-                                s, url=kwargs.get("url", None), body=body, cookies=cookies, headers=headers
-                            )
-                            if r:
-                                r["type"] = "SecretFound"
-                            else:
-                                r = {"type": "IdentifyOnly"}
-                                r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
-                            if "product" not in r.keys():
-                                r["product"] = self.get_product_from_carve(s)
-                            r["location"] = "headers"
-                            results.append(r)
-
-        if body:
-            if type(body) != str:
-                from badsecrets.errors import CarveException
-
-                raise CarveException("Body argument must be type str")
-
-            from badsecrets.base import yara_carve_scan
-
-            if _yara_body_hit is None:
-                _yara_body_hit = type(self).__name__ in yara_carve_scan(body)
-
-            if _yara_body_hit:
-                # Try split viewstate first
-                split_match = re.search(self._carve_re_split, body)
-                if split_match:
-                    viewstate, generator = self._reassemble_split_viewstate(body, split_match)
-                    if viewstate and generator:
-                        # Build a synthetic regex match for carve_to_check_secret
-                        r = self._carve_to_check_secret_direct(
+            # Fallback: viewstate without generator (e.g. MobilePage)
+            elif not results:
+                s = re.search(self._carve_re_no_generator, body)
+                if s:
+                    viewstate = s.group(1)
+                    if not self.validate_carve or self.identify(viewstate):
+                        r = self._carve_no_generator(
                             viewstate,
-                            generator,
-                            url=kwargs.get("url", None),
+                            url=kwargs.get("url"),
                             body=body,
                             cookies=cookies,
                             headers=headers,
@@ -163,51 +126,8 @@ class ASPNET_Viewstate(BadsecretsBase):
                             r["product"] = viewstate
                         r["location"] = "body"
                         results.append(r)
-                # Try normal viewstate regex (requires __VIEWSTATEGENERATOR)
-                elif self.carve_regex():
-                    s = re.search(self.carve_regex(), body)
-                    if s:
-                        if not self.validate_carve or self.identify(s.groups()[0]):
-                            r = self.carve_to_check_secret(
-                                s, url=kwargs.get("url", None), body=body, cookies=cookies, headers=headers
-                            )
-                            if r:
-                                r["type"] = "SecretFound"
-                            else:
-                                r = {"type": "IdentifyOnly"}
-                                r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
-                            if "product" not in r.keys():
-                                r["product"] = self.get_product_from_carve(s)
-                            r["location"] = "body"
-                            results.append(r)
-                    # Fallback: viewstate without generator (e.g. MobilePage)
-                    elif not results:
-                        s = re.search(self._carve_re_no_generator, body)
-                        if s:
-                            viewstate = s.group(1)
-                            if not self.validate_carve or self.identify(viewstate):
-                                r = self._carve_no_generator(
-                                    viewstate,
-                                    url=kwargs.get("url", None),
-                                    body=body,
-                                    cookies=cookies,
-                                    headers=headers,
-                                )
-                                if r:
-                                    r["type"] = "SecretFound"
-                                else:
-                                    r = {"type": "IdentifyOnly"}
-                                    r["hashcat"] = self.get_hashcat_commands(viewstate)
-                                if "product" not in r:
-                                    r["product"] = viewstate
-                                r["location"] = "body"
-                                results.append(r)
 
-        for r in results:
-            r["description"] = self.get_description()
-
-        secret_found_results = set(d["product"] for d in results if d["type"] == "SecretFound")
-        return [d for d in results if not (d["type"] == "IdentifyOnly" and d["product"] in secret_found_results)]
+        return results
 
     def _reassemble_split_viewstate(self, body, split_match):
         """Reassemble split viewstate from __VIEWSTATEFIELDCOUNT and __VIEWSTATE{N} fields."""
@@ -260,7 +180,7 @@ class ASPNET_Viewstate(BadsecretsBase):
                     if val and val not in userkey_candidates:
                         userkey_candidates.append(val)
             # Check for ASP.NET session ID format cookies (24 lowercase alphanumeric)
-            for cookie_name, cookie_value in cookies.items():
+            for _cookie_name, cookie_value in cookies.items():
                 if cookie_value and re.match(r"^[a-z0-5]{24}$", cookie_value):
                     if cookie_value not in userkey_candidates:
                         userkey_candidates.append(cookie_value)
@@ -510,59 +430,98 @@ class ASPNET_Viewstate(BadsecretsBase):
             except ValueError:
                 continue
             with suppress(ValueError):
-                confirmed_ekey = None
-                decryptionAlgo = None
-
-                for mode in ["DOTNET40", "DOTNET45"]:
-                    all_purposes = dotnet45_purposes if mode == "DOTNET45" and viewstate_helpers else [None]
-
-                    for specific_purposes in all_purposes:
-                        vkey_hex_to_use = vkey
-
-                        # IsolateApps support for DOTNET40
-                        vkey_variants = [vkey_hex_to_use]
-                        if mode == "DOTNET40" and dotnet40_hashcodes:
-                            for hashcode in dotnet40_hashcodes:
-                                isolated = isolate_app_process(vkey_hex_to_use, hashcode)
-                                if isolated:
-                                    vkey_variants.append(
-                                        isolated.decode() if isinstance(isolated, bytes) else isolated
-                                    )
-
-                        for vk in vkey_variants:
-                            validationAlgo = self.viewstate_validate(
-                                binascii.unhexlify(vk),
-                                encrypted,
-                                viewstate_bytes,
-                                generator,
-                                specific_purposes,
-                                mode,
-                                viewstate_userkey,
-                                signature_len,
-                            )
-                            if validationAlgo:
-                                if encrypted:
-                                    with suppress(binascii.Error):
-                                        ekey_bytes = binascii.unhexlify(ekey)
-                                        decryptionAlgo = self.viewstate_decrypt(
-                                            ekey_bytes,
-                                            validationAlgo,
-                                            viewstate_bytes,
-                                            specific_purposes,
-                                            mode,
-                                            viewstate_userkey,
-                                        )
-                                        if decryptionAlgo:
-                                            confirmed_ekey = ekey
-
-                                result = f"validationKey: {vk} validationAlgo: {validationAlgo}"
-                                if confirmed_ekey:
-                                    result += f" encryptionKey: {confirmed_ekey} encryptionAlgo: {decryptionAlgo}"
-
-                                product_string = f"Viewstate: {viewstate_B64}"
-                                if generator != b"\x00\x00\x00\x00":
-                                    product_string += f" Generator: {generator[::-1].hex().upper()}"
-                                if viewstate_userkey:
-                                    product_string += f" ViewStateUserKey: {viewstate_userkey}"
-                                return {"secret": result, "product": product_string, "details": f"Mode [{mode}]"}
+                result = self._try_machinekey(
+                    vkey,
+                    ekey,
+                    encrypted,
+                    viewstate_bytes,
+                    generator,
+                    signature_len,
+                    viewstate_userkey,
+                    viewstate_helpers,
+                    dotnet45_purposes,
+                    dotnet40_hashcodes,
+                )
+                if result:
+                    return self._format_result(result, viewstate_B64, generator, viewstate_userkey)
         return None
+
+    def _try_machinekey(
+        self,
+        vkey,
+        ekey,
+        encrypted,
+        viewstate_bytes,
+        generator,
+        signature_len,
+        viewstate_userkey,
+        viewstate_helpers,
+        dotnet45_purposes,
+        dotnet40_hashcodes,
+    ):
+        """Try a single machinekey (vkey,ekey) across all mode/purpose/variant combinations."""
+        for mode in ["DOTNET40", "DOTNET45"]:
+            all_purposes = dotnet45_purposes if mode == "DOTNET45" and viewstate_helpers else [None]
+
+            for specific_purposes in all_purposes:
+                for vk in self._vkey_variants(vkey, mode, dotnet40_hashcodes):
+                    validationAlgo = self.viewstate_validate(
+                        binascii.unhexlify(vk),
+                        encrypted,
+                        viewstate_bytes,
+                        generator,
+                        specific_purposes,
+                        mode,
+                        viewstate_userkey,
+                        signature_len,
+                    )
+                    if validationAlgo:
+                        confirmed_ekey = None
+                        decryptionAlgo = None
+                        if encrypted:
+                            with suppress(binascii.Error):
+                                ekey_bytes = binascii.unhexlify(ekey)
+                                decryptionAlgo = self.viewstate_decrypt(
+                                    ekey_bytes,
+                                    validationAlgo,
+                                    viewstate_bytes,
+                                    specific_purposes,
+                                    mode,
+                                    viewstate_userkey,
+                                )
+                                if decryptionAlgo:
+                                    confirmed_ekey = ekey
+
+                        return {
+                            "vk": vk,
+                            "validationAlgo": validationAlgo,
+                            "confirmed_ekey": confirmed_ekey,
+                            "decryptionAlgo": decryptionAlgo,
+                            "mode": mode,
+                        }
+        return None
+
+    @staticmethod
+    def _vkey_variants(vkey, mode, dotnet40_hashcodes):
+        """Generate validation key variants (base key + IsolateApps variants for DOTNET40)."""
+        yield vkey
+        if mode == "DOTNET40" and dotnet40_hashcodes:
+            for hashcode in dotnet40_hashcodes:
+                isolated = isolate_app_process(vkey, hashcode)
+                if isolated:
+                    yield isolated.decode() if isinstance(isolated, bytes) else isolated
+
+    @staticmethod
+    def _format_result(match, viewstate_B64, generator, viewstate_userkey):
+        """Format a successful machinekey match into the standard result dict."""
+        secret = f"validationKey: {match['vk']} validationAlgo: {match['validationAlgo']}"
+        if match["confirmed_ekey"]:
+            secret += f" encryptionKey: {match['confirmed_ekey']} encryptionAlgo: {match['decryptionAlgo']}"
+
+        product_string = f"Viewstate: {viewstate_B64}"
+        if generator != b"\x00\x00\x00\x00":
+            product_string += f" Generator: {generator[::-1].hex().upper()}"
+        if viewstate_userkey:
+            product_string += f" ViewStateUserKey: {viewstate_userkey}"
+
+        return {"secret": secret, "product": product_string, "details": f"Mode [{match['mode']}]"}

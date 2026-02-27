@@ -5,12 +5,12 @@ from badsecrets.base import BadsecretsBase
 
 class DjangoSignedCookies(BadsecretsBase):
     identify_regex = re.compile(r"^[\.a-zA-z-0-9]+:[\.a-zA-z-0-9:]+$")
-    description = {"product": "Djangno Signed Cookie", "secret": "Django secret_key", "severity": "HIGH"}
+    description = {"product": "Django Signed Cookie", "secret": "Django secret_key", "severity": "HIGH"}
 
     def check_secret(self, django_signed_cookie):
         if not self.identify(django_signed_cookie):
             return False
-        for l in set(list(self.load_resources(["django_secret_keys.txt", "top_100000_passwords.txt"]))):
+        for l in set(self.load_resources(["django_secret_keys.txt", "top_100000_passwords.txt"])):
             secret_key = l.rstrip()
             try:
                 r = djangoLoads(
