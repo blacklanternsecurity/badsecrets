@@ -13,6 +13,7 @@ from badsecrets.errors import BadsecretsException
 
 init(autoreset=True)  # Automatically reset the color to default after each print statement
 
+
 def validate_url(arg_value):
     """Argparse type validator for URLs."""
     parsed = urlparse(arg_value)
