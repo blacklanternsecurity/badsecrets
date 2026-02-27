@@ -4,13 +4,12 @@
 # @paulmmueller
 
 from badsecrets.base import check_all_modules, carve_all_modules, hashcat_all_modules
-from badsecrets.helpers import print_status
+from badsecrets.helpers import print_status, validate_url
 import httpx
 import argparse
 import json as json_module
 import sys
 import os
-import re
 from importlib.metadata import version, PackageNotFoundError
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -34,8 +33,8 @@ def print_version():
 
 class CustomArgumentParser(argparse.ArgumentParser):
     def error(self, message):
-        self.print_usage()
-        self.exit(1)
+        self.print_usage(sys.stderr)
+        self.exit(2, f"error: {message}\n")
 
 
 class BaseReport:
@@ -73,18 +72,6 @@ class ReportIdentify(BaseReport):
         )
         if self.x["hashcat"] is not None:
             print_hashcat_results(self.x["hashcat"])
-
-
-def validate_url(
-    arg_value,
-    pattern=re.compile(
-        r"^https?://((?:[A-Z0-9_]|[A-Z0-9_][A-Z0-9\-_]*[A-Z0-9_])[\.]?)+(?:[A-Z0-9_][A-Z0-9\-_]*[A-Z0-9_]|[A-Z0-9_])(?::[0-9]{1,5})?.*$",
-        re.IGNORECASE,
-    ),
-):
-    if not pattern.match(arg_value):
-        raise argparse.ArgumentTypeError(print_status("URL is not formatted correctly", color="red"))
-    return arg_value
 
 
 def validate_file(file):

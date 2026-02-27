@@ -148,22 +148,8 @@ class BadsecretsBase:
                 raise badsecrets.errors.CarveException("Body argument must be type str")
             if _yara_body_hit is None:
                 _yara_body_hit = type(self).__name__ in yara_carve_scan(body)
-            if _yara_body_hit and self.carve_regex():
-                s = re.search(self.carve_regex(), body)
-                if s:
-                    if not self.validate_carve or self.identify(s.groups()[0]):
-                        r = self.carve_to_check_secret(
-                            s, url=kwargs.get("url"), body=body, cookies=cookies, headers=headers
-                        )
-                        if r:
-                            r["type"] = "SecretFound"
-                        else:
-                            r = {"type": "IdentifyOnly"}
-                            r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
-                        if "product" not in r:
-                            r["product"] = self.get_product_from_carve(s)
-                        r["location"] = "body"
-                        results.append(r)
+            if _yara_body_hit:
+                results.extend(self._carve_body(body, cookies, headers, **kwargs))
 
         for r in results:
             r["description"] = self.get_description()
@@ -171,6 +157,27 @@ class BadsecretsBase:
         # Don't report an IdentifyOnly result if we have a SecretFound result for the same 'product'
         secret_found_results = {d["product"] for d in results if d["type"] == "SecretFound"}
         return [d for d in results if not (d["type"] == "IdentifyOnly" and d["product"] in secret_found_results)]
+
+    def _carve_body(self, body, cookies, headers, **kwargs):
+        """Extract secrets from HTML body text. Override in subclasses for custom body carving."""
+        results = []
+        if self.carve_regex():
+            s = re.search(self.carve_regex(), body)
+            if s:
+                if not self.validate_carve or self.identify(s.groups()[0]):
+                    r = self.carve_to_check_secret(
+                        s, url=kwargs.get("url"), body=body, cookies=cookies, headers=headers
+                    )
+                    if r:
+                        r["type"] = "SecretFound"
+                    else:
+                        r = {"type": "IdentifyOnly"}
+                        r["hashcat"] = self.get_hashcat_commands(s.groups()[0])
+                    if "product" not in r:
+                        r["product"] = self.get_product_from_carve(s)
+                    r["location"] = "body"
+                    results.append(r)
+        return results
 
     @classmethod
     def identify(cls, product):

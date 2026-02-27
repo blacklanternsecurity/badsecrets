@@ -1,6 +1,7 @@
 import os
 import sys
 import tempfile
+import pytest
 import respx
 from unittest.mock import patch
 from importlib.metadata import PackageNotFoundError
@@ -95,12 +96,12 @@ def test_examples_cli_manualtwovalues_identifyonly(monkeypatch, capsys):
 
 
 def test_examples_cli_url_invalid(monkeypatch, capsys):
-    with patch("sys.exit") as exit_mock:
-        monkeypatch.setattr("sys.argv", ["python", "--url", "hxxp://notaurl"])
+    monkeypatch.setattr("sys.argv", ["python", "--url", "hxxp://notaurl"])
+    with pytest.raises(SystemExit) as exc_info:
         cli.main()
-        assert exit_mock.called
-        captured = capsys.readouterr()
-        assert "URL is not formatted correctly" in captured.out
+    assert exc_info.value.code == 2
+    captured = capsys.readouterr()
+    assert "URL is not formatted correctly" in captured.err or "URL is not formatted correctly" in captured.out
 
 
 def test_examples_cli_url_both_set(monkeypatch, capsys):
