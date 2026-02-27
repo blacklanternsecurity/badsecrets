@@ -64,7 +64,7 @@ class Generic_JWT(BadsecretsBase):
         except KeyError:
             return (None, None, None)
 
-        if algorithm in XMLDSIG_table.keys():
+        if algorithm in XMLDSIG_table:
             algorithm = XMLDSIG_table[algorithm]
             JWT = self.swap_algorithm(JWT, algorithm)
 

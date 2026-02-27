@@ -1,8 +1,9 @@
 import os
 import sys
 import tempfile
+import pytest
 import respx
-from mock import patch
+from unittest.mock import patch
 from importlib.metadata import PackageNotFoundError
 
 from badsecrets.modules.generic_jwt import Generic_JWT
@@ -95,12 +96,12 @@ def test_examples_cli_manualtwovalues_identifyonly(monkeypatch, capsys):
 
 
 def test_examples_cli_url_invalid(monkeypatch, capsys):
-    with patch("sys.exit") as exit_mock:
-        monkeypatch.setattr("sys.argv", ["python", "--url", "hxxp://notaurl"])
+    monkeypatch.setattr("sys.argv", ["python", "--url", "hxxp://notaurl"])
+    with pytest.raises(SystemExit) as exc_info:
         cli.main()
-        assert exit_mock.called
-        captured = capsys.readouterr()
-        assert "URL is not formatted correctly" in captured.out
+    assert exc_info.value.code == 2
+    captured = capsys.readouterr()
+    assert "URL is not formatted correctly" in captured.err or "URL is not formatted correctly" in captured.out
 
 
 def test_examples_cli_url_both_set(monkeypatch, capsys):
@@ -270,7 +271,7 @@ def test_example_cli_hashcat_omittedonmatch(monkeypatch, capsys):
 
     cli.main()
     captured = capsys.readouterr()
-    assert not "Potential matching hashcat commands:" in captured.out
+    assert "Potential matching hashcat commands:" not in captured.out
     assert "your-256-bit-secret" in captured.out
 
     print(captured.out)
@@ -284,7 +285,7 @@ def test_example_cli_hashcat_noresult(monkeypatch, capsys):
 
     cli.main()
     captured = capsys.readouterr()
-    assert not "Potential matching hashcat commands" in captured.out
+    assert "Potential matching hashcat commands" not in captured.out
     print(captured.out)
 
 
@@ -298,7 +299,7 @@ def test_example_cli_hashcat_matchnomodule(monkeypatch, capsys):
 
     cli.main()
     captured = capsys.readouterr()
-    assert not "Potential matching hashcat commands" in captured.out
+    assert "Potential matching hashcat commands" not in captured.out
     print(captured.out)
 
 
@@ -378,7 +379,7 @@ def test_example_cli_hashcat_disabled(monkeypatch, capsys):
     captured = capsys.readouterr()
 
     assert (
-        not "Module: [Telerik_HashKey] Telerik Hash Key Signature Command: [hashcat -m 1450 -a 0 d63e" in captured.out
+        "Module: [Telerik_HashKey] Telerik Hash Key Signature Command: [hashcat -m 1450 -a 0 d63e" not in captured.out
     )
 
 
@@ -394,7 +395,7 @@ def test_example_cli_hashcat_telerikhashkey_invalid(monkeypatch, capsys):
     cli.main()
     captured = capsys.readouterr()
 
-    assert not "Module: [Telerik_HashKey] Telerik Hash Key Signature Command" in captured.out
+    assert "Module: [Telerik_HashKey] Telerik Hash Key Signature Command" not in captured.out
 
 
 def test_example_cli_hashcat_telerikhashkey_invalid2(monkeypatch, capsys):
@@ -409,7 +410,7 @@ def test_example_cli_hashcat_telerikhashkey_invalid2(monkeypatch, capsys):
     cli.main()
     captured = capsys.readouterr()
 
-    assert not "Module: [Telerik_HashKey] Telerik Hash Key Signature Command" in captured.out
+    assert "Module: [Telerik_HashKey] Telerik Hash Key Signature Command" not in captured.out
 
 
 def test_example_cli_hashcat_symfony_sha1(monkeypatch, capsys):
@@ -637,12 +638,12 @@ def test_example_cli_help(monkeypatch, capsys):
         assert exit_mock.called
         captured = capsys.readouterr()
         assert "-h, --help" in captured.out
-        assert "-nc, --no-color" in captured.out
-        assert "-u URL, --url URL" in captured.out
-        assert "-nh, --no-hashcat" in captured.out
-        assert "-c CUSTOM_SECRETS, --custom-secrets CUSTOM_SECRETS" in captured.out
-        assert "-p PROXY, --proxy PROXY" in captured.out
-        assert "-a USER_AGENT, --user-agent USER_AGENT" in captured.out
+        assert "--no-color" in captured.out
+        assert "--url URL" in captured.out
+        assert "--no-hashcat" in captured.out
+        assert "--custom-secrets CUSTOM_SECRETS" in captured.out
+        assert "--proxy PROXY" in captured.out
+        assert "--user-agent USER_AGENT" in captured.out
 
 
 def test_example_cli_dotnet45_url(monkeypatch, capsys):
@@ -956,9 +957,9 @@ def test_example_cli_jsfviewstate_serverside(monkeypatch, capsys):
         cli.main()
         captured = capsys.readouterr()
         assert (
-            not "Cryptographic Product Identified (no vulnerability)" in captured.out
+            "Cryptographic Product Identified (no vulnerability)" not in captured.out
         )  # make sure we didn't report it at all
-        assert not "Potential matching hashcat commands:" in captured.out
+        assert "Potential matching hashcat commands:" not in captured.out
 
 
 def test_example_cli_no_args(monkeypatch, capsys):

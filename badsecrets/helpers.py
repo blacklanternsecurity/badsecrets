@@ -4,6 +4,7 @@ import sys
 import hmac
 import struct
 import hashlib
+import argparse
 import binascii
 from enum import Enum
 from urllib.parse import urlparse
@@ -11,6 +12,18 @@ from colorama import Fore, Style, init
 from badsecrets.errors import BadsecretsException
 
 init(autoreset=True)  # Automatically reset the color to default after each print statement
+
+_url_validate_re = re.compile(
+    r"^https?://((?:[A-Z0-9_]|[A-Z0-9_][A-Z0-9\-_]*[A-Z0-9_])[\.]?)+(?:[A-Z0-9_][A-Z0-9\-_]*[A-Z0-9_]|[A-Z0-9_])(?::[0-9]{1,5})?.*$",
+    re.IGNORECASE,
+)
+
+
+def validate_url(arg_value):
+    """Argparse type validator for URLs."""
+    if not _url_validate_re.match(arg_value):
+        raise argparse.ArgumentTypeError("URL is not formatted correctly")
+    return arg_value
 
 
 def print_status(msg, passthru=False, color="white", colorenabled=True):
@@ -92,12 +105,12 @@ class Csharp_pbkdf1:
 
         try:
             self.lasthash = hashlib.sha1(passwordBytes + saltBytes).digest()
-        except TypeError:
-            raise Csharp_pbkdf1_exception("Password and Salt must be of type bytes")
+        except TypeError as e:
+            raise Csharp_pbkdf1_exception("Password and Salt must be of type bytes") from e
 
         self.iterations -= 1
 
-        for i in range(self.iterations - 1):
+        for _i in range(self.iterations - 1):
             self.lasthash = hashlib.sha1(self.lasthash).digest()
 
         self.derivedBytes = hashlib.sha1(self.lasthash).digest()
@@ -137,7 +150,7 @@ class Csharp_pbkdf1:
         return result
 
 
-def twos_compliment(unsigned):
+def twos_complement(unsigned):
     bs = bin(unsigned).replace("0b", "")
     val = int(bs, 2)
     b = val.to_bytes(1, byteorder=sys.byteorder, signed=False)
@@ -164,8 +177,8 @@ class Java_sha1prng:
         outputBytesArray = bytearray(output)
         newState = bytearray()
 
-        for c, n in zip(self.state, outputBytesArray):
-            v = twos_compliment(c) + twos_compliment(n) + last
+        for c, n in zip(self.state, outputBytesArray, strict=False):
+            v = twos_complement(c) + twos_complement(n) + last
             finalv = v & 255
             newState.append(finalv)
             last = v >> 8

@@ -122,7 +122,7 @@ class Jsf_viewstate(BadsecretsBase):
                                 dec_algo.__name__.replace("Crypto.Cipher.", ""),
                                 cipher_mode,
                                 None,
-                                True if uncompressed else False,
+                                bool(uncompressed),
                             )
 
                     elif cipher_mode == "CBC":
@@ -157,7 +157,7 @@ class Jsf_viewstate(BadsecretsBase):
                                         dec_algo.__name__.replace("Crypto.Cipher.", ""),
                                         cipher_mode,
                                         iv,
-                                        True if uncompressed else False,
+                                        bool(uncompressed),
                                     )
                                 else:
                                     invalid_iv_match = (
@@ -165,7 +165,7 @@ class Jsf_viewstate(BadsecretsBase):
                                         dec_algo.__name__.replace("Crypto.Cipher.", ""),
                                         cipher_mode,
                                         b"INVALID",
-                                        True if uncompressed else False,
+                                        bool(uncompressed),
                                     )
                                     continue
 
@@ -231,7 +231,7 @@ class Jsf_viewstate(BadsecretsBase):
             else:
                 jsf_viewstate_value = base64.b64encode(uncompressed)
 
-        for l in set(list(self.load_resources(["jsf_viewstate_passwords.txt", "top_100000_passwords.txt"]))):
+        for l in set(self.load_resources(["jsf_viewstate_passwords.txt", "top_100000_passwords.txt"])):
             with suppress(ValueError):
                 password = l.rstrip()
                 if self.DES3_decrypt(jsf_viewstate_value, password):
@@ -240,7 +240,7 @@ class Jsf_viewstate(BadsecretsBase):
                         "details": {
                             "source": jsf_viewstate_value,
                             "info": "JSF Viewstate (Mojarra 1.2.x - 2.0.3) 3DES Encrypted",
-                            "compression": True if uncompressed else False,
+                            "compression": bool(uncompressed),
                         },
                     }
 
@@ -263,7 +263,7 @@ class Jsf_viewstate(BadsecretsBase):
                             "details": {
                                 "source": jsf_viewstate_value,
                                 "info": "JSF Viewstate (Mojarra 2.2.6 - 2.3.x) AES Encrypted",
-                                "compression": True if uncompressed else False,
+                                "compression": bool(uncompressed),
                             },
                         }
 

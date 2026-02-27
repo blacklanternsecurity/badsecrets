@@ -11,7 +11,7 @@ for file in module_files:
     file = module_dir / file
     if file.is_file() and file.suffix.lower() == ".py" and file.stem not in ["base", "__init__"]:
         modules = importlib.import_module(f"badsecrets.modules.{file.stem}", "badsecrets")
-        for m in modules.__dict__.keys():
+        for m in modules.__dict__:
             module = getattr(modules, m)
             with suppress(AttributeError, TypeError):
                 if isinstance(module, type) and issubclass(module, BadsecretsBase) and module is not BadsecretsBase:

@@ -31,7 +31,7 @@ class LaravelSignedCookies(BadsecretsBase):
         try:
             json_value = json.loads(base64.b64decode(urllib.parse.unquote(value)))
 
-            if not all(key in json_value.keys() for key in ["mac", "value", "iv"]):
+            if not all(key in json_value for key in ["mac", "value", "iv"]):
                 return False
 
         except (binascii.Error, json.decoder.JSONDecodeError, UnicodeDecodeError):
