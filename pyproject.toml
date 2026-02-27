@@ -8,7 +8,7 @@ readme = "README.md"
 
 [tool.poetry.group.dev.dependencies]
 respx = ">=0.21,<1.0"
-pytest = "^8.3.4"
+pytest = ">=8.3.4,<10.0.0"
 pytest-cov = ">=6.1.1,<8.0.0"
 mock = "^5.1.0"
 pytest-mock = "^3.10.0"
