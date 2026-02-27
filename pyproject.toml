@@ -18,7 +18,7 @@ poetry-dynamic-versioning = {extras = ["plugin"], version = "^1.8.2"}
 python = "^3.10"
 pycryptodome = "^3.21.0"
 flask-unsign = "^1.2.1"
-Django = "^4.1.2"
+Django = ">=4.1.2,<6.0.0"
 pyjwt = {extras = ["crypto"], version = "^2.6.0"}
 httpx = ">=0.27,<1.0"
 colorama = "^0.4.6"
