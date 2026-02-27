@@ -10,7 +10,7 @@ import argparse
 import json as json_module
 import sys
 import os
-import re
+from urllib.parse import urlparse
 from importlib.metadata import version, PackageNotFoundError
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -75,14 +75,9 @@ class ReportIdentify(BaseReport):
             print_hashcat_results(self.x["hashcat"])
 
 
-def validate_url(
-    arg_value,
-    pattern=re.compile(
-        r"^https?://((?:[A-Z0-9_]|[A-Z0-9_][A-Z0-9\-_]*[A-Z0-9_])[\.]?)+(?:[A-Z0-9_][A-Z0-9\-_]*[A-Z0-9_]|[A-Z0-9_])(?::[0-9]{1,5})?.*$",
-        re.IGNORECASE,
-    ),
-):
-    if not pattern.match(arg_value):
+def validate_url(arg_value):
+    parsed = urlparse(arg_value)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
         raise argparse.ArgumentTypeError(print_status("URL is not formatted correctly", color="red"))
     return arg_value
 
