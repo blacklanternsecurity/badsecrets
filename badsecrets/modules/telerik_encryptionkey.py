@@ -23,6 +23,7 @@ class Telerik_EncryptionKey(BadsecretsBase):
         "secret": "Telerik.Web.UI.DialogParametersEncryptionKey",
         "severity": "MEDIUM",
     }
+    carve_locations = ("body",)
 
     def carve_regex(self):
         return re.compile(r"{\"SerializedParameters\":\"([^\"]*)\"")

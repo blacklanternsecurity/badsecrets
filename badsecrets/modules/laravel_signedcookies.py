@@ -25,6 +25,7 @@ class LaravelSignedCookies(BadsecretsBase):
 
     identify_regex = re.compile(r"eyJ(?:[\w-])*")
     description = {"product": "Laravel Signed Cookie", "secret": "Laravel APP_KEY", "severity": "HIGH"}
+    carve_locations = ("cookies",)
 
     def laravelVerify(self, value, secret):
         # attempt to decode laravel cookie and load contents into JSON object

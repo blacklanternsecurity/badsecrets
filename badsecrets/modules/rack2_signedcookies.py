@@ -13,6 +13,7 @@ class Rack2_SignedCookies(BadsecretsBase):
         "secret": "Rack 2.x secret key",
         "severity": "HIGH",
     }
+    carve_locations = ("cookies",)
 
     def carve_regex(self):
         return re.compile(r"session=(BAh[\.a-zA-z-0-9\%=]{32,}--[\.a-zA-z-0-9%=]{16,})")

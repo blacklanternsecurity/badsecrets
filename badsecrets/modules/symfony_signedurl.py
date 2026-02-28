@@ -12,6 +12,7 @@ class Symfony_SignedURL(BadsecretsBase):
     identify_regex = re.compile(r"http(?:s)?:\/\/[^\/]+\/_fragment[^\s]+_hash=[\/a-zA-Z0-9\+=%\-]{24,132}")
     yara_carve_pattern = r"https?:\/\/[^\/]+\/_fragment[^\s]+_hash=[\/a-zA-Z0-9\+=%\-]{24,132}"
     description = {"product": "Symfony Signed URL", "secret": "Symfony APP_SECRET", "severity": "CRITICAL"}
+    carve_locations = ("body",)
 
     def carve_regex(self):
         return re.compile(r"(http(?:s)?:\/\/[^\/]+\/_fragment[^\s]+_hash=[\/a-zA-Z0-9\+=%\-]{24,132})")

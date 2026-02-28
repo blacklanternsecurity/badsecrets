@@ -6,6 +6,7 @@ from badsecrets.base import BadsecretsBase
 class DjangoSignedCookies(BadsecretsBase):
     identify_regex = re.compile(r"^[\.a-zA-z-0-9]+:[\.a-zA-z-0-9:]+$")
     description = {"product": "Django Signed Cookie", "secret": "Django secret_key", "severity": "HIGH"}
+    carve_locations = ("cookies",)
 
     def check_secret(self, django_signed_cookie):
         if not self.identify(django_signed_cookie):

@@ -15,6 +15,7 @@ class ASPNET_compressedviewstate(BadsecretsBase):
         " condition: $vs or $vstate or $cvs }"
     )
     description = {"product": "ASP.NET Compressed Viewstate", "secret": "unprotected", "severity": "CRITICAL"}
+    carve_locations = ("body",)
 
     def carve_regex(self):
         return re.compile(r"<input[^>]+__(?:VIEWSTATE|VSTATE|COMPRESSEDVIEWSTATE)\"\s*value=\"(.*?)\"")

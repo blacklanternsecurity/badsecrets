@@ -12,6 +12,7 @@ class Yii2_SignedCookies(BadsecretsBase):
     identify_regex = re.compile(r"^[a-fA-F0-9]{64}a%3A[a-zA-Z0-9%]+$")
     yara_carve_pattern = r"[a-fA-F0-9]{64}a%3A"
     description = {"product": "Yii2 Signed Cookie", "secret": "Yii2 cookieValidationKey", "severity": "HIGH"}
+    carve_locations = ("cookies",)
 
     def verify_yii2_cookie(self, cookie_value, validation_key):
         # URL decode the whole value first

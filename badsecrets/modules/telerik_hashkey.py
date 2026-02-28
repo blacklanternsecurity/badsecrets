@@ -15,6 +15,7 @@ class Telerik_HashKey(BadsecretsBase):
         "secret": "Telerik.Upload.ConfigurationHashKey",
         "severity": "HIGH",
     }
+    carve_locations = ("body",)
 
     def carve_regex(self):
         return re.compile(r"{\"SerializedParameters\":\"([^\"]*)\"")

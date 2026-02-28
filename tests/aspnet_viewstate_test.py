@@ -474,7 +474,8 @@ def test_carve_httpx_response_invalid_type():
 
 def test_carve_cookies_not_dict():
     """carve() with non-dict cookies should raise CarveException (lines 95-97)."""
-    x = ASPNETViewstate()
+    # Use a module with cookies in carve_locations (viewstate is body-only)
+    x = modules_loaded["generic_jwt"]()
     with pytest.raises(CarveException, match="must be type dict"):
         x.carve(cookies="not_a_dict")
 
@@ -484,72 +485,6 @@ def test_carve_body_not_str():
     x = ASPNETViewstate()
     with pytest.raises(CarveException, match="must be type str"):
         x.carve(body=12345)
-
-
-# --- carve() cookie and header paths (lines 101-104, 110-127) ---
-
-
-def test_carve_cookie_path_exercised():
-    """carve() with viewstate in cookies exercises lines 98-104."""
-    x = ASPNETViewstate()
-    # A viewstate-like value in cookies - check_secret is called on it (line 99)
-    # Even if no secret is found (result is []), the code path is exercised
-    viewstate = "/wEPDwUJODc0MjgwMjkwZGTCdzCrBtl0AFYdKsWX1bQ8DcMilw=="
-    r_list = x.carve(cookies={"session": viewstate})
-    # The code path for cookies was exercised (lines 93-104)
-    assert isinstance(r_list, list)
-
-
-def test_carve_cookie_secret_found():
-    """carve() with MAC_DISABLED viewstate in cookies should find it (lines 101-104)."""
-    x = ASPNETViewstate()
-    # MAC_DISABLED viewstate - will be detected in check_secret regardless of generator
-    viewstate = "/wEPDwUJODc0MjgwMjkwZGQ="
-    r_list = x.carve(cookies={"session": viewstate})
-    assert r_list
-    found = any(r["type"] == "SecretFound" and r["location"] == "cookies" for r in r_list)
-    assert found
-
-
-def test_carve_header_direct_secret():
-    """carve() finding a MAC_DISABLED viewstate in a header value (lines 110-113)."""
-    x = ASPNETViewstate()
-    # MAC_DISABLED viewstate
-    viewstate = "/wEPDwUJODc0MjgwMjkwZGQ="
-    r_list = x.carve(headers={"X-Custom": viewstate})
-    assert r_list
-    found = any(r["type"] == "SecretFound" and r["location"] == "headers" for r in r_list)
-    assert found
-
-
-def test_carve_header_carved_secret_found():
-    """carve() with a viewstate+generator carved from header value (line 120)."""
-    x = ASPNETViewstate()
-    # Embed a known DOTNET40 viewstate + generator in an HTML-like header value
-    viewstate = "/wEPDwUJODc0MjgwMjkwZGTCdzCrBtl0AFYdKsWX1bQ8DcMilw=="
-    header_val = (
-        f'<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="{viewstate}" />'
-        '<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="9BD98A7D" />'
-    )
-    r_list = x.carve(headers={"X-Custom": header_val}, url="http://10.1.1.43/default2.aspx")
-    assert r_list
-    found = any(r["type"] == "SecretFound" and r["location"] == "headers" for r in r_list)
-    assert found
-
-
-def test_carve_header_carved_identify_only():
-    """carve() with a viewstate-like value in headers that matches regex but not key (lines 121-127)."""
-    x = ASPNETViewstate()
-    # Construct an HTML-like fragment with viewstate + generator inside a header value
-    header_val = (
-        '<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="'
-        'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" />'
-        '<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="DEADBEEF" />'
-    )
-    r_list = x.carve(headers={"X-Custom": header_val})
-    if r_list:
-        found_io = any(r["type"] == "IdentifyOnly" and r["location"] == "headers" for r in r_list)
-        assert found_io
 
 
 # --- Split viewstate IdentifyOnly (lines 153-154, 156) ---
