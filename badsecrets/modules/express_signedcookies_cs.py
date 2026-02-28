@@ -26,6 +26,7 @@ class ExpressSignedCookies_CS(BadsecretsBase):
         "severity": "HIGH",
     }
     validate_carve = False
+    carve_locations = ("headers",)
 
     def carve_regex(self):
         return re.compile(r"(\w{1,64})=([^;]{4,512});.{0,100}?\1\.sig=([^;]{27,86})")

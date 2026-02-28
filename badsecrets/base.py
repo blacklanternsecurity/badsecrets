@@ -33,6 +33,7 @@ class BadsecretsBase:
 
     check_secret_args = 1
     validate_carve = True
+    carve_locations = ("headers", "cookies", "body")
 
     def __init__(self, custom_resource=None, **kwargs):
         self.custom_resource = custom_resource
@@ -106,7 +107,7 @@ class BadsecretsBase:
             else:
                 raise badsecrets.errors.CarveException("httpx_response must be an httpx.Response object")
 
-        if cookies:
+        if cookies and "cookies" in self.carve_locations:
             if not isinstance(cookies, dict):
                 raise badsecrets.errors.CarveException("Header argument must be type dict")
             for _k, v in cookies.items():
@@ -117,7 +118,7 @@ class BadsecretsBase:
                     r["location"] = "cookies"
                     results.append(r)
 
-        if headers:
+        if headers and "headers" in self.carve_locations:
             for header_value in headers.values():
                 # Check if we have a match outright
                 r = self.check_secret(header_value)
@@ -143,7 +144,7 @@ class BadsecretsBase:
                             r["location"] = "headers"
                             results.append(r)
 
-        if body:
+        if body and "body" in self.carve_locations:
             if not isinstance(body, str):
                 raise badsecrets.errors.CarveException("Body argument must be type str")
             if _yara_body_hit is None:

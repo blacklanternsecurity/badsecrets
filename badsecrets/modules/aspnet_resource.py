@@ -20,16 +20,18 @@ from badsecrets.modules.aspnet_viewstate import ASPNET_Viewstate
 class ASPNET_Resource(ASPNET_Viewstate):
     check_secret_args = 1
     # Match the custom ASP.NET URL-safe base64 alphabet (A-Z, a-z, 0-9, -, _) ending with a padding digit (0-2)
-    identify_regex = re.compile(r"^[A-Za-z0-9\-_]{16,}[0-2]$")
+    # Minimum 49 chars: a valid token decodes to IV (8+ bytes) + data (8+ bytes) + HMAC (20+ bytes) = 36+ bytes = 48+ b64 chars + 1 padding digit
+    identify_regex = re.compile(r"^[A-Za-z0-9\-_]{48,}[0-2]$")
     yara_carve_rule = (
         "rule ASPNET_Resource_carve {"
-        ' strings: $wr = "WebResource.axd" $sr = "ScriptResource.axd"'
+        ' strings: $wr = "WebResource.axd?d=" $sr = "ScriptResource.axd?d="'
         " condition: $wr or $sr }"
     )
     description = {"product": "ASP.NET Resource", "secret": "ASP.NET MachineKey", "severity": "HIGH"}
+    carve_locations = ("body",)
 
     def carve_regex(self):
-        return re.compile(r"(?:WebResource|ScriptResource)\.axd\?d=([A-Za-z0-9_\-]{16,}[0-2])", re.IGNORECASE)
+        return re.compile(r"(?:WebResource|ScriptResource)\.axd\?d=([A-Za-z0-9_\-]{48,}[0-2])", re.IGNORECASE)
 
     def carve_to_check_secret(self, s, **kwargs):
         if s.groups():
@@ -109,9 +111,9 @@ class ASPNET_Resource(ASPNET_Viewstate):
             return None
 
         standard_b64 = aspnet_resource_b64_to_standard_b64(resource_token)
-        resource_bytes = base64.b64decode(standard_b64)
-
-        if len(resource_bytes) < 20:
+        try:
+            resource_bytes = base64.b64decode(standard_b64)
+        except binascii.Error:
             return None
 
         for l in self.load_resources(["aspnet_machinekeys.txt"]):

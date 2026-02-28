@@ -28,6 +28,7 @@ class ExpressSignedCookies_ES(BadsecretsBase):
         "secret": "Express.js SESSION_SECRET (express-session)",
         "severity": "LOW",
     }
+    carve_locations = ("cookies",)
 
     def carve_regex(self):
         return re.compile(r"(?<!http)(s%3[Aa][^.]+\.(?![^ ]*%20|[^ ]*%22)[a-zA-Z0-9%]{20,90})")

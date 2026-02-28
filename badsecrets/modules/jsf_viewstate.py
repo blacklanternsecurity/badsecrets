@@ -25,6 +25,7 @@ class Jsf_viewstate(BadsecretsBase):
     }
 
     hashcat_hashalg_table = {"MD5": "50", "SHA1": "150", "SHA256": "1450", "SHA384": "10800", "SHA512": "1750"}
+    carve_locations = ("body",)
 
     def carve_regex(self):
         return re.compile(r"<input.+?name=\"javax\.faces\.ViewState\".+?value=\"([^\"]*)\"")

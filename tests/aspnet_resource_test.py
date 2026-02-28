@@ -73,13 +73,27 @@ def test_resource_check_secret_dotnet45():
 def test_resource_negative():
     x = ASPNET_Resource()
 
-    # Random base64-like string should not match
+    # Token too short for new 48-char minimum
     r = x.check_secret("AAAAAAAAAAAAAAAAAAAAAAAAAAAA0")
     assert not r
 
     # Standard base64 (not ASP.NET resource format) should not match
     r = x.check_secret("/wEPDwUJODExMDE5NzY5ZGQz6LniPbNSFqk5H12BoEzV")
     assert not r
+
+    # Valid format (passes identify) but random data, no key match → exercises return None at end
+    r = x.check_secret("B" * 48 + "0")
+    assert not r
+
+
+def test_resource_malformed_keyfile(tmp_path):
+    """Malformed line in machinekeys file triggers ValueError continue without crashing."""
+    bad_keys = tmp_path / "bad_keys.txt"
+    bad_keys.write_text("this-has-no-comma\n")
+    x = ASPNET_Resource(custom_resource=str(bad_keys))
+    # The malformed line is skipped (ValueError continue), built-in keys still match
+    r = x.check_secret(webresource_token)
+    assert r is not None
 
 
 def test_resource_carve():
@@ -146,29 +160,11 @@ def test_resource_module_loaded():
 
 
 def test_resource_check_secret_invalid_b64():
-    """Token that passes identify but fails b64 decode should return None (lines 117-118)."""
+    """Token that passes identify but produces invalid base64 should return None."""
     x = ASPNET_Resource()
-    # Valid identify regex format but contains invalid base64 after conversion
-    # The token format is [A-Za-z0-9\-_]{16,}[0-2] and padding digit at end
-    # Make a token that will fail during base64 decode
-    r = x.check_secret("!" * 20 + "0")  # Won't pass identify
-    assert r is None
-
-
-def test_resource_check_secret_short_bytes():
-    """Token that decodes to < 20 bytes should return None (line 121)."""
-    x = ASPNET_Resource()
-    import base64
-
-    # Create a short payload, encode as ASP.NET resource b64
-    short_data = b"A" * 10
-    std_b64 = base64.b64encode(short_data).decode()
-    # Convert to ASP.NET URL-safe format: replace +/- with -_, add padding digit
-    token = std_b64.replace("+", "-").replace("/", "_").rstrip("=")
-    pad_count = (4 - len(std_b64.rstrip("=")) % 4) % 4
-    # Ensure it's at least 16 chars
-    token = token.ljust(16, "A") + str(pad_count)
-    r = x.check_secret(token)
+    # 49 A's + padding digit "1" → passes identify_regex (49 chars from [A-Za-z0-9\-_] + [0-2])
+    # After conversion: 49 A's + "=" → 50 chars, 50 % 4 != 0 → Incorrect padding
+    r = x.check_secret("A" * 49 + "1")
     assert r is None
 
 

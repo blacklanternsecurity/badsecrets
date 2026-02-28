@@ -29,6 +29,7 @@ class ASPNET_Viewstate(BadsecretsBase):
     )
     yara_carve_rule = 'rule ASPNET_Viewstate_carve { strings: $vs = "__VIEWSTATE" condition: $vs }'
     description = {"product": "ASP.NET Viewstate", "secret": "ASP.NET MachineKey", "severity": "CRITICAL"}
+    carve_locations = ("body",)
 
     # Regex for normal viewstate (non-split)
     # Limit gap between fields to 256KB to prevent excessive backtracking on pages without generator
