@@ -175,27 +175,34 @@ def parse_custom_secrets(custom_secrets_args):
     return global_files, module_keys
 
 
+def _print_module_table(title, classes):
+    """Print a formatted table of modules."""
+    if not classes:
+        return
+    rows = []
+    for cls in sorted(classes, key=lambda c: c.__name__):
+        desc = cls.get_description()
+        rows.append((cls.__name__, desc["product"], desc["secret"], desc["severity"]))
+
+    headers = ("Module", "Product", "Secret", "Severity")
+    widths = [max(len(h), max(len(r[i]) for r in rows)) for i, h in enumerate(headers)]
+    sep = "+-" + "-+-".join("-" * w for w in widths) + "-+"
+    fmt = "| " + " | ".join(f"{{:<{w}}}" for w in widths) + " |"
+
+    print(f"\n{title}\n")
+    print(sep)
+    print(fmt.format(*headers))
+    print(sep)
+    for row in rows:
+        print(fmt.format(*row))
+    print(sep)
+
+
 def list_modules():
     """Print all available modules with their descriptions."""
-    print("\nPassive modules (analyze existing cryptographic products):\n")
-    for cls in sorted(_passive_subclasses(), key=lambda c: c.__name__):
-        desc = cls.get_description()
-        print(f"  {cls.__name__}")
-        print(f"    Product: {desc['product']}")
-        print(f"    Secret:  {desc['secret']}")
-        print(f"    Severity: {desc['severity']}")
-        print()
-
-    active = sorted(_active_subclasses(), key=lambda c: c.__name__)
-    if active:
-        print("Active modules (send targeted probes to detect default/known keys):\n")
-        for cls in active:
-            desc = cls.get_description()
-            print(f"  {cls.__name__}")
-            print(f"    Product: {desc['product']}")
-            print(f"    Secret:  {desc['secret']}")
-            print(f"    Severity: {desc['severity']}")
-            print()
+    _print_module_table("Passive modules (analyze existing cryptographic products)", _passive_subclasses())
+    _print_module_table("Active modules (send targeted probes to detect default/known keys)", _active_subclasses())
+    print()
 
 
 def main():
