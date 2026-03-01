@@ -8,7 +8,7 @@ import httpx
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(f"{os.path.dirname(SCRIPT_DIR)}/examples")
 from badsecrets.examples import cli
-from badsecrets.examples.cli import validate_active_keys
+from badsecrets.examples.cli import parse_custom_secrets
 
 import argparse
 
@@ -24,60 +24,117 @@ GLOBALPROTECT_PORTAL_HTML = """
 </html>
 """
 
+SHIRO_LOGIN_HTML = """
+<html>
+<head><title>Login</title></head>
+<body>
+<form action="/doLogin" method="POST">
+<input type="text" name="username" />
+<input type="password" name="password" />
+<input type="checkbox" name="rememberMe" /> Remember me
+</form>
+</body>
+</html>
+"""
 
-def test_active_keys_inline():
-    """--active-keys MODULE:key1,key2 parses inline keys."""
-    result = validate_active_keys(["GlobalProtect_DefaultMasterKey:key1,key2,key3"])
-    assert "GlobalProtect_DefaultMasterKey" in result
-    assert result["GlobalProtect_DefaultMasterKey"] == ["key1", "key2", "key3"]
+
+# --- parse_custom_secrets tests ---
 
 
-def test_active_keys_file():
-    """--active-keys MODULE:/path/to/file reads keys from file."""
+def test_custom_secrets_global_file():
+    """--custom-secrets FILE (no module prefix) returns as global file."""
     with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-        f.write("filekey1\nfilekey2\n\n")
+        f.write("key1\nkey2\n")
         f.flush()
         try:
-            result = validate_active_keys([f"GlobalProtect_DefaultMasterKey:{f.name}"])
-            assert "GlobalProtect_DefaultMasterKey" in result
-            assert result["GlobalProtect_DefaultMasterKey"] == ["filekey1", "filekey2"]
+            global_files, module_keys = parse_custom_secrets([f.name])
+            assert len(global_files) == 1
+            assert global_files[0] == f.name
+            assert module_keys == {}
         finally:
             os.unlink(f.name)
 
 
-def test_active_keys_invalid_module():
+def test_custom_secrets_module_inline():
+    """--custom-secrets MODULE:key1,key2 parses inline keys."""
+    global_files, module_keys = parse_custom_secrets(["GlobalProtect_DefaultMasterKey:key1,key2,key3"])
+    assert global_files == []
+    assert "GlobalProtect_DefaultMasterKey" in module_keys
+    assert module_keys["GlobalProtect_DefaultMasterKey"] == ["key1", "key2", "key3"]
+
+
+def test_custom_secrets_module_file():
+    """--custom-secrets MODULE:/path/to/file reads keys from file."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+        f.write("filekey1\nfilekey2\n\n")
+        f.flush()
+        try:
+            global_files, module_keys = parse_custom_secrets([f"GlobalProtect_DefaultMasterKey:{f.name}"])
+            assert global_files == []
+            assert "GlobalProtect_DefaultMasterKey" in module_keys
+            assert module_keys["GlobalProtect_DefaultMasterKey"] == ["filekey1", "filekey2"]
+        finally:
+            os.unlink(f.name)
+
+
+def test_custom_secrets_invalid_module():
     """Typo in module name -> error with suggestion."""
-    with pytest.raises(argparse.ArgumentTypeError, match="No active module found"):
-        validate_active_keys(["GlobalProtect_DefaultMasterKe:key1"])
+    with pytest.raises(argparse.ArgumentTypeError, match="No module found"):
+        parse_custom_secrets(["GlobalProtect_DefaultMasterKe:key1"])
 
 
-def test_active_keys_no_colon():
-    """Missing colon -> format error."""
-    with pytest.raises(argparse.ArgumentTypeError, match="Expected MODULE:keys_or_file"):
-        validate_active_keys(["GlobalProtect_DefaultMasterKeykey1"])
-
-
-def test_active_keys_multiple():
-    """Multiple --active-keys for same module extend the key list."""
-    result = validate_active_keys(
+def test_custom_secrets_multiple():
+    """Multiple --custom-secrets for same module extend the key list."""
+    global_files, module_keys = parse_custom_secrets(
         [
             "GlobalProtect_DefaultMasterKey:key1,key2",
             "GlobalProtect_DefaultMasterKey:key3",
         ]
     )
-    assert result["GlobalProtect_DefaultMasterKey"] == ["key1", "key2", "key3"]
+    assert module_keys["GlobalProtect_DefaultMasterKey"] == ["key1", "key2", "key3"]
 
 
-def test_active_keys_case_insensitive():
+def test_custom_secrets_case_insensitive():
     """Module name lookup is case-insensitive."""
-    result = validate_active_keys(["globalprotect_defaultmasterkey:mykey"])
-    assert "GlobalProtect_DefaultMasterKey" in result
+    global_files, module_keys = parse_custom_secrets(["globalprotect_defaultmasterkey:mykey"])
+    assert "GlobalProtect_DefaultMasterKey" in module_keys
 
 
-def test_active_keys_empty():
-    """No --active-keys returns empty dict."""
-    result = validate_active_keys(None)
-    assert result == {}
+def test_custom_secrets_empty():
+    """No --custom-secrets returns empty."""
+    global_files, module_keys = parse_custom_secrets(None)
+    assert global_files == []
+    assert module_keys == {}
+
+
+def test_custom_secrets_mixed():
+    """Mix of global file and module-targeted keys."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+        f.write("globalkey\n")
+        f.flush()
+        try:
+            global_files, module_keys = parse_custom_secrets([f.name, "GlobalProtect_DefaultMasterKey:targeted_key"])
+            assert len(global_files) == 1
+            assert "GlobalProtect_DefaultMasterKey" in module_keys
+            assert module_keys["GlobalProtect_DefaultMasterKey"] == ["targeted_key"]
+        finally:
+            os.unlink(f.name)
+
+
+def test_custom_secrets_shiro_module():
+    """Module targeting works for active Shiro module."""
+    global_files, module_keys = parse_custom_secrets(["Shiro_RememberMe_Key:myShiroKey123"])
+    assert "Shiro_RememberMe_Key" in module_keys
+    assert module_keys["Shiro_RememberMe_Key"] == ["myShiroKey123"]
+
+
+def test_custom_secrets_passive_module():
+    """Module targeting also works for passive modules."""
+    global_files, module_keys = parse_custom_secrets(["Shiro_RememberMe:mykey"])
+    assert "Shiro_RememberMe" in module_keys
+
+
+# --- CLI integration tests ---
 
 
 @respx.mock
@@ -152,20 +209,39 @@ def test_url_mode_active_json(monkeypatch, capsys):
     assert "p1a2l3o4a5l6t7o8" in captured.out
 
 
-def test_passive_only_and_active_keys_conflict(monkeypatch, capsys):
-    """--passive-only + --active-keys -> error."""
+@respx.mock
+def test_url_mode_custom_secrets_for_active(monkeypatch, capsys):
+    """--custom-secrets MODULE:keys works in URL mode for active modules."""
+    respx.get("https://vpn.example.com").mock(return_value=httpx.Response(200, text=GLOBALPROTECT_PORTAL_HTML))
+    respx.post("https://vpn.example.com/sslmgr").mock(
+        return_value=httpx.Response(200, text="Unable to find the configuration")
+    )
+
     monkeypatch.setattr(
         "sys.argv",
         [
             "python",
             "-u",
             "https://vpn.example.com",
-            "--passive-only",
-            "--active-keys",
-            "GlobalProtect_DefaultMasterKey:key1",
+            "-c",
+            "GlobalProtect_DefaultMasterKey:customkey1,customkey2",
             "-nc",
         ],
     )
 
-    with pytest.raises(SystemExit):
-        cli.main()
+    cli.main()
+    captured = capsys.readouterr()
+    assert "Known Secret Found!" in captured.out
+
+
+def test_list_modules(monkeypatch, capsys):
+    """--list-modules shows module descriptions."""
+    monkeypatch.setattr("sys.argv", ["python", "--list-modules", "-nc"])
+
+    cli.main()
+    captured = capsys.readouterr()
+    assert "Passive modules" in captured.out
+    assert "Active modules" in captured.out
+    assert "GlobalProtect_DefaultMasterKey" in captured.out
+    assert "Shiro_RememberMe_Key" in captured.out
+    assert "Apache Shiro" in captured.out

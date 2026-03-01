@@ -419,6 +419,25 @@ def carve_all_modules(**kwargs):
         return results
 
 
+def build_prefilter_text(httpx_response=None, body=None):
+    """Build text for YARA prefilter scanning, including headers + body.
+
+    Active module prefilters may need to match on response headers (e.g. Set-Cookie)
+    in addition to body content. This function constructs the combined text.
+    """
+    parts = []
+    if httpx_response is not None:
+        for name, value in httpx_response.headers.items():
+            parts.append(f"{name}: {value}")
+        parts.append("")
+    text = body
+    if not text and httpx_response is not None:
+        text = getattr(httpx_response, "text", None)
+    if text:
+        parts.append(text)
+    return "\n".join(parts) if parts else ""
+
+
 async def probe_all_modules(httpx_response=None, url=None, body=None, active_keys_map=None, **kwargs):
     """Run active probes against modules whose YARA prefilter matches the response.
 
@@ -434,11 +453,11 @@ async def probe_all_modules(httpx_response=None, url=None, body=None, active_key
     if active_keys_map is None:
         active_keys_map = {}
 
-    # Extract body for prefilter scanning
-    scan_body = body
-    if not scan_body and httpx_response is not None:
-        scan_body = getattr(httpx_response, "text", None)
-    if not scan_body:
+    # Build scan text including headers + body for prefilter matching
+    scan_text = body
+    if not scan_text:
+        scan_text = build_prefilter_text(httpx_response=httpx_response, body=body)
+    if not scan_text:
         return results
 
     # Extract URL from response if not provided
@@ -446,7 +465,7 @@ async def probe_all_modules(httpx_response=None, url=None, body=None, active_key
         url = str(httpx_response.url)
 
     # Run YARA prefilter
-    prefilter_matches = yara_prefilter_scan(scan_body)
+    prefilter_matches = yara_prefilter_scan(scan_text)
     if not prefilter_matches:
         return results
 

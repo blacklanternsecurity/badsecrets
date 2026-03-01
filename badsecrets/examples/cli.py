@@ -8,6 +8,8 @@ from badsecrets.base import (
     carve_all_modules,
     hashcat_all_modules,
     probe_all_modules,
+    build_prefilter_text,
+    _passive_subclasses,
     _active_subclasses,
     yara_prefilter_scan,
 )
@@ -104,47 +106,96 @@ def print_hashcat_results(hashcat_candidates):
             )
 
 
-def validate_active_keys(active_keys_args):
-    """Parse and validate --active-keys arguments.
-    Returns dict: {module_class_name: [key1, key2, ...]}
+def _all_module_names():
+    """Build case-insensitive lookup of all module class names (passive + active)."""
+    names = {}
+    for cls in _passive_subclasses():
+        names[cls.__name__.upper()] = cls.__name__
+    for cls in _active_subclasses():
+        names[cls.__name__.upper()] = cls.__name__
+    return names
+
+
+def _active_module_names():
+    """Set of active module class names."""
+    return {cls.__name__ for cls in _active_subclasses()}
+
+
+def parse_custom_secrets(custom_secrets_args):
+    """Parse --custom-secrets arguments into global files and per-module keys.
+
+    Supports two formats:
+      --custom-secrets FILE              → global file for all modules
+      --custom-secrets MODULE:FILE_OR_KEYS → targeted to specific module
+
+    Returns:
+        global_files: list of file paths to apply to all modules
+        module_keys: dict of {module_class_name: [key1, key2, ...]}
     """
-    if not active_keys_args:
-        return {}
+    global_files = []
+    module_keys = {}
 
-    # Build lookup of valid module names (case-insensitive)
-    valid_names = {cls.__name__.upper(): cls.__name__ for cls in _active_subclasses()}
+    if not custom_secrets_args:
+        return global_files, module_keys
 
-    result = {}
-    for arg in active_keys_args:
+    all_names = _all_module_names()
+
+    for arg in custom_secrets_args:
         if ":" not in arg:
-            raise argparse.ArgumentTypeError(f"Invalid --active-keys format: '{arg}'. Expected MODULE:keys_or_file")
-        module_name, value = arg.split(":", 1)
-        upper_name = module_name.upper()
-
-        if upper_name not in valid_names:
-            candidates = list(valid_names.values())
-            close = difflib.get_close_matches(module_name, candidates, n=1, cutoff=0.4)
-            suggestion = f" Did you mean '{close[0]}'?" if close else ""
-            available = ", ".join(candidates)
-            raise argparse.ArgumentTypeError(
-                f"No active module found for '{module_name}'.{suggestion} Available active modules: {available}"
-            )
-
-        canonical_name = valid_names[upper_name]
-
-        # Auto-detect: if value is an existing file path, read keys from it
-        if os.path.isfile(value):
-            with open(value) as f:
-                keys = [line.strip() for line in f if line.strip()]
+            # No module prefix → treat as global file
+            validate_file(arg)
+            global_files.append(arg)
         else:
-            # Otherwise treat as comma-separated inline keys
-            keys = [k.strip() for k in value.split(",") if k.strip()]
+            module_name, value = arg.split(":", 1)
+            upper_name = module_name.upper()
 
-        if canonical_name not in result:
-            result[canonical_name] = []
-        result[canonical_name].extend(keys)
+            if upper_name not in all_names:
+                candidates = list(set(all_names.values()))
+                close = difflib.get_close_matches(module_name, candidates, n=1, cutoff=0.4)
+                suggestion = f" Did you mean '{close[0]}'?" if close else ""
+                available = ", ".join(sorted(candidates))
+                raise argparse.ArgumentTypeError(
+                    f"No module found for '{module_name}'.{suggestion} Available modules: {available}"
+                )
 
-    return result
+            canonical_name = all_names[upper_name]
+
+            # Auto-detect: if value is an existing file path, read keys from it
+            if os.path.isfile(value):
+                with open(value) as f:
+                    keys = [line.strip() for line in f if line.strip()]
+            else:
+                # Otherwise treat as comma-separated inline keys
+                keys = [k.strip() for k in value.split(",") if k.strip()]
+
+            if canonical_name not in module_keys:
+                module_keys[canonical_name] = []
+            module_keys[canonical_name].extend(keys)
+
+    return global_files, module_keys
+
+
+def list_modules():
+    """Print all available modules with their descriptions."""
+    print("\nPassive modules (analyze existing cryptographic products):\n")
+    for cls in sorted(_passive_subclasses(), key=lambda c: c.__name__):
+        desc = cls.get_description()
+        print(f"  {cls.__name__}")
+        print(f"    Product: {desc['product']}")
+        print(f"    Secret:  {desc['secret']}")
+        print(f"    Severity: {desc['severity']}")
+        print()
+
+    active = sorted(_active_subclasses(), key=lambda c: c.__name__)
+    if active:
+        print("Active modules (send targeted probes to detect default/known keys):\n")
+        for cls in active:
+            desc = cls.get_description()
+            print(f"  {cls.__name__}")
+            print(f"    Product: {desc['product']}")
+            print(f"    Secret:  {desc['secret']}")
+            print(f"    Severity: {desc['severity']}")
+            print()
 
 
 def main():
@@ -198,8 +249,16 @@ def main():
     parser.add_argument(
         "-c",
         "--custom-secrets",
-        type=validate_file,
-        help="include a custom secrets file to load along with the default secrets",
+        action="append",
+        metavar="FILE_OR_MODULE:KEYS",
+        help=(
+            "Custom secrets to check. Can be specified multiple times. "
+            "Without a module prefix, the file is loaded for all modules. "
+            "With a module prefix (MODULE:value), keys are targeted to that module only. "
+            "Value can be a file path or comma-separated inline keys. "
+            "Example: -c my_keys.txt  or  -c Shiro_RememberMe_Key:key1,key2  "
+            "or  -c GlobalProtect_DefaultMasterKey:keys.txt"
+        ),
     )
 
     parser.add_argument("product", nargs="*", type=str, help="Cryptographic product to check for known secrets")
@@ -246,19 +305,17 @@ def main():
     )
 
     parser.add_argument(
-        "--active-keys",
-        action="append",
-        metavar="MODULE:KEYS_OR_FILE",
-        help=(
-            "Custom keys for a specific active module. Format: MODULE:value where value is "
-            "a file path (if it exists on disk) or a comma-separated list of keys. "
-            "Can be specified multiple times for different modules. "
-            "Example: --active-keys GlobalProtect_DefaultMasterKey:my_keys.txt "
-            "or --active-keys GlobalProtect_DefaultMasterKey:key1,key2,key3"
-        ),
+        "-l",
+        "--list-modules",
+        action="store_true",
+        help="List all available modules with descriptions and exit",
     )
 
     args = parser.parse_args(unknown_args)
+
+    if args.list_modules:
+        list_modules()
+        return
 
     if not args.url and not args.product:
         parser.error(
@@ -273,23 +330,42 @@ def main():
         parser.error(print_status("In --url mode, no positional arguments should be used", color="red"))
         return
 
-    if args.passive_only and args.active_keys:
-        parser.error(print_status("--passive-only and --active-keys are mutually exclusive", color="red"))
-        return
-
-    if not args.url and (args.passive_only or args.active_keys):
-        parser.error(print_status("--passive-only and --active-keys are only valid in --url mode", color="red"))
+    if not args.url and args.passive_only:
+        parser.error(print_status("--passive-only is only valid in --url mode", color="red"))
         return
 
     proxy = None
     if args.proxy:
         proxy = args.proxy
 
-    custom_resource = None
-    if args.custom_secrets:
-        custom_resource = args.custom_secrets
-        if not json_mode:
-            print_status(f"Including custom secrets list [{custom_resource}]\n", color="yellow")
+    # Parse unified --custom-secrets
+    try:
+        global_files, module_keys = parse_custom_secrets(args.custom_secrets)
+    except argparse.ArgumentTypeError as e:
+        parser.error(str(e))
+        return
+
+    # Global custom resource for passive modules (first global file, backward compatible)
+    custom_resource = global_files[0] if global_files else None
+
+    # Build active_keys_map: start with module-targeted keys for active modules
+    active_names = _active_module_names()
+    active_keys_map = {k: v for k, v in module_keys.items() if k in active_names}
+
+    # Also load keys from global files for active modules
+    if global_files:
+        for f in global_files:
+            with open(f) as fh:
+                keys_from_file = [line.strip() for line in fh if line.strip()]
+            if keys_from_file:
+                for active_cls in _active_subclasses():
+                    name = active_cls.__name__
+                    if name not in active_keys_map:
+                        active_keys_map[name] = []
+                    active_keys_map[name].extend(keys_from_file)
+
+    if custom_resource and not json_mode:
+        print_status(f"Including custom secrets list [{custom_resource}]\n", color="yellow")
 
     if args.url:
         headers = {}
@@ -393,16 +469,14 @@ def main():
             if not json_mode:
                 print_status("Active probes are enabled. Use --passive-only to disable.", color="yellow")
 
-            active_keys_map = validate_active_keys(args.active_keys)
-
             # Check every collected response against prefilters, probe each match once
             active_results = []
             seen_modules = set()
             for resp, resp_url in responses:
-                scan_body = resp.text
-                if not scan_body:
+                scan_text = build_prefilter_text(httpx_response=resp)
+                if not scan_text:
                     continue
-                prefilter_matches = yara_prefilter_scan(scan_body)
+                prefilter_matches = yara_prefilter_scan(scan_text)
                 new_matches = {k: v for k, v in prefilter_matches.items() if k not in seen_modules}
                 if new_matches and not json_mode:
                     for module_name in new_matches:
@@ -413,7 +487,7 @@ def main():
                 if new_matches:
                     results = asyncio.run(
                         probe_all_modules(
-                            body=scan_body,
+                            body=scan_text,
                             url=resp_url,
                             active_keys_map=active_keys_map,
                         )

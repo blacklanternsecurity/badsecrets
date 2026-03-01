@@ -641,7 +641,7 @@ def test_example_cli_help(monkeypatch, capsys):
         assert "--no-color" in captured.out
         assert "--url URL" in captured.out
         assert "--no-hashcat" in captured.out
-        assert "--custom-secrets CUSTOM_SECRETS" in captured.out
+        assert "--custom-secrets" in captured.out
         assert "--proxy PROXY" in captured.out
         assert "--user-agent USER_AGENT" in captured.out
 
