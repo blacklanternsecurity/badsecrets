@@ -1,7 +1,7 @@
 import re
 
 from badsecrets.base import BadsecretsBase
-from badsecrets.modules.aspnet_viewstate import ASPNET_Viewstate
+from badsecrets.modules.passive.aspnet_viewstate import ASPNET_Viewstate
 
 # Reference: https://blog.sorcery.ie/posts/higherlogic_rce/
 
