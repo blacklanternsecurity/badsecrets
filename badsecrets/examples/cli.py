@@ -19,6 +19,7 @@ import asyncio
 import argparse
 import difflib
 import json as json_module
+import logging
 import sys
 import os
 from importlib.metadata import version, PackageNotFoundError
@@ -385,6 +386,12 @@ def main():
                     headers[name.strip()] = value.strip()
 
         if args.debug and not json_mode:
+            _log = logging.getLogger("badsecrets")
+            _log.setLevel(logging.DEBUG)
+            _log.propagate = False
+            _handler = logging.StreamHandler()
+            _handler.setFormatter(logging.Formatter("[DEBUG] %(message)s"))
+            _log.addHandler(_handler)
             print_status(f"[DEBUG] Request URL: {args.url}", color="blue")
 
         # Fetch initial response without following redirects, then follow if needed.

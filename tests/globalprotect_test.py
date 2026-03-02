@@ -1,4 +1,5 @@
 import asyncio
+import unittest.mock as mock
 import httpx
 import respx
 from badsecrets.base import yara_prefilter_scan, probe_all_modules
@@ -221,3 +222,64 @@ def test_probe_with_http_client():
 
     results = asyncio.run(run())
     assert len(results) == 1
+
+
+@respx.mock
+def test_probe_unexpected_response():
+    """Response with unexpected text triggers debug log, no result."""
+    respx.post("https://vpn.example.com/sslmgr").mock(
+        return_value=httpx.Response(200, text="Something completely different")
+    )
+
+    gp = GlobalProtect_DefaultMasterKey()
+    results = asyncio.run(gp.probe("https://vpn.example.com"))
+    assert len(results) == 0
+
+
+@respx.mock
+def test_probe_resource_file_extra_key():
+    """Keys from resource file beyond the default key are tried."""
+    call_count = 0
+
+    def side_effect(request):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            # Default key -> rejected
+            return httpx.Response(200, text="Invalid Cookie")
+        else:
+            # Extra resource key -> found
+            return httpx.Response(200, text="Unable to find the configuration")
+
+    respx.post("https://vpn.example.com/sslmgr").mock(side_effect=side_effect)
+
+    gp = GlobalProtect_DefaultMasterKey()
+    with mock.patch.object(gp, "load_resources", return_value=["p1a2l3o4a5l6t7o8\n", "extra_key_from_file\n"]):
+        results = asyncio.run(gp.probe("https://vpn.example.com"))
+    assert len(results) == 1
+    assert results[0]["details"]["key"] == "extra_key_from_file"
+    assert results[0]["details"]["is_default_key"] is False
+
+
+@respx.mock
+def test_probe_resource_file_missing():
+    """Missing resource file doesn't crash — falls back to default key only."""
+    respx.post("https://vpn.example.com/sslmgr").mock(
+        return_value=httpx.Response(200, text="Unable to find the configuration")
+    )
+
+    gp = GlobalProtect_DefaultMasterKey()
+    with mock.patch.object(gp, "load_resources", side_effect=FileNotFoundError):
+        results = asyncio.run(gp.probe("https://vpn.example.com"))
+    assert len(results) == 1
+    assert results[0]["details"]["is_default_key"] is True
+
+
+@respx.mock
+def test_probe_exception_during_key_attempt():
+    """Exception during key probe doesn't crash."""
+    respx.post("https://vpn.example.com/sslmgr").mock(side_effect=httpx.ReadTimeout("timeout"))
+
+    gp = GlobalProtect_DefaultMasterKey()
+    results = asyncio.run(gp.probe("https://vpn.example.com"))
+    assert len(results) == 0

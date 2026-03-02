@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import unittest.mock as mock
 import httpx
 import respx
 from badsecrets.base import yara_prefilter_scan, probe_all_modules, build_prefilter_text
@@ -360,3 +361,83 @@ def test_description():
     desc = Shiro_RememberMe_Key.get_description()
     assert desc["product"] == "Apache Shiro"
     assert desc["severity"] == "CRITICAL"
+
+
+@respx.mock
+def test_probe_resource_file_missing():
+    """Missing resource file doesn't crash — falls back to default key."""
+
+    def side_effect(request):
+        cookie_header = request.headers.get("cookie", "")
+        if "rememberMe=1" in cookie_header:
+            return httpx.Response(200, text=SHIRO_LOGIN_HTML, headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"})
+        return httpx.Response(200, text=SHIRO_LOGIN_HTML)
+
+    respx.get("https://shiro.example.com/login").mock(side_effect=side_effect)
+
+    gp = Shiro_RememberMe_Key()
+    with mock.patch.object(gp, "load_resources", side_effect=FileNotFoundError):
+        results = asyncio.run(gp.probe("https://shiro.example.com/login"))
+    assert len(results) >= 1
+    assert results[0]["details"]["is_default_key"] is True
+
+
+@respx.mock
+def test_probe_default_key_not_in_resources():
+    """When resource file keys don't include default, default is prepended."""
+
+    def side_effect(request):
+        cookie_header = request.headers.get("cookie", "")
+        if "rememberMe=1" in cookie_header:
+            return httpx.Response(200, text=SHIRO_LOGIN_HTML, headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"})
+        return httpx.Response(200, text=SHIRO_LOGIN_HTML)
+
+    respx.get("https://shiro.example.com/login").mock(side_effect=side_effect)
+
+    # Resource file returns a key that's NOT the default
+    other_key = base64.b64encode(b"\x00" * 16).decode()
+    gp = Shiro_RememberMe_Key()
+    with mock.patch.object(gp, "load_resources", return_value=[f"{other_key}\n"]):
+        results = asyncio.run(gp.probe("https://shiro.example.com/login"))
+    # Default key is tried first and accepted
+    assert len(results) >= 1
+    assert results[0]["details"]["is_default_key"] is True
+
+
+@respx.mock
+def test_probe_invalid_key_length():
+    """Key that decodes to non-AES length is skipped."""
+
+    def side_effect(request):
+        cookie_header = request.headers.get("cookie", "")
+        if "rememberMe=1" in cookie_header:
+            return httpx.Response(200, text=SHIRO_LOGIN_HTML, headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"})
+        return httpx.Response(200, text=SHIRO_LOGIN_HTML, headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"})
+
+    respx.get("https://shiro.example.com/login").mock(side_effect=side_effect)
+
+    # 15 bytes is not a valid AES key length (need 16, 24, or 32)
+    bad_key = base64.b64encode(b"\x00" * 15).decode()
+    gp = Shiro_RememberMe_Key()
+    with mock.patch.object(gp, "load_resources", return_value=[f"{bad_key}\n"]):
+        results = asyncio.run(gp.probe("https://shiro.example.com/login"))
+    assert len(results) == 0
+
+
+@respx.mock
+def test_try_key_exception():
+    """Exception in _try_key doesn't crash probe."""
+    call_count = 0
+
+    def side_effect(request):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return httpx.Response(200, text=SHIRO_LOGIN_HTML, headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"})
+        raise httpx.ReadTimeout("timeout")
+
+    respx.get("https://shiro.example.com/login").mock(side_effect=side_effect)
+
+    gp = Shiro_RememberMe_Key()
+    results = asyncio.run(gp.probe("https://shiro.example.com/login"))
+    assert len(results) == 0

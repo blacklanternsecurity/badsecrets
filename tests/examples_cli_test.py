@@ -989,3 +989,10 @@ def test_example_cli_version_not_found(monkeypatch, capsys):
         cli.main()
         captured = capsys.readouterr()
         assert "Version - Unknown (Running w/poetry?)" in captured.out
+
+
+def test_print_module_table_empty(capsys):
+    """_print_module_table with no classes produces no output."""
+    cli._print_module_table("Empty", [])
+    captured = capsys.readouterr()
+    assert captured.out == ""
