@@ -3,11 +3,23 @@
 # Black Lantern Security - https://www.blacklanternsecurity.com
 # @paulmmueller
 
-from badsecrets.base import check_all_modules, carve_all_modules, hashcat_all_modules
+from badsecrets.base import (
+    check_all_modules,
+    carve_all_modules,
+    hashcat_all_modules,
+    probe_all_modules,
+    build_prefilter_text,
+    _passive_subclasses,
+    _active_subclasses,
+    yara_prefilter_scan,
+)
 from badsecrets.helpers import print_status, validate_url
 import httpx
+import asyncio
 import argparse
+import difflib
 import json as json_module
+import logging
 import sys
 import os
 from importlib.metadata import version, PackageNotFoundError
@@ -95,6 +107,105 @@ def print_hashcat_results(hashcat_candidates):
             )
 
 
+def _all_module_names():
+    """Build case-insensitive lookup of all module class names (passive + active)."""
+    names = {}
+    for cls in _passive_subclasses():
+        names[cls.__name__.upper()] = cls.__name__
+    for cls in _active_subclasses():
+        names[cls.__name__.upper()] = cls.__name__
+    return names
+
+
+def _active_module_names():
+    """Set of active module class names."""
+    return {cls.__name__ for cls in _active_subclasses()}
+
+
+def parse_custom_secrets(custom_secrets_args):
+    """Parse --custom-secrets arguments into global files and per-module keys.
+
+    Supports two formats:
+      --custom-secrets FILE              → global file for all modules
+      --custom-secrets MODULE:FILE_OR_KEYS → targeted to specific module
+
+    Returns:
+        global_files: list of file paths to apply to all modules
+        module_keys: dict of {module_class_name: [key1, key2, ...]}
+    """
+    global_files = []
+    module_keys = {}
+
+    if not custom_secrets_args:
+        return global_files, module_keys
+
+    all_names = _all_module_names()
+
+    for arg in custom_secrets_args:
+        if ":" not in arg:
+            # No module prefix → treat as global file
+            validate_file(arg)
+            global_files.append(arg)
+        else:
+            module_name, value = arg.split(":", 1)
+            upper_name = module_name.upper()
+
+            if upper_name not in all_names:
+                candidates = list(set(all_names.values()))
+                close = difflib.get_close_matches(module_name, candidates, n=1, cutoff=0.4)
+                suggestion = f" Did you mean '{close[0]}'?" if close else ""
+                available = ", ".join(sorted(candidates))
+                raise argparse.ArgumentTypeError(
+                    f"No module found for '{module_name}'.{suggestion} Available modules: {available}"
+                )
+
+            canonical_name = all_names[upper_name]
+
+            # Auto-detect: if value is an existing file path, read keys from it
+            if os.path.isfile(value):
+                with open(value) as f:
+                    keys = [line.strip() for line in f if line.strip()]
+            else:
+                # Otherwise treat as comma-separated inline keys
+                keys = [k.strip() for k in value.split(",") if k.strip()]
+
+            if canonical_name not in module_keys:
+                module_keys[canonical_name] = []
+            module_keys[canonical_name].extend(keys)
+
+    return global_files, module_keys
+
+
+def _print_module_table(title, classes):
+    """Print a formatted table of modules."""
+    if not classes:
+        return
+    rows = []
+    for cls in sorted(classes, key=lambda c: c.__name__):
+        desc = cls.get_description()
+        rows.append((cls.__name__, desc["product"], desc["secret"], desc["severity"]))
+
+    headers = ("Module", "Product", "Secret", "Severity")
+    widths = [max(len(h), max(len(r[i]) for r in rows)) for i, h in enumerate(headers)]
+    sep = "+-" + "-+-".join("-" * w for w in widths) + "-+"
+    fmt = "| " + " | ".join(f"{{:<{w}}}" for w in widths) + " |"
+
+    print(f"\n{title}\n")
+    print(sep)
+    print(fmt.format(*headers))
+    print(sep)
+    for row in rows:
+        print(fmt.format(*row))
+    print(sep)
+
+
+def list_modules():
+    """Print all available modules with their descriptions."""
+    _print_module_table("Passive modules (analyze existing cryptographic products)", _passive_subclasses())
+    _print_module_table("Active modules (send targeted probes to detect default/known keys)", _active_subclasses())
+    print()
+
+
 def main():
     global colorenabled
     colorenabled = False
@@ -146,8 +257,16 @@ def main():
     parser.add_argument(
         "-c",
         "--custom-secrets",
-        type=validate_file,
-        help="include a custom secrets file to load along with the default secrets",
+        action="append",
+        metavar="FILE_OR_MODULE:KEYS",
+        help=(
+            "Custom secrets to check. Can be specified multiple times. "
+            "Without a module prefix, the file is loaded for all modules. "
+            "With a module prefix (MODULE:value), keys are targeted to that module only. "
+            "Value can be a file path or comma-separated inline keys. "
+            "Example: -c my_keys.txt  or  -c Shiro_RememberMe_Key:key1,key2  "
+            "or  -c GlobalProtect_DefaultMasterKey:keys.txt"
+        ),
     )
 
     parser.add_argument("product", nargs="*", type=str, help="Cryptographic product to check for known secrets")
@@ -162,13 +281,6 @@ def main():
         "-a",
         "--user-agent",
         help="In URL mode, Optionally set a custom user-agent",
-    )
-
-    parser.add_argument(
-        "-r",
-        "--allow-redirects",
-        action="store_true",
-        help="Optionally follow HTTP redirects. Off by default",
     )
 
     parser.add_argument(
@@ -193,7 +305,25 @@ def main():
         help="Request timeout in seconds (default: 10)",
     )
 
+    parser.add_argument(
+        "-P",
+        "--passive-only",
+        action="store_true",
+        help="Disable active probing in URL mode (only run passive analysis)",
+    )
+
+    parser.add_argument(
+        "-l",
+        "--list-modules",
+        action="store_true",
+        help="List all available modules with descriptions and exit",
+    )
+
     args = parser.parse_args(unknown_args)
+
+    if args.list_modules:
+        list_modules()
+        return
 
     if not args.url and not args.product:
         parser.error(
@@ -208,19 +338,42 @@ def main():
         parser.error(print_status("In --url mode, no positional arguments should be used", color="red"))
         return
 
-    allow_redirects = False
-    if args.allow_redirects:
-        allow_redirects = True
+    if not args.url and args.passive_only:
+        parser.error(print_status("--passive-only is only valid in --url mode", color="red"))
+        return
 
     proxy = None
     if args.proxy:
         proxy = args.proxy
 
-    custom_resource = None
-    if args.custom_secrets:
-        custom_resource = args.custom_secrets
-        if not json_mode:
-            print_status(f"Including custom secrets list [{custom_resource}]\n", color="yellow")
+    # Parse unified --custom-secrets
+    try:
+        global_files, module_keys = parse_custom_secrets(args.custom_secrets)
+    except argparse.ArgumentTypeError as e:
+        parser.error(str(e))
+        return
+
+    # Global custom resource for passive modules (first global file, backward compatible)
+    custom_resource = global_files[0] if global_files else None
+
+    # Build active_keys_map: start with module-targeted keys for active modules
+    active_names = _active_module_names()
+    active_keys_map = {k: v for k, v in module_keys.items() if k in active_names}
+
+    # Also load keys from global files for active modules
+    if global_files:
+        for f in global_files:
+            with open(f) as fh:
+                keys_from_file = [line.strip() for line in fh if line.strip()]
+            if keys_from_file:
+                for active_cls in _active_subclasses():
+                    name = active_cls.__name__
+                    if name not in active_keys_map:
+                        active_keys_map[name] = []
+                    active_keys_map[name].extend(keys_from_file)
+
+    if custom_resource and not json_mode:
+        print_status(f"Including custom secrets list [{custom_resource}]\n", color="yellow")
 
     if args.url:
         headers = {}
@@ -233,60 +386,83 @@ def main():
                     headers[name.strip()] = value.strip()
 
         if args.debug and not json_mode:
+            _log = logging.getLogger("badsecrets")
+            _log.setLevel(logging.DEBUG)
+            _log.propagate = False
+            _handler = logging.StreamHandler()
+            _handler.setFormatter(logging.Formatter("[DEBUG] %(message)s"))
+            _log.addHandler(_handler)
             print_status(f"[DEBUG] Request URL: {args.url}", color="blue")
 
+        # Fetch initial response without following redirects, then follow if needed.
+        # Both passive and active phases evaluate every response we collect.
         try:
             res = httpx.get(
                 args.url,
                 proxy=proxy,
                 headers=headers,
                 verify=False,
-                follow_redirects=allow_redirects,
+                follow_redirects=False,
                 timeout=args.timeout,
             )
-            # Auto-follow trailing-slash redirects (e.g. /path -> /path/)
-            if not allow_redirects and res.is_redirect:
-                location = res.headers.get("location", "")
-                if location.rstrip("/") == args.url.rstrip("/") and location.endswith("/"):
-                    if args.debug and not json_mode:
-                        print_status(f"[DEBUG] Auto-following trailing-slash redirect to: {location}", color="blue")
-                    res = httpx.get(
-                        location,
-                        proxy=proxy,
-                        headers=headers,
-                        verify=False,
-                        follow_redirects=False,
-                        timeout=args.timeout,
-                    )
         except (httpx.ConnectError, httpx.ConnectTimeout):
             if not json_mode:
                 print_status(f"Error connecting to URL: [{args.url}]", color="red")
             return
 
-        if args.debug and not json_mode:
-            print_status(f"[DEBUG] Response status: {res.status_code}", color="blue")
-            print_status(f"[DEBUG] Response headers: {dict(res.headers)}", color="blue")
-            if res.cookies:
-                print_status(f"[DEBUG] Cookies: {list(res.cookies.keys())}", color="blue")
-            print_status(f"[DEBUG] Response body length: {len(res.text)} chars", color="blue")
+        responses = [(res, args.url)]
 
-        r_list = carve_all_modules(httpx_response=res, custom_resource=custom_resource, url=args.url)
-        if args.debug and not json_mode:
+        # If the initial response is a redirect, also fetch the followed page
+        if res.is_redirect:
+            try:
+                followed = httpx.get(
+                    args.url,
+                    proxy=proxy,
+                    headers=headers,
+                    verify=False,
+                    follow_redirects=True,
+                    timeout=args.timeout,
+                )
+                if args.debug and not json_mode:
+                    print_status(
+                        f"[DEBUG] Followed redirect to: {followed.url} (status {followed.status_code})",
+                        color="blue",
+                    )
+                responses.append((followed, str(followed.url)))
+            except (httpx.ConnectError, httpx.ConnectTimeout):
+                pass
+
+        # Passive phase: carve all responses
+        all_passive_results = []
+        for resp, resp_url in responses:
+            if args.debug and not json_mode:
+                print_status(f"[DEBUG] Response status: {resp.status_code} ({resp_url})", color="blue")
+                print_status(f"[DEBUG] Response headers: {dict(resp.headers)}", color="blue")
+                if resp.cookies:
+                    print_status(f"[DEBUG] Cookies: {list(resp.cookies.keys())}", color="blue")
+                print_status(f"[DEBUG] Response body length: {len(resp.text)} chars", color="blue")
+
+            r_list = carve_all_modules(httpx_response=resp, custom_resource=custom_resource, url=resp_url)
             if r_list:
-                modules_hit = {r["detecting_module"] for r in r_list}
-                secret_count = sum(1 for r in r_list if r["type"] == "SecretFound")
-                identify_count = sum(1 for r in r_list if r["type"] == "IdentifyOnly")
+                all_passive_results.extend(r_list)
+
+        if args.debug and not json_mode:
+            if all_passive_results:
+                modules_hit = {r["detecting_module"] for r in all_passive_results}
+                secret_count = sum(1 for r in all_passive_results if r["type"] == "SecretFound")
+                identify_count = sum(1 for r in all_passive_results if r["type"] == "IdentifyOnly")
                 print_status(
-                    f"[DEBUG] Carve results: {len(r_list)} total ({secret_count} secrets, {identify_count} identify-only) from modules: {', '.join(modules_hit)}",
+                    f"[DEBUG] Carve results: {len(all_passive_results)} total ({secret_count} secrets, {identify_count} identify-only) from modules: {', '.join(modules_hit)}",
                     color="blue",
                 )
             else:
                 print_status("[DEBUG] Carve results: none", color="blue")
-        if r_list:
+
+        if all_passive_results:
             if json_mode:
-                print(json_module.dumps(r_list))
+                print(json_module.dumps(all_passive_results))
             else:
-                for r in r_list:
+                for r in all_passive_results:
                     if r["type"] == "SecretFound":
                         report = ReportSecret(r)
                     else:
@@ -301,6 +477,47 @@ def main():
         else:
             if not json_mode:
                 print_status("No secrets found :(", color="red")
+
+        # Active probes (on by default in URL mode, unless --passive-only)
+        if not args.passive_only:
+            if not json_mode:
+                print_status("Active probes are enabled. Use --passive-only to disable.", color="yellow")
+
+            # Check every collected response against prefilters, probe each match once
+            active_results = []
+            seen_modules = set()
+            for resp, resp_url in responses:
+                scan_text = build_prefilter_text(httpx_response=resp)
+                if not scan_text:
+                    continue
+                prefilter_matches = yara_prefilter_scan(scan_text)
+                new_matches = {k: v for k, v in prefilter_matches.items() if k not in seen_modules}
+                if new_matches and not json_mode:
+                    for module_name in new_matches:
+                        print_status(
+                            f"Detected {module_name} signature. Sending active probe...",
+                            color="yellow",
+                        )
+                if new_matches:
+                    results = asyncio.run(
+                        probe_all_modules(
+                            body=scan_text,
+                            url=resp_url,
+                            active_keys_map=active_keys_map,
+                        )
+                    )
+                    active_results.extend(results)
+                seen_modules.update(prefilter_matches.keys())
+
+            if active_results:
+                if json_mode:
+                    print(json_module.dumps(active_results))
+                else:
+                    for r in active_results:
+                        report = ReportSecret(r)
+                        report.report()
+            elif args.debug and not json_mode:
+                print_status("[DEBUG] No active findings.", color="blue")
 
     else:
         if args.debug and not json_mode:

@@ -6,7 +6,7 @@ import respx
 from unittest.mock import patch
 from importlib.metadata import PackageNotFoundError
 
-from badsecrets.modules.generic_jwt import Generic_JWT
+from badsecrets.modules.passive.generic_jwt import Generic_JWT
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(f"{os.path.dirname(SCRIPT_DIR)}/examples")
@@ -641,7 +641,7 @@ def test_example_cli_help(monkeypatch, capsys):
         assert "--no-color" in captured.out
         assert "--url URL" in captured.out
         assert "--no-hashcat" in captured.out
-        assert "--custom-secrets CUSTOM_SECRETS" in captured.out
+        assert "--custom-secrets" in captured.out
         assert "--proxy PROXY" in captured.out
         assert "--user-agent USER_AGENT" in captured.out
 
@@ -870,7 +870,8 @@ def test_examples_cli_colors_info(monkeypatch, capsys):
     print(captured.out)
 
 
-def test_example_cli_redirects_allow(monkeypatch, capsys):
+def test_example_cli_redirects_followed(monkeypatch, capsys):
+    """Redirects are always followed — secret on the final page is found."""
     with respx.mock:
         respx.get("http://example.com/vulnerablejwt.html").respond(
             status_code=200,
@@ -881,9 +882,7 @@ def test_example_cli_redirects_allow(monkeypatch, capsys):
             status_code=302, headers={"Location": "vulnerablejwt.html"}
         )
 
-        monkeypatch.setattr(
-            "sys.argv", ["python", "--url", "http://example.com/vulnerablejwt-redir.html", "--allow-redirects"]
-        )
+        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerablejwt-redir.html"])
         cli.main()
         captured = capsys.readouterr()
         assert "your-256-bit-secret" in captured.out
@@ -908,7 +907,7 @@ def test_example_cli_redirects_default(monkeypatch, capsys):
 
 
 def test_example_cli_trailing_slash_redirect(monkeypatch, capsys):
-    """Trailing-slash redirect (e.g. /path -> /path/) should be auto-followed without -r."""
+    """Trailing-slash redirect (e.g. /path -> /path/) — secret on followed page is found."""
     with respx.mock:
         respx.get("http://example.com/vulnerablejwt").respond(
             status_code=301,
@@ -926,19 +925,25 @@ def test_example_cli_trailing_slash_redirect(monkeypatch, capsys):
         assert "your-256-bit-secret" in captured.out
 
 
-def test_example_cli_trailing_slash_redirect_not_followed_for_different_path(monkeypatch, capsys):
-    """Non-trailing-slash redirects should NOT be auto-followed without -r."""
+def test_example_cli_redirect_secret_in_initial_response(monkeypatch, capsys):
+    """Secret in the redirect response body is found even though we also follow.
+    Both the initial response and the redirect target are evaluated.
+    """
     with respx.mock:
         respx.get("http://example.com/old-page").respond(
             status_code=301,
             text=base_vulnerable_page,
             headers={"Location": "http://example.com/new-page/"},
         )
+        respx.get("http://example.com/new-page/").respond(
+            status_code=200,
+            text=base_non_vulnerable_page,
+        )
 
         monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/old-page"])
         cli.main()
         captured = capsys.readouterr()
-        # Should detect from the redirect response body itself, not follow the redirect
+        # Should detect from the redirect response body itself
         assert "your-256-bit-secret" in captured.out
 
 
@@ -984,3 +989,10 @@ def test_example_cli_version_not_found(monkeypatch, capsys):
         cli.main()
         captured = capsys.readouterr()
         assert "Version - Unknown (Running w/poetry?)" in captured.out
+
+
+def test_print_module_table_empty(capsys):
+    """_print_module_table with no classes produces no output."""
+    cli._print_module_table("Empty", [])
+    captured = capsys.readouterr()
+    assert captured.out == ""

@@ -4,10 +4,13 @@ import gzip
 import base64
 import hashlib
 import binascii
+import logging
 import httpx
 import yara
 import badsecrets.errors
 from abc import abstractmethod
+
+log = logging.getLogger(__name__)
 
 generic_base64_regex = re.compile(
     r"^(?:[A-Za-z0-9+\/]{4}){8,}(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}={2})$"
@@ -193,6 +196,32 @@ class BadsecretsBase:
             return items
 
 
+class BadsecretsActiveBase(BadsecretsBase):
+    """Base class for active probe modules that send crafted requests."""
+
+    active = True
+    # YARA pattern to pre-filter HTTP responses (decides if probe should fire)
+    yara_prefilter_pattern = None
+    yara_prefilter_rule = None  # Full custom YARA rule for compound conditions
+    description = {"product": "Undefined", "secret": "Undefined", "severity": "Undefined"}
+
+    def __init__(self, custom_resource=None, http_client=None, **kwargs):
+        super().__init__(custom_resource=custom_resource, **kwargs)
+        self.http_client = http_client
+
+    @abstractmethod
+    async def probe(self, url, **kwargs):
+        """Send active probe to target URL. Returns list of result dicts or empty list."""
+        raise NotImplementedError
+
+    # Active modules don't use passive carving — stub out abstract methods
+    def check_secret(self, secret):
+        return None
+
+    def carve_regex(self):
+        return None
+
+
 def _all_subclasses(cls):
     """Recursively collect all subclasses of cls."""
     result = []
@@ -202,6 +231,16 @@ def _all_subclasses(cls):
     return result
 
 
+def _passive_subclasses():
+    """Return all passive (non-active) subclasses of BadsecretsBase."""
+    return [cls for cls in _all_subclasses(BadsecretsBase) if not issubclass(cls, BadsecretsActiveBase)]
+
+
+def _active_subclasses():
+    """Return all active subclasses."""
+    return list(_all_subclasses(BadsecretsActiveBase))
+
+
 _compiled_yara_carve_rules = None
 
 
@@ -209,7 +248,7 @@ def _compile_yara_carve_rules():
     """Compile YARA rules from all loaded modules' yara_carve_pattern/yara_carve_rule attributes."""
     global _compiled_yara_carve_rules
     rules_parts = []
-    for cls in _all_subclasses(BadsecretsBase):
+    for cls in _passive_subclasses():
         custom_rule = getattr(cls, "yara_carve_rule", None)
         if custom_rule:
             rules_parts.append(custom_rule)
@@ -262,9 +301,65 @@ def yara_carve_scan(text):
     return result
 
 
+# Active YARA prefilter system
+
+_compiled_yara_prefilter_rules = None
+
+
+def _compile_yara_prefilter_rules():
+    """Compile YARA rules from active modules' yara_prefilter_pattern/rule attributes."""
+    global _compiled_yara_prefilter_rules
+    rules_parts = []
+    for cls in _active_subclasses():
+        custom_rule = getattr(cls, "yara_prefilter_rule", None)
+        if custom_rule:
+            rules_parts.append(custom_rule)
+        else:
+            pattern = getattr(cls, "yara_prefilter_pattern", None)
+            if pattern:
+                rule = f"rule {cls.__name__}_prefilter {{ strings: $prefilter = /{pattern}/ nocase condition: $prefilter }}"
+                rules_parts.append(rule)
+    if rules_parts:
+        source = "\n".join(rules_parts)
+        _compiled_yara_prefilter_rules = yara.compile(source=source)
+    return _compiled_yara_prefilter_rules
+
+
+def get_yara_prefilter_rules():
+    global _compiled_yara_prefilter_rules
+    if _compiled_yara_prefilter_rules is None:
+        _compile_yara_prefilter_rules()
+    return _compiled_yara_prefilter_rules
+
+
+def yara_prefilter_scan(text):
+    """Scan text against active module prefilter YARA rules.
+    Returns dict of {module_name: [{'offset': int, 'data': str}, ...]}
+    """
+    rules = get_yara_prefilter_rules()
+    if not rules:
+        return {}
+    data = text.encode("utf-8") if isinstance(text, str) else text
+    matches = rules.match(data=data)
+    result = {}
+    for match in matches:
+        module_name = match.rule.removesuffix("_prefilter")
+        instances = []
+        for string_match in match.strings:
+            for instance in string_match.instances:
+                instances.append(
+                    {
+                        "offset": instance.offset,
+                        "data": instance.matched_data.decode("utf-8", errors="replace"),
+                    }
+                )
+        result[module_name] = instances
+    return result
+
+
 def hashcat_all_modules(product, detecting_module=None, *args):
     hashcat_candidates = []
-    for m in _all_subclasses(BadsecretsBase):
+    for m in _passive_subclasses():
         if detecting_module == m.__name__ or detecting_module is None:
             x = m()
             if x.identify(product):
@@ -281,7 +376,7 @@ def hashcat_all_modules(product, detecting_module=None, *args):
 
 
 def check_all_modules(*args, **kwargs):
-    for m in _all_subclasses(BadsecretsBase):
+    for m in _passive_subclasses():
         x = m(custom_resource=kwargs.get("custom_resource"))
         r = x.check_secret(*args[0 : x.check_secret_args])
         if r:
@@ -311,7 +406,7 @@ def carve_all_modules(**kwargs):
         yara_results = yara_carve_scan(scan_body)
         yara_body_matches = set(yara_results.keys())
 
-    for m in _all_subclasses(BadsecretsBase):
+    for m in _passive_subclasses():
         x = m(custom_resource=kwargs.get("custom_resource"))
 
         yara_hit = m.__name__ in yara_body_matches
@@ -322,3 +417,71 @@ def carve_all_modules(**kwargs):
                 results.append(r)
     if results:
         return results
+
+
+def build_prefilter_text(httpx_response=None, body=None):
+    """Build text for YARA prefilter scanning, including headers + body.
+
+    Active module prefilters may need to match on response headers (e.g. Set-Cookie)
+    in addition to body content. This function constructs the combined text.
+    """
+    parts = []
+    if httpx_response is not None:
+        for name, value in httpx_response.headers.items():
+            parts.append(f"{name}: {value}")
+        parts.append("")
+    text = body
+    if not text and httpx_response is not None:
+        text = getattr(httpx_response, "text", None)
+    if text:
+        parts.append(text)
+    return "\n".join(parts) if parts else ""
+
+
+async def probe_all_modules(httpx_response=None, url=None, body=None, active_keys_map=None, **kwargs):
+    """Run active probes against modules whose YARA prefilter matches the response.
+
+    Args:
+        httpx_response: The passive HTTP response to prefilter against
+        url: Target URL for active probes (extracted from httpx_response if not provided)
+        body: Response body text (extracted from httpx_response if not provided)
+        active_keys_map: Dict of {module_class_name: [key1, key2, ...]} for per-module custom keys
+    Returns:
+        List of result dicts from active probes, or empty list
+    """
+    results = []
+    if active_keys_map is None:
+        active_keys_map = {}
+
+    # Build scan text including headers + body for prefilter matching
+    scan_text = body
+    if not scan_text:
+        scan_text = build_prefilter_text(httpx_response=httpx_response, body=body)
+    if not scan_text:
+        return results
+
+    # Extract URL from response if not provided
+    if not url and httpx_response is not None:
+        url = str(httpx_response.url)
+
+    # Run YARA prefilter
+    prefilter_matches = yara_prefilter_scan(scan_text)
+    if not prefilter_matches:
+        return results
+
+    # Fire matching active modules
+    for cls in _active_subclasses():
+        if cls.__name__ in prefilter_matches:
+            custom_keys = active_keys_map.get(cls.__name__, [])
+            module = cls()
+            try:
+                probe_results = await module.probe(url, custom_keys=custom_keys, **kwargs)
+            except Exception as e:
+                log.debug(f"Error running active probe {cls.__name__}: {e}")
+                continue
+            if probe_results:
+                for r in probe_results:
+                    r["detecting_module"] = cls.__name__
+                    r["description"] = cls.get_description()
+                    results.append(r)
+    return results

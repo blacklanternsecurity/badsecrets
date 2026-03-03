@@ -19,6 +19,10 @@ Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a de
 
 ## Current Modules
 
+### Passive Modules
+
+Passive modules analyze cryptographic products (cookies, tokens, signed URLs, etc.) that you already have. They work offline by attempting to decrypt or verify the product against a database of known secrets.
+
 | Name     | Description |
 | ----------- | ----------- |
 | ASPNET_Viewstate      | Checks the viewstate/generator against a list of known machine keys. |
@@ -30,7 +34,7 @@ Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a de
 | Django_SignedCookies   | Checks django's session cookies (when in signed_cookie mode) for known django secret_key |
 | Rails_SecretKeyBase   | Checks Ruby on Rails signed or encrypted session cookies (from multiple major releases) for known secret_key_base |
 | Generic_JWT | Checks JWTs for known HMAC secrets or RSA private keys |
-| Jsf_viewstate | Checks Both Mojarra and Myfaces implimentations of Java Server Faces (JSF) for use of known or weak secret keys | 
+| Jsf_viewstate | Checks Both Mojarra and Myfaces implimentations of Java Server Faces (JSF) for use of known or weak secret keys |
 | Symfony_SignedURL | Checks symfony "_fragment" urls for known HMAC key. Operates on Full URL, including hash |
 | Express_SignedCookies_ES | Checks express.js express-session middleware for signed cookies and session cookies for known 'session secret' |
 | Express_SignedCookies_CS | Checks express.js cookie-session middleware for signed cookies and session cookies for known secret |
@@ -38,6 +42,20 @@ Inspired by [Blacklist3r](https://github.com/NotSoSecure/Blacklist3r), with a de
 | ASPNET_Compressedviewstate      | Checks for a once popular custom compressed Viewstate [code snippet](https://blog.sorcery.ie/posts/higherlogic_rce/) vulnerable to RCE|
 | Rack2_SignedCookies | Checks Rack 2.x signed cookies for known secret keys |
 | Yii2_SignedCookies | Checks Yii2 framework signed cookies for known cookie validation keys |
+| Shiro_RememberMe | Checks Apache Shiro `rememberMe` cookies for known AES encryption keys |
+| LTPA_Token | Checks IBM WebSphere `LtpaToken` and `LtpaToken2` cookies for known LTPA encryption keys |
+
+### Active Modules
+
+Active modules go a step beyond passive detection. They use YARA-based prefiltering to fingerprint a live target (based on HTTP response headers, cookies, and body content), then forge cryptographic products with known keys and send them to the target to confirm whether the key is accepted. This makes them useful for cases where you don't already have a token to analyze but suspect the target may be using default or well-known secrets.
+
+Active modules are enabled by default in URL mode (`--url`). Use `--passive-only` to disable them.
+
+| Name     | Description |
+| ----------- | ----------- |
+| Shiro_RememberMe_Key | Forges Apache Shiro `rememberMe` cookies with known AES keys and tests if the target accepts them (deserialization RCE) |
+| GlobalProtect_DefaultMasterKey | Tests PAN-OS GlobalProtect portals for use of the default master encryption key |
+| LTPA_Token_Key | Forges IBM WebSphere `LtpaToken2` cookies with known LTPA keys and tests if the target grants authentication (auth bypass) |
 
 ## Installation
 
@@ -84,7 +102,10 @@ Bad secrets includes an [example CLI](https://github.com/blacklanternsecurity/ba
 #### Usage
 
 ```
-usage: badsecrets [-h] [-nc] [-u URL] [-nh] [-c CUSTOM_SECRETS] [-p PROXY] [-a USER_AGENT] [product ...]
+usage: badsecrets [-h] [-nc] [-j] [-u URL] [-nh] [-c FILE_OR_MODULE:KEYS]
+                  [-p PROXY] [-a USER_AGENT] [-H HEADER] [-d] [-t TIMEOUT]
+                  [-P] [-l]
+                  [product ...]
 
 Check cryptographic products against badsecrets library
 
@@ -94,14 +115,34 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   -nc, --no-color       Disable color message in the console
-  -u URL, --url URL     Use URL Mode. Specified the URL of the page to access and attempt to check for secrets
-  -nh, --no-hashcat     Skip the check for compatable hashcat commands when secret isn't found
-  -c CUSTOM_SECRETS, --custom-secrets CUSTOM_SECRETS
-                        include a custom secrets file to load along with the default secrets
+  -j, --json            Output results as JSON only (no banner, no color).
+                        Outputs nothing on no detection
+  -u URL, --url URL     Use URL Mode. Specified the URL of the page to access
+                        and attempt to check for secrets
+  -nh, --no-hashcat     Skip the check for compatable hashcat commands when
+                        secret isn't found
+  -c FILE_OR_MODULE:KEYS, --custom-secrets FILE_OR_MODULE:KEYS
+                        Custom secrets to check. Can be specified multiple
+                        times. Without a module prefix, the file is loaded for
+                        all modules. With a module prefix (MODULE:value), keys
+                        are targeted to that module only. Value can be a file
+                        path or comma-separated inline keys. Example: -c
+                        my_keys.txt or -c Shiro_RememberMe_Key:key1,key2 or -c
+                        GlobalProtect_DefaultMasterKey:keys.txt
   -p PROXY, --proxy PROXY
                         In URL mode, Optionally specify an HTTP proxy
   -a USER_AGENT, --user-agent USER_AGENT
                         In URL mode, Optionally set a custom user-agent
+  -H HEADER, --header HEADER
+                        Custom header (e.g., -H 'Cookie: foo=bar'). Can be
+                        specified multiple times
+  -d, --debug           Enable debug output (request URL, response status,
+                        headers, etc.)
+  -t TIMEOUT, --timeout TIMEOUT
+                        Request timeout in seconds (default: 10)
+  -P, --passive-only    Disable active probing in URL mode (only run passive
+                        analysis)
+  -l, --list-modules    List all available modules with descriptions and exit
 
 ```
 
@@ -306,10 +347,12 @@ Symfony_SignedURL = modules_loaded["symfony_signedurl"]
 Express_SignedCookies_ES = modules_loaded["express_signedcookies_es"]
 Express_SignedCookies_CS = modules_loaded["express_signedcookies_cs"]
 Laravel_SignedCookies = modules_loaded["laravel_signedcookies"]
-ASPNET_Compressed_Viewstate = modules_loaded["aspnet_compressedvstate"]
+ASPNET_Compressed_Viewstate = modules_loaded["aspnet_compressedviewstate"]
 ASPNET_Resource = modules_loaded["aspnet_resource"]
 Rack2_SignedCookies = modules_loaded["rack2_signedcookies"]
 Yii2_SignedCookies = modules_loaded["yii2_signedcookies"]
+Shiro_RememberMe = modules_loaded["shiro_rememberme"]
+LTPA_Token = modules_loaded["ltpa_token"]
 
 
 x = ASPNET_Viewstate()
@@ -453,6 +496,32 @@ if r:
 else:
     print("KEY NOT FOUND :(")
 
+x = Shiro_RememberMe()
+print(f"###{str(x.__class__.__name__)}###")
+r = x.check_secret(
+    "vTpNGrKtiiA5t5FLJWyVLHlOpNfF/7AeBEqYfvgHjccS5fjDBuRsR82FqRpmSZdPyN6GfjHTilBGN38h+6LjldUKjB0fhYBDsL9luW32Va3d+qbKb2pszstnllMR56pTBSKP"
+    "K/xKY0uryuYPGafGi7clBnlWh5NwOaluQm11Pm+NZKkcjDVlBpNgfpoKSpaCYfzcUFUDeL/cfkpTKA3H/TWVnVfw8Cxp0tVEmMqF3YtNliwdNkeGD/0gWDNaF9Zw17Is1Mgi"
+    "BiIRAQ/umDwxfdlKjVKgaLllPohV1ROhoP84zuMeXcsppwHC57ykUg/i8hdhaQwE4LUZQKnM7+sbU6FU2r5rv2i1Fb+KmeRZ9bbudNg8BMP7vEKnzImjD4qNFkXhVvq+APH9/"
+    "SLsLJzUZo3bz9macPFb5NhLVJ/NMp+/2iPM9Ik5yNz1zq/X+QIoXzVSLavH5S2O6C42wk14F4msB1G1SvyfSP8/CjZQMecWPR+eHBb1P8LF0zLqwSoIuf1nJ3yDQ5Dbc6M+"
+    "GBcsCQ=="
+)
+if r:
+    print(r)
+else:
+    print("KEY NOT FOUND :(")
+
+x = LTPA_Token()
+print(f"###{str(x.__class__.__name__)}###")
+r = x.check_secret(
+    "Ol6StBNpmLFMvRAkuqwvkxZznLJANOw320SDogOvZvUTvNUFKQ9qkQNsGa/soD2wgOI7+UnzZxBXZJY7Zd8Knge3cOXma/m+8tr96eEhXBP5XcatOey5e8BOQEFNBHK/"
+    "QvaEY/rpJfyef4dX+d+coJRdQvF3IRSnqRPubsXgbTx/R148gE++CkIGfuBMVPkEWJkYHpsYRJj7xiYWNbu1jGrwz8GlonX4SdC5JBsjmezWYeAtsoKWeDXX1rhyAyBBgE27nAQEJgi4VEi3be"
+    "M1eMo+foxaDHxsCeAabrSGOfOf/yLFMEZr3KAZ7QvyhErT"
+)
+if r:
+    print(r)
+else:
+    print("KEY NOT FOUND :(")
+
 ```
 
 #### Carve
@@ -492,7 +561,9 @@ tests = [
     "eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo",
     "dUEvRldLekFNcklGZ3ZSbU1XaHJ0ZGxsLzhYTHlNTW43T3BVN05kZXE3WUhQOVVKbVA3Rm5WaSs5eG5QQ1VIRVBzeDFNTnNpZ0xCM1FKbzFZTEJISzhaNzFmVGYzME0waDFURVpCYm5TQlJFRmRFclYzNUZhR3VuN29PMmlkVHBrRi8wb3AwZWgvWmxObkFOYnpkeHR1YWpWZ3lnN0Y4ZW9xSk9LNVlQd0U4MmFsbWtLZUI5VzkzRkM4YXBFWXBWLS15L00xME1nVFp2ZTlmUWcxZVlpelpnPT0=--7efe7919a5210cfd1ac4c6228e3ff82c0600d841",
     "https://localhost/_fragment?_path=_controller%3Dsystem%26command%3Did%26return_value%3Dnull&_hash=Xnsvx/yLVQaimEd1CfepgH0rEXr422JnRSn/uaCE3gs=",
-    "s%3A8FnPwdeM9kdGTZlWvdaVtQ0S1BCOhY5G.qys7H2oGSLLdRsEq7sqh7btOohHsaRKqyjV4LiVnBvc"
+    "s%3A8FnPwdeM9kdGTZlWvdaVtQ0S1BCOhY5G.qys7H2oGSLLdRsEq7sqh7btOohHsaRKqyjV4LiVnBvc",
+    "vTpNGrKtiiA5t5FLJWyVLHlOpNfF/7AeBEqYfvgHjccS5fjDBuRsR82FqRpmSZdPyN6GfjHTilBGN38h+6LjldUKjB0fhYBDsL9luW32Va3d+qbKb2pszstnllMR56pTBSKPK/xKY0uryuYPGafGi7clBnlWh5NwOaluQm11Pm+NZKkcjDVlBpNgfpoKSpaCYfzcUFUDeL/cfkpTKA3H/TWVnVfw8Cxp0tVEmMqF3YtNliwdNkeGD/0gWDNaF9Zw17Is1MgiBiIRAQ/umDwxfdlKjVKgaLllPohV1ROhoP84zuMeXcsppwHC57ykUg/i8hdhaQwE4LUZQKnM7+sbU6FU2r5rv2i1Fb+KmeRZ9bbudNg8BMP7vEKnzImjD4qNFkXhVvq+APH9/SLsLJzUZo3bz9macPFb5NhLVJ/NMp+/2iPM9Ik5yNz1zq/X+QIoXzVSLavH5S2O6C42wk14F4msB1G1SvyfSP8/CjZQMecWPR+eHBb1P8LF0zLqwSoIuf1nJ3yDQ5Dbc6M+GBcsCQ==",
+    "Ol6StBNpmLFMvRAkuqwvkxZznLJANOw320SDogOvZvUTvNUFKQ9qkQNsGa/soD2wgOI7+UnzZxBXZJY7Zd8Knge3cOXma/m+8tr96eEhXBP5XcatOey5e8BOQEFNBHK/QvaEY/rpJfyef4dX+d+coJRdQvF3IRSnqRPubsXgbTx/R148gE++CkIGfuBMVPkEWJkYHpsYRJj7xiYWNbu1jGrwz8GlonX4SdC5JBsjmezWYeAtsoKWeDXX1rhyAyBBgE27nAQEJgi4VEi3beM1eMo+foxaDHxsCeAabrSGOfOf/yLFMEZr3KAZ7QvyhErT"
 ]
 
 for test in tests:

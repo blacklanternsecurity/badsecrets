@@ -14,7 +14,7 @@ from badsecrets.helpers import (
     Purpose,
     aspnet_resource_b64_to_standard_b64,
 )
-from badsecrets.modules.aspnet_viewstate import ASPNET_Viewstate
+from badsecrets.modules.passive.aspnet_viewstate import ASPNET_Viewstate
 
 
 class ASPNET_Resource(ASPNET_Viewstate):

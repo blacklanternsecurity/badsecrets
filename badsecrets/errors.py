@@ -12,3 +12,7 @@ class Telerik_EncryptionKey_Exception(BadsecretsException):
 
 class CarveException(BadsecretsException):
     pass
+
+
+class ActiveProbeException(BadsecretsException):
+    pass
