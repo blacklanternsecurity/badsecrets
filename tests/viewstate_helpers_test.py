@@ -469,6 +469,51 @@ def test_skip_vlq_overflow():
     assert viewstate_signature_length(_vs(b"\x02" + vlq_data)) == 20
 
 
+def test_skip_node_emptycolor():
+    """Marker 0x0C (EmptyColor) — no extra bytes, zero-argument constant."""
+    assert viewstate_signature_length(_vs(b"\x0c")) == 20
+
+
+def test_skip_node_byte():
+    """Marker 0x03 (Byte) — 1 byte of data."""
+    assert viewstate_signature_length(_vs(b"\x03\x42")) == 20
+
+
+def test_skip_node_char():
+    """Marker 0x04 (Char) — VLQ encoded value."""
+    assert viewstate_signature_length(_vs(b"\x04\x41")) == 20
+
+
+def test_skip_node_double():
+    """Marker 0x07 (Double) — 8 bytes."""
+    assert viewstate_signature_length(_vs(b"\x07" + b"\x00" * 8)) == 20
+
+
+def test_skip_node_single():
+    """Marker 0x08 (Single/Float) — 4 bytes."""
+    assert viewstate_signature_length(_vs(b"\x08\x00\x00\x80\x3f")) == 20
+
+
+def test_null_padded_viewstate_is_mac_disabled():
+    """ViewState followed by all-zero padding should be detected as MAC_DISABLED (sig_len=0)."""
+    # EmptyColor root node + 250 null bytes of padding (like ONLYOFFICE produces)
+    raw = _PREAMBLE + b"\x0c" + b"\x00" * 250
+    assert viewstate_signature_length(raw) == 0
+
+
+def test_null_padded_pair_viewstate_is_mac_disabled():
+    """Pair(None,None) followed by null padding should be MAC_DISABLED."""
+    raw = _PREAMBLE + b"\x0f\x64\x64" + b"\x00" * 100
+    assert viewstate_signature_length(raw) == 0
+
+
+def test_nonzero_signature_not_treated_as_padding():
+    """Real (non-zero) signatures should NOT be collapsed to 0."""
+    # EmptyColor with a 20-byte non-zero signature
+    raw = _PREAMBLE + b"\x0c" + b"\xab" * 20
+    assert viewstate_signature_length(raw) == 20
+
+
 def test_skip_node_indexerror():
     """Truncated data should return None via IndexError catch."""
     # Pair marker but only one child — second child read will IndexError

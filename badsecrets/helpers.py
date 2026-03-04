@@ -345,11 +345,18 @@ def _skip_node(data, pos):
     marker = data[pos]
     pos += 1
 
-    # Constants: None, Empty, Zero, True, False
-    if marker in (0x64, 0x65, 0x66, 0x67, 0x68):
+    # Constants: None, Empty, Zero, True, False, EmptyColor
+    if marker in (0x64, 0x65, 0x66, 0x67, 0x68, 0x0C):
         return pos
     # Noop
     if marker == 0x01:
+        return pos
+    # Byte (1 byte of data)
+    if marker == 0x03:
+        return pos + 1
+    # Char (VLQ)
+    if marker == 0x04:
+        _, pos = _skip_vlq(data, pos)
         return pos
     # Integer (VLQ)
     if marker in (0x02, 0x2B):
@@ -419,8 +426,14 @@ def _skip_node(data, pos):
     # Color (1 byte index)
     if marker == 0x0A:
         return pos + 1
-    # RGBA (4 bytes)
+    # KnownColor / RGBA (4 bytes)
     if marker == 0x09:
+        return pos + 4
+    # Double (8 bytes)
+    if marker == 0x07:
+        return pos + 8
+    # Single / Float (4 bytes)
+    if marker == 0x08:
         return pos + 4
     # Datetime (8 bytes)
     if marker == 0x06:
@@ -451,7 +464,11 @@ def viewstate_signature_length(viewstate_bytes):
         return None
     if pos is None:
         return None
-    return len(viewstate_bytes) - pos
+    trailing = len(viewstate_bytes) - pos
+    # All-zero trailing bytes are null-padding, not a real HMAC signature
+    if trailing > 0 and viewstate_bytes[pos:] == b"\x00" * trailing:
+        return 0
+    return trailing
 
 
 class Viewstate_Helpers:
