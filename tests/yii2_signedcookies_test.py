@@ -25,8 +25,7 @@ def test_yii2_bad():
 
 def test_yii2_carve():
     x = Yii2_SignedCookies()
-    header_value = f"lang={yii2_tests[0][1]}; expires=Sat, 11-Apr-2026"
-    results = x.carve(headers={"Set-Cookie": header_value})
+    results = x.carve(cookies={"lang": yii2_tests[0][1]})
     assert len(results) > 0
     assert results[0]["type"] == "SecretFound"
     assert results[0]["secret"] == yii2_tests[0][0]

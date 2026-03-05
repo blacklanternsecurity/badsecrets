@@ -22,28 +22,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: psf/black@stable
-        with:
-          options: "--check"
       - name: Install Python 3
         uses: actions/setup-python@v4
         with:
-          python-version: 3.9
-      - name: Install dependencies
-        run: |
-          pip install flake8
-      - name: flake8
-        run: |
-          flake8 --select F,E722 --ignore F403,F405,F541
+          python-version: "3.10"
+      - name: Install Ruff
+        run: pip install ruff==0.15.2
+      - name: Ruff format check
+        run: ruff format --check .
+      - name: Ruff lint check
+        run: ruff check .
 
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+      fail-fast: false
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
       - name: Install dependencies
         run: |
           pip install poetry
@@ -57,6 +59,7 @@ jobs:
           command: |
             poetry run pytest --exitfirst --disable-warnings --log-cli-level=DEBUG --cov-report xml:cov.xml --cov=badsecrets --cov=examples
       - name: Upload Code Coverage
+        if: matrix.python-version == '3.12'
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

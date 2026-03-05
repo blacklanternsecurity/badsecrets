@@ -25,13 +25,14 @@ class LaravelSignedCookies(BadsecretsBase):
 
     identify_regex = re.compile(r"eyJ(?:[\w-])*")
     description = {"product": "Laravel Signed Cookie", "secret": "Laravel APP_KEY", "severity": "HIGH"}
+    carve_locations = ("cookies",)
 
     def laravelVerify(self, value, secret):
         # attempt to decode laravel cookie and load contents into JSON object
         try:
             json_value = json.loads(base64.b64decode(urllib.parse.unquote(value)))
 
-            if not all(key in json_value.keys() for key in ["mac", "value", "iv"]):
+            if not all(key in json_value for key in ["mac", "value", "iv"]):
                 return False
 
         except (binascii.Error, json.decoder.JSONDecodeError, UnicodeDecodeError):

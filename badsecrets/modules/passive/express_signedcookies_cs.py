@@ -17,6 +17,8 @@ def no_padding_urlsafe_base64_encode_cs(enc):
 class ExpressSignedCookies_CS(BadsecretsBase):
     check_secret_args = 2
     identify_regex = re.compile(r"\w{1,200}\=eyJ[A-Za-z0-9=\\_]{4,512}")
+    # Simplified carve: backreference \1 not supported in YARA, match the .sig= part
+    yara_carve_pattern = r"\.sig=[^;]{27,86}"
     signature_regex = re.compile(r"^[A-Za-z0-9_-]{27}$")
     description = {
         "product": "Express.js Signed Cookie (cookie-session)",
@@ -24,6 +26,7 @@ class ExpressSignedCookies_CS(BadsecretsBase):
         "severity": "HIGH",
     }
     validate_carve = False
+    carve_locations = ("headers",)
 
     def carve_regex(self):
         return re.compile(r"(\w{1,64})=([^;]{4,512});.{0,100}?\1\.sig=([^;]{27,86})")
@@ -63,7 +66,7 @@ class ExpressSignedCookies_CS(BadsecretsBase):
         if not sig:
             return False
 
-        for l in set(list(self.load_resources(["express_session_secrets.txt", "top_100000_passwords.txt"]))):
+        for l in set(self.load_resources(["express_session_secrets.txt", "top_100000_passwords.txt"])):
             secret = l.rstrip()
             r = self.expressVerify_cs(express_signed_cookie_data, sig, secret)
             if r:

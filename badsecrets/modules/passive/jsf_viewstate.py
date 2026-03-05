@@ -17,6 +17,7 @@ class Jsf_viewstate(BadsecretsBase):
     identify_regex = re.compile(
         r"^(?:[%A-Za-z0-9+\/]{4}){8,}(?:[%A-Za-z0-9+\/]{4}|[%A-Za-z0-9+\/]{3}=|[%A-Za-z0-9+\/]{2}={2})$"
     )
+    yara_carve_pattern = r"javax\.faces\.ViewState"
     description = {
         "product": "Java Server Faces Viewstate",
         "secret": "com.sun.faces.ClientStateSavingPassword",
@@ -24,6 +25,7 @@ class Jsf_viewstate(BadsecretsBase):
     }
 
     hashcat_hashalg_table = {"MD5": "50", "SHA1": "150", "SHA256": "1450", "SHA384": "10800", "SHA512": "1750"}
+    carve_locations = ("body",)
 
     def carve_regex(self):
         return re.compile(r"<input.+?name=\"javax\.faces\.ViewState\".+?value=\"([^\"]*)\"")
@@ -37,7 +39,7 @@ class Jsf_viewstate(BadsecretsBase):
         )  # Theres no way to determine the IV, as it lives in server memory. So, we can pass anything in - we can still decrypt all except for block #1
         try:
             decrypted = cipher.decrypt(base64.b64decode(ct))
-            if b"java." in decrypted:
+            if decrypted.count(b"java.") >= 2:
                 return True
         except (ValueError, binascii.Error):
             return False
@@ -121,7 +123,7 @@ class Jsf_viewstate(BadsecretsBase):
                                 dec_algo.__name__.replace("Crypto.Cipher.", ""),
                                 cipher_mode,
                                 None,
-                                True if uncompressed else False,
+                                bool(uncompressed),
                             )
 
                     elif cipher_mode == "CBC":
@@ -156,7 +158,7 @@ class Jsf_viewstate(BadsecretsBase):
                                         dec_algo.__name__.replace("Crypto.Cipher.", ""),
                                         cipher_mode,
                                         iv,
-                                        True if uncompressed else False,
+                                        bool(uncompressed),
                                     )
                                 else:
                                     invalid_iv_match = (
@@ -164,7 +166,7 @@ class Jsf_viewstate(BadsecretsBase):
                                         dec_algo.__name__.replace("Crypto.Cipher.", ""),
                                         cipher_mode,
                                         b"INVALID",
-                                        True if uncompressed else False,
+                                        bool(uncompressed),
                                     )
                                     continue
 
@@ -230,7 +232,7 @@ class Jsf_viewstate(BadsecretsBase):
             else:
                 jsf_viewstate_value = base64.b64encode(uncompressed)
 
-        for l in set(list(self.load_resources(["jsf_viewstate_passwords.txt", "top_100000_passwords.txt"]))):
+        for l in set(self.load_resources(["jsf_viewstate_passwords.txt", "top_100000_passwords.txt"])):
             with suppress(ValueError):
                 password = l.rstrip()
                 if self.DES3_decrypt(jsf_viewstate_value, password):
@@ -239,7 +241,7 @@ class Jsf_viewstate(BadsecretsBase):
                         "details": {
                             "source": jsf_viewstate_value,
                             "info": "JSF Viewstate (Mojarra 1.2.x - 2.0.3) 3DES Encrypted",
-                            "compression": True if uncompressed else False,
+                            "compression": bool(uncompressed),
                         },
                     }
 
@@ -262,7 +264,7 @@ class Jsf_viewstate(BadsecretsBase):
                             "details": {
                                 "source": jsf_viewstate_value,
                                 "info": "JSF Viewstate (Mojarra 2.2.6 - 2.3.x) AES Encrypted",
-                                "compression": True if uncompressed else False,
+                                "compression": bool(uncompressed),
                             },
                         }
 

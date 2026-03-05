@@ -11,23 +11,19 @@ import base64
 import random
 import urllib.parse
 import argparse
-import requests
+import httpx
 from itertools import chain
-
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-from urllib3.exceptions import MaxRetryError
 
 from Crypto.Cipher import AES
 from Crypto.Hash import HMAC
 from Crypto.Hash import SHA256
-
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
 from badsecrets import modules_loaded
+from badsecrets.helpers import validate_url
 
 Telerik_HashKey = modules_loaded["telerik_hashkey"]
 Telerik_EncryptionKey = modules_loaded["telerik_encryptionkey"]
@@ -36,18 +32,6 @@ Telerik_EncryptionKey = modules_loaded["telerik_encryptionkey"]
 def random_hex_string(length):
     random_digits = [random.choice(string.hexdigits) for _ in range(length)]
     return "".join(random_digits).lower()
-
-
-def validate_url(
-    arg_value,
-    pattern=re.compile(
-        r"^https?://((?:[A-Z0-9_]|[A-Z0-9_][A-Z0-9\-_]*[A-Z0-9_])[\.]?)+(?:[A-Z0-9_][A-Z0-9\-_]*[A-Z0-9_]|[A-Z0-9_])(?::[0-9]{1,5})?.*$",
-        re.IGNORECASE,
-    ),
-):
-    if not pattern.match(arg_value):
-        raise argparse.ArgumentTypeError("URL is not formatted correctly")
-    return arg_value
 
 
 telerik_versions = [
@@ -202,10 +186,10 @@ telerik_versions_patched = [
 
 # Heavily derived from https://github.com/bao7uo/RAU_crypto/blob/master/RAU_crypto.py <3
 class AsyncUpload:
-    def __init__(self, url, include_machinekeys_bool=False, proxies={}, headers=None):
+    def __init__(self, url, include_machinekeys_bool=False, proxy=None, headers=None):
         self.url = url
         self.asyncupload_key = None
-        self.proxies = proxies
+        self.proxy = proxy
         self.headers = headers
         self.include_machinekeys_bool = include_machinekeys_bool
         self.telerik_hashkey = Telerik_HashKey()
@@ -231,15 +215,11 @@ class AsyncUpload:
     def version_probe(self):
         derived_key, iv = self.telerik_encryptionkey.telerik_derivekeys_PBKDF1_MS("GreatScott!")
         data, multipart_boundary = self.rau_data_prep("1985.10.26", derived_key, iv, "ThinkMcFlyThink")
-        session = requests.Session()
-        session.proxies.update(self.proxies)
-        request = requests.Request("POST", self.url, data=data)
-        request = request.prepare()
-        request.headers["Content-Type"] = (
-            f"multipart/form-data; boundary=---------------------------{multipart_boundary}"
-        )
-        request.headers.update(self.headers)
-        resp = session.send(request, verify=False)
+        headers = dict(self.headers) if self.headers else {}
+        headers["Content-Type"] = f"multipart/form-data; boundary=---------------------------{multipart_boundary}"
+        request = httpx.Request("POST", self.url, content=data, headers=headers)
+        with httpx.Client(proxy=self.proxy, verify=False) as client:
+            resp = client.send(request)
         if "Exception Details: " in resp.text:
             print("Verbose Errors are enabled!")
             if "Telerik.Web.UI.CryptoExceptionThrower.ThrowGenericCryptoException" in resp.text:
@@ -261,7 +241,7 @@ class AsyncUpload:
         payload = ""
         payload += f"-----------------------------{multipart_boundary}\r\n"
         payload += 'Content-Disposition: form-data; name="rauPostData"\r\n\r\n'
-        payload += f"{self.encrypt(enc_a,key,iv)}&{self.encrypt(enc_b,key,iv)}\r\n"
+        payload += f"{self.encrypt(enc_a, key, iv)}&{self.encrypt(enc_b, key, iv)}\r\n"
         payload += f"-----------------------------{multipart_boundary}\r\n"
         payload += 'Content-Disposition: form-data; name="file"; filename="blob"\r\n'
         payload += "Content-Type: application/octet-stream\r\n"
@@ -345,19 +325,17 @@ class AsyncUpload:
                             derived_key, iv = self.telerik_encryptionkey.telerik_derivekeys_PBKDF2(key)
 
                         data, multipart_boundary = self.rau_data_prep(telerik_version, derived_key, iv, hashkey)
-                        session = requests.Session()
-                        session.proxies.update(self.proxies)
-                        request = requests.Request("POST", self.url, data=data)
-                        request = request.prepare()
-                        request.headers["Content-Type"] = (
+                        headers = dict(self.headers) if self.headers else {}
+                        headers["Content-Type"] = (
                             f"multipart/form-data; boundary=---------------------------{multipart_boundary}"
                         )
-                        request.headers.update(self.headers)
+                        request = httpx.Request("POST", self.url, content=data, headers=headers)
                         if hasattr(self, "debug") and self.debug:
                             print(f"[DEBUG] Sending request to: {self.url}")
                         try:
-                            resp = session.send(request, verify=False)
-                        except (requests.exceptions.RequestException, MaxRetryError):
+                            with httpx.Client(proxy=self.proxy, verify=False) as client:
+                                resp = client.send(request)
+                        except httpx.HTTPError:
                             print(f"Network error connecting to URL: [{self.url}]. Exiting due to connection failure.")
                             sys.exit(1)
                         if hasattr(self, "debug") and self.debug:
@@ -381,13 +359,13 @@ class AsyncUpload:
 
 
 class DialogHandler:
-    def __init__(self, url, modern_dialog_params=False, include_machinekeys_bool=False, proxies={}, headers=None):
+    def __init__(self, url, modern_dialog_params=False, include_machinekeys_bool=False, proxy=None, headers=None):
         self.url = url
         self.telerik_hashkey = Telerik_HashKey()
         self.telerik_encryptionkey = Telerik_EncryptionKey()
         self.encryption_key = None
         self.hash_key = None
-        self.proxies = proxies
+        self.proxy = proxy
         self.headers = headers
         self.include_machinekeys_bool = include_machinekeys_bool
         self.modern_dialog_params = modern_dialog_params
@@ -408,14 +386,14 @@ class DialogHandler:
         ct = self.telerik_encryptionkey.telerik_encrypt(derivedKey, derivedIV, plaintext)
         dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params(self.hash_key, ct)
         try:
-            r = requests.post(
+            r = httpx.post(
                 self.url,
                 data={"dialogParametersHolder": dialog_parameters},
                 headers=self.headers,
                 verify=False,
-                proxies=self.proxies,
+                proxy=self.proxy,
             )
-        except (requests.exceptions.RequestException, MaxRetryError):
+        except httpx.HTTPError:
             if hasattr(self, "debug") and self.debug:
                 print("[DEBUG] Network error probing version, exiting")
             sys.exit(1)
@@ -440,14 +418,14 @@ class DialogHandler:
         dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params(self.hash_key, ct)
 
         try:
-            r = requests.post(
+            r = httpx.post(
                 self.url,
                 data={"dialogParametersHolder": dialog_parameters},
                 headers=self.headers,
                 verify=False,
-                proxies=self.proxies,
+                proxy=self.proxy,
             )
-        except (requests.exceptions.RequestException, MaxRetryError):
+        except httpx.HTTPError:
             if hasattr(self, "debug") and self.debug:
                 print("[DEBUG] Network error probing version, exiting")
             sys.exit(1)
@@ -474,10 +452,8 @@ class DialogHandler:
             print("\n[DEBUG] Detecting key derivation function")
             print(f"[DEBUG] Sending probe request to: {self.url}")
         try:
-            res = requests.post(
-                self.url, data=KDF_probe_data, proxies=self.proxies, headers=self.headers, verify=False
-            )
-        except (requests.exceptions.RequestException, MaxRetryError):
+            res = httpx.post(self.url, data=KDF_probe_data, proxy=self.proxy, headers=self.headers, verify=False)
+        except httpx.HTTPError:
             print(f"Network error connecting to URL: [{self.url}]. Cannot determine key derivation function.")
             sys.exit(1)
         resp_body = res.text
@@ -528,8 +504,8 @@ class DialogHandler:
                     print(f"[DEBUG] Sending request to: {self.url}")
 
                 try:
-                    res = requests.post(self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False)
-                except (requests.exceptions.RequestException, MaxRetryError):
+                    res = httpx.post(self.url, data=data, proxy=self.proxy, headers=self.headers, verify=False)
+                except httpx.HTTPError:
                     print(f"Network error connecting to URL: [{self.url}]. Exiting due to connection failure.")
                     sys.exit(1)
 
@@ -571,10 +547,8 @@ class DialogHandler:
                         print(f"\n[DEBUG] Testing encryption key #{encryptionkey_counter}: {encryption_key}")
                         print(f"[DEBUG] Sending request to: {self.url}")
                     try:
-                        res = requests.post(
-                            self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False
-                        )
-                    except (requests.exceptions.RequestException, MaxRetryError):
+                        res = httpx.post(self.url, data=data, proxy=self.proxy, headers=self.headers, verify=False)
+                    except httpx.HTTPError:
                         print(f"Network error connecting to URL: [{self.url}]. Exiting due to connection failure.")
                         sys.exit(1)
                     if hasattr(self, "debug") and self.debug:
@@ -613,10 +587,8 @@ class DialogHandler:
             dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params("dummy", ct)
             data = {"dialogParametersHolder": dialog_parameters}
             try:
-                baseline_res = requests.post(
-                    self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False
-                )
-            except (requests.exceptions.RequestException, MaxRetryError):
+                baseline_res = httpx.post(self.url, data=data, proxy=self.proxy, headers=self.headers, verify=False)
+            except httpx.HTTPError:
                 print(f"Network error connecting to URL: [{self.url}]. Cannot establish baseline for testing.")
                 sys.exit(1)
             baseline_size = len(baseline_res.text)
@@ -648,7 +620,7 @@ class DialogHandler:
                     custom_keys=custom_keys,
                 )
 
-                for encryption_key_probe, encryption_key in encryptionkey_generator:
+                for _encryption_key_probe, encryption_key in encryptionkey_generator:
                     count += 1
                     # For PBKDF2, we need to properly encrypt and hash the parameters
                     derivedKey, derivedIV = self.telerik_encryptionkey.telerik_derivekeys(
@@ -667,10 +639,8 @@ class DialogHandler:
                         print(f"  - Encryption Key: {encryption_key}")
                         print(f"[DEBUG] Sending request to: {self.url}")
                     try:
-                        res = requests.post(
-                            self.url, data=data, proxies=self.proxies, headers=self.headers, verify=False
-                        )
-                    except (requests.exceptions.RequestException, MaxRetryError):
+                        res = httpx.post(self.url, data=data, proxy=self.proxy, headers=self.headers, verify=False)
+                    except httpx.HTTPError:
                         print(f"Network error connecting to URL: [{self.url}]. Exiting due to connection failure.")
                         sys.exit(1)
 
@@ -803,9 +773,9 @@ def main():
         print("This will generate a lot of output!\n")
 
     if args.proxy:
-        proxies = {"http": args.proxy, "https": args.proxy}
+        proxy = args.proxy
     else:
-        proxies = {}
+        proxy = None
 
     include_machinekeys_bool = False
     if args.machine_keys:
@@ -826,8 +796,8 @@ def main():
         print("Assuming target is a AsyncUpload Endpoint...")
         asyncupload_endpoint = args.url.split("?")[0] + "?type=RAU"
         try:
-            res = requests.get(asyncupload_endpoint, proxies=proxies, headers=headers, verify=False, timeout=10)
-        except (requests.exceptions.RequestException, MaxRetryError):
+            res = httpx.get(asyncupload_endpoint, proxy=proxy, headers=headers, verify=False, timeout=10)
+        except httpx.HTTPError:
             print(f"Network error connecting to URL: [{args.url}]. Please check the URL and network connectivity.")
             sys.exit(1)
             return
@@ -840,7 +810,7 @@ def main():
 
             rau = AsyncUpload(
                 asyncupload_endpoint,
-                proxies=proxies,
+                proxy=proxy,
                 headers=headers,
                 include_machinekeys_bool=include_machinekeys_bool,
             )
@@ -870,8 +840,8 @@ def main():
     else:
         print("Assuming target is Telerik UI DialogHandler...")
         try:
-            res = requests.get(args.url, proxies=proxies, headers=headers, verify=False)
-        except (requests.exceptions.RequestException, MaxRetryError):
+            res = httpx.get(args.url, proxy=proxy, headers=headers, verify=False, follow_redirects=True)
+        except httpx.HTTPError:
             print(f"Network error connecting to URL: [{args.url}]. Please check the URL and network connectivity.")
             sys.exit(1)
             return
@@ -885,7 +855,7 @@ def main():
         dh = DialogHandler(
             args.url,
             modern_dialog_params=args.modern_dialog_params,
-            proxies=proxies,
+            proxy=proxy,
             headers=headers,
             include_machinekeys_bool=include_machinekeys_bool,
         )

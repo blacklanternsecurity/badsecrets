@@ -1,8 +1,8 @@
 import os
 import sys
-import requests
-import requests_mock
-from mock import patch
+import httpx
+import respx
+from unittest.mock import patch
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(f"{os.path.dirname(SCRIPT_DIR)}/examples")
@@ -158,19 +158,17 @@ def test_examples_blacklist3r_offline(monkeypatch, capsys):
         captured = capsys.readouterr()
         assert "error: --viewstate/--generator options and --url option are mutually exclusive" in captured.err
 
-    with requests_mock.Mocker() as m:
-        m.get(
-            f"http://example.com/vulnerableviewstate.aspx",
+    with respx.mock:
+        respx.get("http://example.com/vulnerableviewstate.aspx").respond(
             status_code=200,
             text=base_viewstate_page.replace("###viewstate###", vulnerable_viewstate),
         )
-        m.get(
-            f"http://example.com/nonvulnerableviewstate.aspx",
+        respx.get("http://example.com/nonvulnerableviewstate.aspx").respond(
             status_code=200,
             text=base_viewstate_page.replace("###viewstate###", non_vulnerable_viewstate),
         )
-        m.get(f"http://example.com/noviewstate.aspx", status_code=200, text=no_viewstate_page)
-        m.get(f"http://notreal.com/", exc=requests.exceptions.ConnectTimeout)
+        respx.get("http://example.com/noviewstate.aspx").respond(status_code=200, text=no_viewstate_page)
+        respx.get("http://notreal.com/").mock(side_effect=httpx.ConnectTimeout("timeout"))
         # URL Mode - Valid URL is visited, contains viewstate, viewstate is vulnerable
 
         monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerableviewstate.aspx"])
