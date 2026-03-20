@@ -7,23 +7,23 @@ import os
 
 # Handle bad custom resource
 def test_handle_bad_resource():
-    for module_name, mod in modules_loaded.items():
+    for _module_name, mod in modules_loaded.items():
         try:
             rand_string = "".join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
             mod(custom_resource=f"/tmp/{rand_string}")
-            assert False
+            raise AssertionError()
         except badsecrets.errors.LoadResourceException:
             assert True
 
 
 # Ensure a good custom resource gets loaded properly
 def test_load_resource():
-    for module_name, mod in modules_loaded.items():
+    for _module_name, mod in modules_loaded.items():
         try:
             mod(custom_resource="/etc/passwd")
             assert True
-        except badsecrets.errors.LoadResourceException:
-            assert False
+        except badsecrets.errors.LoadResourceException as e:
+            raise AssertionError() from e
 
 
 def test_use_custom_resource():
@@ -42,4 +42,4 @@ def test_identity_non_match():
     Generic_JWT = modules_loaded["generic_jwt"]
     x = Generic_JWT()
     r = x.check_secret("N0T_Val1D")
-    assert r == None
+    assert r is None

@@ -3,29 +3,35 @@
 # Black Lantern Security - https://www.blacklanternsecurity.com
 # @paulmmueller
 
-from badsecrets.base import check_all_modules, carve_all_modules, hashcat_all_modules
-from badsecrets.helpers import print_status
-import requests
+from badsecrets.base import (
+    check_all_modules,
+    carve_all_modules,
+    hashcat_all_modules,
+    probe_all_modules,
+    build_prefilter_text,
+    _passive_subclasses,
+    _active_subclasses,
+    yara_prefilter_scan,
+)
+from badsecrets.helpers import print_status, validate_url
+import httpx
+import asyncio
 import argparse
+import difflib
+import json as json_module
+import logging
 import sys
 import os
-import re
 from importlib.metadata import version, PackageNotFoundError
-
-
-from urllib3.exceptions import InsecureRequestWarning
-
-# Suppress only the single warning from urllib3 needed.
-requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
 ascii_art_banner = r"""
- __ )              |                                |         
- __ \    _` |   _` |   __|   _ \   __|   __|   _ \  __|   __| 
- |   |  (   |  (   | \__ \   __/  (     |      __/  |   \__ \ 
-____/  \__,_| \__,_| ____/ \___| \___| _|    \___| \__| ____/ 
+ __ )              |                                |
+ __ \    _` |   _` |   __|   _ \   __|   __|   _ \  __|   __|
+ |   |  (   |  (   | \__ \   __/  (     |      __/  |   \__ \
+____/  \__,_| \__,_| ____/ \___| \___| _|    \___| \__| ____/
 """
 
 
@@ -39,8 +45,8 @@ def print_version():
 
 class CustomArgumentParser(argparse.ArgumentParser):
     def error(self, message):
-        self.print_usage()
-        self.exit(1)
+        self.print_usage(sys.stderr)
+        self.exit(2, f"error: {message}\n")
 
 
 class BaseReport:
@@ -80,18 +86,6 @@ class ReportIdentify(BaseReport):
             print_hashcat_results(self.x["hashcat"])
 
 
-def validate_url(
-    arg_value,
-    pattern=re.compile(
-        r"^https?://((?:[A-Z0-9_]|[A-Z0-9_][A-Z0-9\-_]*[A-Z0-9_])[\.]?)+(?:[A-Z0-9_][A-Z0-9\-_]*[A-Z0-9_]|[A-Z0-9_])(?::[0-9]{1,5})?.*$",
-        re.IGNORECASE,
-    ),
-):
-    if not pattern.match(arg_value):
-        raise argparse.ArgumentTypeError(print_status("URL is not formatted correctly", color="red"))
-    return arg_value
-
-
 def validate_file(file):
     if not os.path.exists(file):
         raise argparse.ArgumentTypeError(print_status(f"The file {file} does not exist!", color="red"))
@@ -113,6 +107,105 @@ def print_hashcat_results(hashcat_candidates):
             )
 
 
+def _all_module_names():
+    """Build case-insensitive lookup of all module class names (passive + active)."""
+    names = {}
+    for cls in _passive_subclasses():
+        names[cls.__name__.upper()] = cls.__name__
+    for cls in _active_subclasses():
+        names[cls.__name__.upper()] = cls.__name__
+    return names
+
+
+def _active_module_names():
+    """Set of active module class names."""
+    return {cls.__name__ for cls in _active_subclasses()}
+
+
+def parse_custom_secrets(custom_secrets_args):
+    """Parse --custom-secrets arguments into global files and per-module keys.
+
+    Supports two formats:
+      --custom-secrets FILE              → global file for all modules
+      --custom-secrets MODULE:FILE_OR_KEYS → targeted to specific module
+
+    Returns:
+        global_files: list of file paths to apply to all modules
+        module_keys: dict of {module_class_name: [key1, key2, ...]}
+    """
+    global_files = []
+    module_keys = {}
+
+    if not custom_secrets_args:
+        return global_files, module_keys
+
+    all_names = _all_module_names()
+
+    for arg in custom_secrets_args:
+        if ":" not in arg:
+            # No module prefix → treat as global file
+            validate_file(arg)
+            global_files.append(arg)
+        else:
+            module_name, value = arg.split(":", 1)
+            upper_name = module_name.upper()
+
+            if upper_name not in all_names:
+                candidates = list(set(all_names.values()))
+                close = difflib.get_close_matches(module_name, candidates, n=1, cutoff=0.4)
+                suggestion = f" Did you mean '{close[0]}'?" if close else ""
+                available = ", ".join(sorted(candidates))
+                raise argparse.ArgumentTypeError(
+                    f"No module found for '{module_name}'.{suggestion} Available modules: {available}"
+                )
+
+            canonical_name = all_names[upper_name]
+
+            # Auto-detect: if value is an existing file path, read keys from it
+            if os.path.isfile(value):
+                with open(value) as f:
+                    keys = [line.strip() for line in f if line.strip()]
+            else:
+                # Otherwise treat as comma-separated inline keys
+                keys = [k.strip() for k in value.split(",") if k.strip()]
+
+            if canonical_name not in module_keys:
+                module_keys[canonical_name] = []
+            module_keys[canonical_name].extend(keys)
+
+    return global_files, module_keys
+
+
+def _print_module_table(title, classes):
+    """Print a formatted table of modules."""
+    if not classes:
+        return
+    rows = []
+    for cls in sorted(classes, key=lambda c: c.__name__):
+        desc = cls.get_description()
+        rows.append((cls.__name__, desc["product"], desc["secret"], desc["severity"]))
+
+    headers = ("Module", "Product", "Secret", "Severity")
+    widths = [max(len(h), max(len(r[i]) for r in rows)) for i, h in enumerate(headers)]
+    sep = "+-" + "-+-".join("-" * w for w in widths) + "-+"
+    fmt = "| " + " | ".join(f"{{:<{w}}}" for w in widths) + " |"
+
+    print(f"\n{title}\n")
+    print(sep)
+    print(fmt.format(*headers))
+    print(sep)
+    for row in rows:
+        print(fmt.format(*row))
+    print(sep)
+
+
+def list_modules():
+    """Print all available modules with their descriptions."""
+    _print_module_table("Passive modules (analyze existing cryptographic products)", _passive_subclasses())
+    _print_module_table("Active modules (send targeted probes to detect default/known keys)", _active_subclasses())
+    print()
+
+
 def main():
     global colorenabled
     colorenabled = False
@@ -125,19 +218,27 @@ def main():
         help="Disable color message in the console",
     )
 
+    color_parser.add_argument(
+        "-j",
+        "--json",
+        action="store_true",
+        help="Output results as JSON only (no banner, no color). Outputs nothing on no detection",
+    )
+
     args, unknown_args = color_parser.parse_known_args()
-    colorenabled = not args.no_color
+    json_mode = args.json
+    colorenabled = not args.no_color and not json_mode
 
     parser = CustomArgumentParser(
         description="Check cryptographic products against badsecrets library", parents=[color_parser]
     )
 
-    if colorenabled:
-        print_status(ascii_art_banner, color="green")
-
-    else:
-        print(ascii_art_banner)
-    print_version()
+    if not json_mode:
+        if colorenabled:
+            print_status(ascii_art_banner, color="green")
+        else:
+            print(ascii_art_banner)
+        print_version()
 
     parser.add_argument(
         "-u",
@@ -156,8 +257,16 @@ def main():
     parser.add_argument(
         "-c",
         "--custom-secrets",
-        type=validate_file,
-        help="include a custom secrets file to load along with the default secrets",
+        action="append",
+        metavar="FILE_OR_MODULE:KEYS",
+        help=(
+            "Custom secrets to check. Can be specified multiple times. "
+            "Without a module prefix, the file is loaded for all modules. "
+            "With a module prefix (MODULE:value), keys are targeted to that module only. "
+            "Value can be a file path or comma-separated inline keys. "
+            "Example: -c my_keys.txt  or  -c Shiro_RememberMe_Key:key1,key2  "
+            "or  -c GlobalProtect_DefaultMasterKey:keys.txt"
+        ),
     )
 
     parser.add_argument("product", nargs="*", type=str, help="Cryptographic product to check for known secrets")
@@ -175,13 +284,46 @@ def main():
     )
 
     parser.add_argument(
-        "-r",
-        "--allow-redirects",
+        "-H",
+        "--header",
+        action="append",
+        help="Custom header (e.g., -H 'Cookie: foo=bar'). Can be specified multiple times",
+    )
+
+    parser.add_argument(
+        "-d",
+        "--debug",
         action="store_true",
-        help="Optionally follow HTTP redirects. Off by default",
+        help="Enable debug output (request URL, response status, headers, etc.)",
+    )
+
+    parser.add_argument(
+        "-t",
+        "--timeout",
+        type=int,
+        default=10,
+        help="Request timeout in seconds (default: 10)",
+    )
+
+    parser.add_argument(
+        "-P",
+        "--passive-only",
+        action="store_true",
+        help="Disable active probing in URL mode (only run passive analysis)",
+    )
+
+    parser.add_argument(
+        "-l",
+        "--list-modules",
+        action="store_true",
+        help="List all available modules with descriptions and exit",
     )
 
     args = parser.parse_args(unknown_args)
+
+    if args.list_modules:
+        list_modules()
+        return
 
     if not args.url and not args.product:
         parser.error(
@@ -196,58 +338,209 @@ def main():
         parser.error(print_status("In --url mode, no positional arguments should be used", color="red"))
         return
 
-    allow_redirects = False
-    if args.allow_redirects:
-        allow_redirects = True
+    if not args.url and args.passive_only:
+        parser.error(print_status("--passive-only is only valid in --url mode", color="red"))
+        return
 
-    proxies = None
+    proxy = None
     if args.proxy:
-        proxies = {"http": args.proxy, "https": args.proxy}
+        proxy = args.proxy
 
-    custom_resource = None
-    if args.custom_secrets:
-        custom_resource = args.custom_secrets
+    # Parse unified --custom-secrets
+    try:
+        global_files, module_keys = parse_custom_secrets(args.custom_secrets)
+    except argparse.ArgumentTypeError as e:
+        parser.error(str(e))
+        return
+
+    # Global custom resource for passive modules (first global file, backward compatible)
+    custom_resource = global_files[0] if global_files else None
+
+    # Build active_keys_map: start with module-targeted keys for active modules
+    active_names = _active_module_names()
+    active_keys_map = {k: v for k, v in module_keys.items() if k in active_names}
+
+    # Also load keys from global files for active modules
+    if global_files:
+        for f in global_files:
+            with open(f) as fh:
+                keys_from_file = [line.strip() for line in fh if line.strip()]
+            if keys_from_file:
+                for active_cls in _active_subclasses():
+                    name = active_cls.__name__
+                    if name not in active_keys_map:
+                        active_keys_map[name] = []
+                    active_keys_map[name].extend(keys_from_file)
+
+    if custom_resource and not json_mode:
         print_status(f"Including custom secrets list [{custom_resource}]\n", color="yellow")
 
     if args.url:
         headers = {}
         if args.user_agent:
             headers["User-agent"] = args.user_agent
+        if args.header:
+            for h in args.header:
+                if ":" in h:
+                    name, value = h.split(":", 1)
+                    headers[name.strip()] = value.strip()
 
+        if args.debug and not json_mode:
+            _log = logging.getLogger("badsecrets")
+            _log.setLevel(logging.DEBUG)
+            _log.propagate = False
+            _handler = logging.StreamHandler()
+            _handler.setFormatter(logging.Formatter("[DEBUG] %(message)s"))
+            _log.addHandler(_handler)
+            print_status(f"[DEBUG] Request URL: {args.url}", color="blue")
+
+        # Fetch initial response without following redirects, then follow if needed.
+        # Both passive and active phases evaluate every response we collect.
         try:
-            res = requests.get(
-                args.url, proxies=proxies, headers=headers, verify=False, allow_redirects=allow_redirects
+            res = httpx.get(
+                args.url,
+                proxy=proxy,
+                headers=headers,
+                verify=False,
+                follow_redirects=False,
+                timeout=args.timeout,
             )
-        except (requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout):
-            print_status(f"Error connecting to URL: [{args.url}]", color="red")
+        except (httpx.ConnectError, httpx.ConnectTimeout):
+            if not json_mode:
+                print_status(f"Error connecting to URL: [{args.url}]", color="red")
             return
 
-        r_list = carve_all_modules(requests_response=res, custom_resource=custom_resource, url=args.url)
-        if r_list:
-            for r in r_list:
-                if r["type"] == "SecretFound":
-                    report = ReportSecret(r)
-                else:
-                    if not args.no_hashcat:
-                        hashcat_candidates = hashcat_all_modules(r["product"], detecting_module=r["detecting_module"])
-                        if hashcat_candidates:
-                            r["hashcat"] = hashcat_candidates
-                    report = ReportIdentify(r)
-                report.report()
+        responses = [(res, args.url)]
+
+        # If the initial response is a redirect, also fetch the followed page
+        if res.is_redirect:
+            try:
+                followed = httpx.get(
+                    args.url,
+                    proxy=proxy,
+                    headers=headers,
+                    verify=False,
+                    follow_redirects=True,
+                    timeout=args.timeout,
+                )
+                if args.debug and not json_mode:
+                    print_status(
+                        f"[DEBUG] Followed redirect to: {followed.url} (status {followed.status_code})",
+                        color="blue",
+                    )
+                responses.append((followed, str(followed.url)))
+            except (httpx.ConnectError, httpx.ConnectTimeout):
+                pass
+
+        # Passive phase: carve all responses
+        all_passive_results = []
+        for resp, resp_url in responses:
+            if args.debug and not json_mode:
+                print_status(f"[DEBUG] Response status: {resp.status_code} ({resp_url})", color="blue")
+                print_status(f"[DEBUG] Response headers: {dict(resp.headers)}", color="blue")
+                if resp.cookies:
+                    print_status(f"[DEBUG] Cookies: {list(resp.cookies.keys())}", color="blue")
+                print_status(f"[DEBUG] Response body length: {len(resp.text)} chars", color="blue")
+
+            r_list = carve_all_modules(httpx_response=resp, custom_resource=custom_resource, url=resp_url)
+            if r_list:
+                all_passive_results.extend(r_list)
+
+        if args.debug and not json_mode:
+            if all_passive_results:
+                modules_hit = {r["detecting_module"] for r in all_passive_results}
+                secret_count = sum(1 for r in all_passive_results if r["type"] == "SecretFound")
+                identify_count = sum(1 for r in all_passive_results if r["type"] == "IdentifyOnly")
+                print_status(
+                    f"[DEBUG] Carve results: {len(all_passive_results)} total ({secret_count} secrets, {identify_count} identify-only) from modules: {', '.join(modules_hit)}",
+                    color="blue",
+                )
+            else:
+                print_status("[DEBUG] Carve results: none", color="blue")
+
+        if all_passive_results:
+            if json_mode:
+                print(json_module.dumps(all_passive_results))
+            else:
+                for r in all_passive_results:
+                    if r["type"] == "SecretFound":
+                        report = ReportSecret(r)
+                    else:
+                        if not args.no_hashcat:
+                            hashcat_candidates = hashcat_all_modules(
+                                r["product"], detecting_module=r["detecting_module"]
+                            )
+                            if hashcat_candidates:
+                                r["hashcat"] = hashcat_candidates
+                        report = ReportIdentify(r)
+                    report.report()
         else:
-            print_status("No secrets found :(", color="red")
+            if not json_mode:
+                print_status("No secrets found :(", color="red")
+
+        # Active probes (on by default in URL mode, unless --passive-only)
+        if not args.passive_only:
+            if not json_mode:
+                print_status("Active probes are enabled. Use --passive-only to disable.", color="yellow")
+
+            # Check every collected response against prefilters, probe each match once
+            active_results = []
+            seen_modules = set()
+            for resp, resp_url in responses:
+                scan_text = build_prefilter_text(httpx_response=resp)
+                if not scan_text:
+                    continue
+                prefilter_matches = yara_prefilter_scan(scan_text)
+                new_matches = {k: v for k, v in prefilter_matches.items() if k not in seen_modules}
+                if new_matches and not json_mode:
+                    for module_name in new_matches:
+                        print_status(
+                            f"Detected {module_name} signature. Sending active probe...",
+                            color="yellow",
+                        )
+                if new_matches:
+                    results = asyncio.run(
+                        probe_all_modules(
+                            body=scan_text,
+                            url=resp_url,
+                            active_keys_map=active_keys_map,
+                        )
+                    )
+                    active_results.extend(results)
+                seen_modules.update(prefilter_matches.keys())
+
+            if active_results:
+                if json_mode:
+                    print(json_module.dumps(active_results))
+                else:
+                    for r in active_results:
+                        report = ReportSecret(r)
+                        report.report()
+            elif args.debug and not json_mode:
+                print_status("[DEBUG] No active findings.", color="blue")
 
     else:
+        if args.debug and not json_mode:
+            print_status(f"[DEBUG] Checking product(s): {args.product}", color="blue")
         x = check_all_modules(*args.product, custom_resource=custom_resource)
+        if args.debug and not json_mode:
+            if x:
+                print_status(f"[DEBUG] Match found by module: {x.get('detecting_module', 'unknown')}", color="blue")
+            else:
+                print_status("[DEBUG] No match from any module", color="blue")
         if x:
-            report = ReportSecret(x)
-            report.report()
+            if json_mode:
+                print(json_module.dumps(x))
+            else:
+                report = ReportSecret(x)
+                report.report()
         else:
-            print_status("No secrets found :(", color="red")
-            if not args.no_hashcat:
-                hashcat_candidates = hashcat_all_modules(*args.product)
-                if hashcat_candidates:
-                    print_hashcat_results(hashcat_candidates)
+            if not json_mode:
+                print_status("No secrets found :(", color="red")
+                if not args.no_hashcat:
+                    hashcat_candidates = hashcat_all_modules(*args.product)
+                    if hashcat_candidates:
+                        print_hashcat_results(hashcat_candidates)
 
 
 if __name__ == "__main__":

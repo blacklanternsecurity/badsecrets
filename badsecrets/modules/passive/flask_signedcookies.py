@@ -8,11 +8,12 @@ from badsecrets.base import BadsecretsBase
 class Flask_SignedCookies(BadsecretsBase):
     identify_regex = re.compile(r"\.?e[Jy](?:[\w-]*\.)(?:[\w-]*\.)[\w-]*")
     description = {"product": "Flask Signed Cookie", "secret": "Flask Password", "severity": "HIGH"}
+    carve_locations = ("cookies",)
 
     def check_secret(self, flask_cookie):
         if not self.identify(flask_cookie):
             return None
-        for l in set(list(self.load_resources(["flask_secret_keys.txt", "top_100000_passwords.txt"]))):
+        for l in set(self.load_resources(["flask_secret_keys.txt", "top_100000_passwords.txt"])):
             password = l.rstrip()
             r = flaskVerify(value=flask_cookie, secret=password)
             if r:

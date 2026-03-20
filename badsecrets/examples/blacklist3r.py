@@ -8,11 +8,8 @@ import re
 import os
 import sys
 import argparse
-import requests
+import httpx
 import urllib.parse
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
@@ -96,9 +93,9 @@ def main():
         parser.error("--viewstate/--generator options and --url option are mutually exclusive")
         return
 
-    proxies = None
+    proxy = None
     if args.proxy:
-        proxies = {"http": args.proxy, "https": args.proxy}
+        proxy = args.proxy
 
     if args.url:
         headers = {}
@@ -106,8 +103,8 @@ def main():
             headers["User-agent"] = args.user_agent
 
         try:
-            res = requests.get(args.url, proxies=proxies, headers=headers, verify=False)
-        except (requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout):
+            res = httpx.get(args.url, proxy=proxy, headers=headers, verify=False, follow_redirects=True)
+        except (httpx.ConnectError, httpx.ConnectTimeout):
             print(f"Error connecting to URL: [{args.url}]")
             return
         resp_body = urllib.parse.unquote(res.text)

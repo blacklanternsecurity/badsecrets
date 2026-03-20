@@ -1,8 +1,8 @@
 import os
 import sys
-import requests
-import requests_mock
-from mock import patch
+import httpx
+import respx
+from unittest.mock import patch
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(f"{os.path.dirname(SCRIPT_DIR)}/examples")
@@ -14,10 +14,10 @@ Symfony_SignedURL = modules_loaded["symfony_signedurl"]
 
 
 def test_symfony_url_not_up(monkeypatch, capsys):
-    with requests_mock.Mocker() as m:
+    with respx.mock:
         # URL is down - handled correctly
 
-        m.get(f"http://notreal.com/_fragment", exc=requests.exceptions.ConnectTimeout)
+        respx.get("http://notreal.com/_fragment").mock(side_effect=httpx.ConnectTimeout("timeout"))
         monkeypatch.setattr("sys.argv", ["python", "--url", "http://notreal.com"])
         symfony_knownkey.main()
         captured = capsys.readouterr()
@@ -54,24 +54,20 @@ def test_symfony_brute_success(monkeypatch, capsys, mocker):
 <tr><td class="e">Server API (SAPI) Abstraction Layer </td><td class="v">Andi Gutmans, Shane Caraveo, Zeev Suraski </td></tr>
     """
 
-    with requests_mock.Mocker() as m:
-        m.get(
-            f"https://localhost/AAAAAAAA",
+    with respx.mock:
+        respx.get("https://localhost/AAAAAAAA").respond(
             status_code=404,
             text="",
         )
 
-        m.get(
-            f"https://localhost/_fragment",
-            status_code=403,
-            text="",
-        )
+        # Use a side_effect dispatcher because respx matches URLs without considering
+        # query parameters, so a route for "_fragment" would also match "_fragment?_path=..."
+        def _fragment_dispatcher(request):
+            if "_hash=SrBMT/u6I0ylFIn/i6LYayCog21DnFMJ7yFBSnZpImA=" in str(request.url):
+                return httpx.Response(200, text=phpcredits_page)
+            return httpx.Response(403, text="")
 
-        m.get(
-            f"https://localhost/_fragment?_path=_controller%3Dphpcredits&_hash=SrBMT/u6I0ylFIn/i6LYayCog21DnFMJ7yFBSnZpImA=",
-            status_code=200,
-            text=phpcredits_page,
-        )
+        respx.get(url__startswith="https://localhost/_fragment").mock(side_effect=_fragment_dispatcher)
 
         monkeypatch.setattr(
             "sys.argv",
