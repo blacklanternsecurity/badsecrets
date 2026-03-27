@@ -324,6 +324,12 @@ bbot -f subdomain-enum -m badsecrets -t evil.corp
 
 ![badsecrets](https://user-images.githubusercontent.com/24899338/227044294-59e0408e-c55f-481a-a494-7ee5dd0a39be.png)
 
+## Docker
+
+```bash
+docker build -t badsecrets .
+docker run -t badsecrets <args>
+```
 
 ### Basic library usage
 
