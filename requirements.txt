@@ -1,4 +1,4 @@
-anyio==4.12.1 ; python_version >= "3.9" and python_version < "4.0"
+anyio==4.13.0 ; python_version >= "3.9" and python_version < "4.0"
 asgiref==3.11.1 ; python_version >= "3.9" and python_version < "4.0"
 blinker==1.9.0 ; python_version >= "3.9" and python_version < "4.0"
 certifi==2026.2.25 ; python_version >= "3.9" and python_version < "4.0"
