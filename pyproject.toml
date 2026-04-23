@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "badsecrets"
-version = "1.0.0"
+version = "1.1.0"
 description = "About"
 authors = ["A library for detecting known or weak secrets on across many platforms"]
 license = "GPL-3.0"
