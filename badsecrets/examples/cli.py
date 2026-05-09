@@ -39,7 +39,7 @@ def print_version():
     try:
         version_str = version("badsecrets")
     except PackageNotFoundError:
-        version_str = "Unknown (Running w/poetry?)"
+        version_str = "Unknown (not installed)"
     print(f"Version - {version_str}\n")
 
 
