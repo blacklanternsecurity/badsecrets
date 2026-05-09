@@ -988,7 +988,7 @@ def test_example_cli_version_not_found(monkeypatch, capsys):
         )
         cli.main()
         captured = capsys.readouterr()
-        assert "Version - Unknown (Running w/poetry?)" in captured.out
+        assert "Version - Unknown (not installed)" in captured.out
 
 
 def test_print_module_table_empty(capsys):
