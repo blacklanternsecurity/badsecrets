@@ -10,7 +10,7 @@ from unittest.mock import patch
 import pytest
 from blasthttp.mock import BlasthttpMock
 
-from badsecrets.examples import cli, blacklist3r, symfony_knownkey, telerik_knownkey
+from badsecrets.examples import cli, symfony_knownkey, telerik_knownkey
 
 
 @pytest.fixture
@@ -24,7 +24,6 @@ def bh_mock():
     mock = BlasthttpMock()
     with (
         patch.object(cli, "BlastHTTP", return_value=mock),
-        patch.object(blacklist3r, "BlastHTTP", return_value=mock),
         patch.object(symfony_knownkey, "BlastHTTP", return_value=mock),
         patch.object(telerik_knownkey, "_HTTP_CLIENT", mock),
     ):
