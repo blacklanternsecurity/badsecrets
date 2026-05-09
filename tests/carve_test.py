@@ -1,9 +1,18 @@
 import pytest
-import httpx
-import respx
 import badsecrets.errors
 
 from badsecrets import modules_loaded
+
+
+class FakeResponse:
+    """Duck-typed HTTP response for carve(http_response=...) tests."""
+
+    def __init__(self, text="", headers=None, cookies=None, url=""):
+        self.text = text
+        self.headers = headers if headers is not None else {}
+        self.cookies = cookies if cookies is not None else {}
+        self.url = url
+
 
 Django_SignedCookies = modules_loaded["django_signedcookies"]
 ASPNET_Viewstate = modules_loaded["aspnet_viewstate"]
@@ -104,195 +113,145 @@ def test_carve_telerik():
 
 
 def test_carve_headers():
-    with respx.mock:
-        x = Generic_JWT()
+    x = Generic_JWT()
 
-        test_headers_vuln = {
-            "auth_jwt": "eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo"
-        }
-        respx.get("http://vuln.headerscarve.badsecrets.com/").respond(
-            status_code=200,
-            headers=test_headers_vuln,
-            text="<html><p>Some HTML Content</p></html>",
-        )
+    test_headers_vuln = {
+        "auth_jwt": "eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo"
+    }
+    res = FakeResponse(text="<html><p>Some HTML Content</p></html>", headers=test_headers_vuln)
+    r = x.carve(http_response=res)
 
-        res = httpx.get("http://vuln.headerscarve.badsecrets.com/")
-        r = x.carve(httpx_response=res)
+    print(r)
+    assert len(r) > 0
+    assert r[0]["type"] == "SecretFound"
+    assert r[0]["secret"] == "1234"
 
-        print(r)
-        assert len(r) > 0
-        assert r[0]["type"] == "SecretFound"
-        assert r[0]["secret"] == "1234"
+    test_headers_notvuln = {
+        "auth_jwt": "eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCA"
+    }
+    res = FakeResponse(text="<html><p>Some HTML Content</p></html>", headers=test_headers_notvuln)
+    r = x.carve(http_response=res)
 
-        test_headers_notvuln = {
-            "auth_jwt": "eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCA"
-        }
-        respx.get("http://notvuln.headerscarve.badsecrets.com/").respond(
-            status_code=200,
-            headers=test_headers_notvuln,
-            text="<html><p>Some HTML Content</p></html>",
-        )
-
-        res = httpx.get("http://notvuln.headerscarve.badsecrets.com/")
-        r = x.carve(httpx_response=res)
-
-        print(r)
-        assert len(r) > 0
-        assert r[0]["type"] == "IdentifyOnly"
+    print(r)
+    assert len(r) > 0
+    assert r[0]["type"] == "IdentifyOnly"
 
 
 def test_carve_cookies():
-    with respx.mock:
-        # peoplesoft_pstoken
-        x = Peoplesoft_PSToken()
+    # peoplesoft_pstoken
+    x = Peoplesoft_PSToken()
 
-        cookies = {
-            "random-cookie": "useless_data",
-            "PS_TOKEN": "qAAAAAQDAgEBAAAAvAIAAAAAAAAsAAAABABTaGRyAk4AdQg4AC4AMQAwABT5mYioG/i325GsBHHNyDIM+9yf1GgAAAAFAFNkYXRhXHicHYfJDUBQAESfJY5O2iDWgwIsJxHcxdaApTvFGX8mefPmAVzHtizta2MSrCzsXBxsnOIt9yo6GvyekZqJmZaBPCUmVUMS2c9MjCmJKLSR/u+laUGuzwdaGw3o",
-            "random-cookie2": "useless_data2",
-        }
+    cookies = {
+        "random-cookie": "useless_data",
+        "PS_TOKEN": "qAAAAAQDAgEBAAAAvAIAAAAAAAAsAAAABABTaGRyAk4AdQg4AC4AMQAwABT5mYioG/i325GsBHHNyDIM+9yf1GgAAAAFAFNkYXRhXHicHYfJDUBQAESfJY5O2iDWgwIsJxHcxdaApTvFGX8mefPmAVzHtizta2MSrCzsXBxsnOIt9yo6GvyekZqJmZaBPCUmVUMS2c9MjCmJKLSR/u+laUGuzwdaGw3o",
+        "random-cookie2": "useless_data2",
+    }
 
-        cookie_headers = [("set-cookie", f"{k}={v}") for k, v in cookies.items()]
-        respx.get("http://ps_token.badsecrets.com/").mock(
-            return_value=httpx.Response(200, text="<html><p>Some HTML Content</p></html>", headers=cookie_headers)
-        )
+    res = FakeResponse(text="<html><p>Some HTML Content</p></html>", cookies=cookies)
+    r = x.carve(http_response=res)
+    print(r)
+    assert len(r) > 0
+    assert r[0]["secret"] == "Username: badsecrets Password: password"
 
-        res = httpx.get("http://ps_token.badsecrets.com/")
-        r = x.carve(httpx_response=res)
-        print(r)
-        assert len(r) > 0
-        assert r[0]["secret"] == "Username: badsecrets Password: password"
+    # django_signedcookies
+    x = Django_SignedCookies()
 
-        # django_signedcookies
-        x = Django_SignedCookies()
+    cookies = {
+        "random-cookie": "useless_data",
+        "django_session": ".eJxVjLsOAiEURP-F2hAuL8HSfr-BAPciq4ZNlt3K-O9KsoU2U8w5My8W4r7VsHdaw4zswoCdfrsU84PaAHiP7bbwvLRtnRMfCj9o59OC9Lwe7t9Bjb2OtbMkAEGQtQjekykmJy9JZIW-6CgUaCGsA6eSyV65s1Qya_xGKZrY-wPVYjdw:1ojOrE:bfOktjgLlUykwCIRIpvaTZRQMM3-UypscEN57ECtXis",
+        "random-cookie2": "useless_data2",
+    }
 
-        cookies = {
-            "random-cookie": "useless_data",
-            "django_session": ".eJxVjLsOAiEURP-F2hAuL8HSfr-BAPciq4ZNlt3K-O9KsoU2U8w5My8W4r7VsHdaw4zswoCdfrsU84PaAHiP7bbwvLRtnRMfCj9o59OC9Lwe7t9Bjb2OtbMkAEGQtQjekykmJy9JZIW-6CgUaCGsA6eSyV65s1Qya_xGKZrY-wPVYjdw:1ojOrE:bfOktjgLlUykwCIRIpvaTZRQMM3-UypscEN57ECtXis",
-            "random-cookie2": "useless_data2",
-        }
+    res = FakeResponse(text="<html><p>Some HTML Content</p></html>", cookies=cookies)
+    r = x.carve(http_response=res)
+    print(r)
+    assert len(r) > 0
+    assert r[0]["details"]["_auth_user_hash"] == "d86e01d10e66d199e5f5cb92e0c3d9f4a03140068183b5c9387232c4d32cff4e"
 
-        cookie_headers = [("set-cookie", f"{k}={v}") for k, v in cookies.items()]
-        respx.get("http://django.badsecrets.com/").mock(
-            return_value=httpx.Response(200, text="<html><p>Some HTML Content</p></html>", headers=cookie_headers)
-        )
+    # flash_signedcookies
+    x = Flask_SignedCookies()
 
-        res = httpx.get("http://django.badsecrets.com/")
-        r = x.carve(httpx_response=res)
-        print(r)
-        assert len(r) > 0
-        assert r[0]["details"]["_auth_user_hash"] == "d86e01d10e66d199e5f5cb92e0c3d9f4a03140068183b5c9387232c4d32cff4e"
+    cookies = {
+        "random-cookie": "useless_data",
+        "flask_session": "eyJoZWxsbyI6IndvcmxkIn0.XDtqeQ.1qsBdjyRJLokwRzJdzXMVCSyRTA",
+        "random-cookie2": "useless_data2",
+    }
 
-        # flash_signedcookies
-        x = Flask_SignedCookies()
+    res = FakeResponse(text="<html><p>Some HTML Content</p></html>", cookies=cookies)
+    r = x.carve(http_response=res)
+    print(r)
+    assert len(r) > 0
+    assert r[0]["secret"] == "CHANGEME"
 
-        cookies = {
-            "random-cookie": "useless_data",
-            "flask_session": "eyJoZWxsbyI6IndvcmxkIn0.XDtqeQ.1qsBdjyRJLokwRzJdzXMVCSyRTA",
-            "random-cookie2": "useless_data2",
-        }
+    # rails_secretkeybase
+    x = Rails_SecretKeyBase()
 
-        cookie_headers = [("set-cookie", f"{k}={v}") for k, v in cookies.items()]
-        respx.get("http://flask.badsecrets.com/").mock(
-            return_value=httpx.Response(200, text="<html><p>Some HTML Content</p></html>", headers=cookie_headers)
-        )
+    cookies = {
+        "random-cookie": "useless_data",
+        "rails_session": "eyJfcmFpbHMiOnsibWVzc2FnZSI6IklraGxiR3h2TENCSklHRnRJR0VnYzJsbmJtVmtJSEpoYVd4ek5pQkRiMjlyYVdVaElnPT0iLCJleHAiOm51bGwsInB1ciI6ImNvb2tpZS5zaWduZWQifX0%3D--eb1ea3ddc55deb16ffc58ac165edfbb554067edc",
+        "random-cookie2": "useless_data2",
+    }
 
-        res = httpx.get("http://flask.badsecrets.com/")
-        r = x.carve(httpx_response=res)
-        print(r)
-        assert len(r) > 0
-        assert r[0]["secret"] == "CHANGEME"
+    res = FakeResponse(text="<html><p>Some HTML Content</p></html>", cookies=cookies)
+    r = x.carve(http_response=res)
+    print(r)
+    assert len(r) > 0
+    assert (
+        r[0]["secret"]
+        == "4698bc5d99f3103ca76ab57f28a6b8f75f5f0768aab4f2e3f3743383594ad91f43e78c1b86138602f5859a811927698180ebfae7c490333f37b87521ca5a5f8c"
+    )
 
-        # rails_secretkeybase
-        x = Rails_SecretKeyBase()
+    # generic_jwt
+    x = Generic_JWT()
 
-        cookies = {
-            "random-cookie": "useless_data",
-            "rails_session": "eyJfcmFpbHMiOnsibWVzc2FnZSI6IklraGxiR3h2TENCSklHRnRJR0VnYzJsbmJtVmtJSEpoYVd4ek5pQkRiMjlyYVdVaElnPT0iLCJleHAiOm51bGwsInB1ciI6ImNvb2tpZS5zaWduZWQifX0%3D--eb1ea3ddc55deb16ffc58ac165edfbb554067edc",
-            "random-cookie2": "useless_data2",
-        }
+    cookies = {
+        "random-cookie": "useless_data",
+        "auth": "eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo",
+        "random-cookie2": "useless_data2",
+    }
 
-        cookie_headers = [("set-cookie", f"{k}={v}") for k, v in cookies.items()]
-        respx.get("http://rails.badsecrets.com/").mock(
-            return_value=httpx.Response(200, text="<html><p>Some HTML Content</p></html>", headers=cookie_headers)
-        )
+    res = FakeResponse(text="<html><p>Some HTML Content</p></html>", cookies=cookies)
+    r = x.carve(http_response=res)
+    print(r)
+    assert len(r) > 0
+    assert r[0]["secret"] == "1234"
 
-        res = httpx.get("http://rails.badsecrets.com/")
-        r = x.carve(httpx_response=res)
-        print(r)
-        assert len(r) > 0
-        assert (
-            r[0]["secret"]
-            == "4698bc5d99f3103ca76ab57f28a6b8f75f5f0768aab4f2e3f3743383594ad91f43e78c1b86138602f5859a811927698180ebfae7c490333f37b87521ca5a5f8c"
-        )
+    cookies = {
+        "random-cookie": "useless_data",
+        "auth": "eyJhbGciOiJSUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.VY5gbfqc1nrTMz7oCFvFBZtHE_gb97dWBAsOG9NJeeXJhASEBe2srxVqbWw1HTGcyZc1oxzJU6o-fpPAEpNO4QhFEJNZbWYJBLMtggiu_MKBEHGHgrAOE9gtH2qUKZ6zMWq5hO3JA0QuIWKE3g342C-beBNoLJ8ph02yrrqYuCWg2smExg6wL_LK0gnpsNLBXRcJ2dYSlEn9tz9Aim5TioZVJZK1DVtBX8k4xA0k47i9DGNwII7R9SU2cqqDOXBd7oo8AYwGP1U4kWtzeTKBBIAEjwGh11yKIMkZrL1SkctWEY1ogFlxBG9dWn0BcrYCVJaIxTSMCGmpjRSUKPnkTg",
+        "random-cookie2": "useless_data2",
+    }
 
-        # generic_jwt
-        x = Generic_JWT()
-
-        cookies = {
-            "random-cookie": "useless_data",
-            "auth": "eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCo",
-            "random-cookie2": "useless_data2",
-        }
-
-        cookie_headers = [("set-cookie", f"{k}={v}") for k, v in cookies.items()]
-        respx.get("http://hmac.generic-jwt.badsecrets.com/").mock(
-            return_value=httpx.Response(200, text="<html><p>Some HTML Content</p></html>", headers=cookie_headers)
-        )
-
-        res = httpx.get("http://hmac.generic-jwt.badsecrets.com/")
-        r = x.carve(httpx_response=res)
-        print(r)
-        assert len(r) > 0
-        assert r[0]["secret"] == "1234"
-
-        cookies = {
-            "random-cookie": "useless_data",
-            "auth": "eyJhbGciOiJSUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.VY5gbfqc1nrTMz7oCFvFBZtHE_gb97dWBAsOG9NJeeXJhASEBe2srxVqbWw1HTGcyZc1oxzJU6o-fpPAEpNO4QhFEJNZbWYJBLMtggiu_MKBEHGHgrAOE9gtH2qUKZ6zMWq5hO3JA0QuIWKE3g342C-beBNoLJ8ph02yrrqYuCWg2smExg6wL_LK0gnpsNLBXRcJ2dYSlEn9tz9Aim5TioZVJZK1DVtBX8k4xA0k47i9DGNwII7R9SU2cqqDOXBd7oo8AYwGP1U4kWtzeTKBBIAEjwGh11yKIMkZrL1SkctWEY1ogFlxBG9dWn0BcrYCVJaIxTSMCGmpjRSUKPnkTg",
-            "random-cookie2": "useless_data2",
-        }
-
-        cookie_headers = [("set-cookie", f"{k}={v}") for k, v in cookies.items()]
-        respx.get("http://rsa.generic-jwt.badsecrets.com/").mock(
-            return_value=httpx.Response(200, text="<html><p>Some HTML Content</p></html>", headers=cookie_headers)
-        )
-
-        res = httpx.get("http://rsa.generic-jwt.badsecrets.com/")
-        r = x.carve(httpx_response=res)
-        print(r)
-        assert len(r) > 0
-        assert r[0]["secret"] == "Private key Name: 1"
+    res = FakeResponse(text="<html><p>Some HTML Content</p></html>", cookies=cookies)
+    r = x.carve(http_response=res)
+    print(r)
+    assert len(r) > 0
+    assert r[0]["secret"] == "Private key Name: 1"
 
 
 def test_multiple_results():
-    with respx.mock:
-        # rails_secretkeybase
-        x = Rails_SecretKeyBase()
+    # rails_secretkeybase
+    x = Rails_SecretKeyBase()
 
-        cookies = {
-            "random-cookie": "useless_data",
-            "rails_session": "eyJfcmFpbHMiOnsibWVzc2FnZSI6IklraGxiR3h2TENCSklHRnRJR0VnYzJsbmJtVmtJSEpoYVd4ek5pQkRiMjlyYVdVaElnPT0iLCJleHAiOm51bGwsInB1ciI6ImNvb2tpZS5zaWduZWQifX0%3D--eb1ea3ddc55deb16ffc58ac165edfbb554067edc",
-            "random-cookie2": "useless_data2",
-            "rails_session_2": "fuP54C4UxMudlZRR6j25zJfkevHVZ6IJR6Hp1B3rW6sAW5Aqc1j2Ri0XgcyLRvuSNVLwzq6cqeWlVhwU13xMS8scjU%2BSGGi%2Bta4jQU7oYujKdxynHSEiYOmeNFW4onXoF3KLlmr7ODmtIaHm1zIEP11TT%2FmRqZuxxecjz0VIxUDhvHYEFQ%3D%3D--ZclUs5zZFu3JPKnx--%2Fc0Q4ufTHqqmMxoin0mRtQ%3D%3D",
-        }
+    cookies = {
+        "random-cookie": "useless_data",
+        "rails_session": "eyJfcmFpbHMiOnsibWVzc2FnZSI6IklraGxiR3h2TENCSklHRnRJR0VnYzJsbmJtVmtJSEpoYVd4ek5pQkRiMjlyYVdVaElnPT0iLCJleHAiOm51bGwsInB1ciI6ImNvb2tpZS5zaWduZWQifX0%3D--eb1ea3ddc55deb16ffc58ac165edfbb554067edc",
+        "random-cookie2": "useless_data2",
+        "rails_session_2": "fuP54C4UxMudlZRR6j25zJfkevHVZ6IJR6Hp1B3rW6sAW5Aqc1j2Ri0XgcyLRvuSNVLwzq6cqeWlVhwU13xMS8scjU%2BSGGi%2Bta4jQU7oYujKdxynHSEiYOmeNFW4onXoF3KLlmr7ODmtIaHm1zIEP11TT%2FmRqZuxxecjz0VIxUDhvHYEFQ%3D%3D--ZclUs5zZFu3JPKnx--%2Fc0Q4ufTHqqmMxoin0mRtQ%3D%3D",
+    }
 
-        cookie_headers = [("set-cookie", f"{k}={v}") for k, v in cookies.items()]
-        respx.get("http://rails.badsecrets.com/").mock(
-            return_value=httpx.Response(200, text="<html><p>Some HTML Content</p></html>", headers=cookie_headers)
-        )
-
-        res = httpx.get("http://rails.badsecrets.com/")
-        r = x.carve(httpx_response=res)
-        print(r)
-        assert len(r) == 2
-        assert (
-            r[0]["secret"]
-            == "4698bc5d99f3103ca76ab57f28a6b8f75f5f0768aab4f2e3f3743383594ad91f43e78c1b86138602f5859a811927698180ebfae7c490333f37b87521ca5a5f8c"
-        )
-        assert (
-            r[1]["secret"]
-            == "4698bc5d99f3103ca76ab57f28a6b8f75f5f0768aab4f2e3f3743383594ad91f43e78c1b86138602f5859a811927698180ebfae7c490333f37b87521ca5a5f8c"
-        )
+    res = FakeResponse(text="<html><p>Some HTML Content</p></html>", cookies=cookies)
+    r = x.carve(http_response=res)
+    print(r)
+    assert len(r) == 2
+    assert (
+        r[0]["secret"]
+        == "4698bc5d99f3103ca76ab57f28a6b8f75f5f0768aab4f2e3f3743383594ad91f43e78c1b86138602f5859a811927698180ebfae7c490333f37b87521ca5a5f8c"
+    )
+    assert (
+        r[1]["secret"]
+        == "4698bc5d99f3103ca76ab57f28a6b8f75f5f0768aab4f2e3f3743383594ad91f43e78c1b86138602f5859a811927698180ebfae7c490333f37b87521ca5a5f8c"
+    )
 
 
 def test_generic_jwt_body_carve():
@@ -310,17 +269,12 @@ def test_generic_jwt_body_carve():
 </html>
 """
 
-    with respx.mock:
-        x = Generic_JWT()
-        respx.get("http://body.generic-jwt.badsecrets.com/").respond(
-            status_code=200,
-            text=jwt_html,
-        )
-        res = httpx.get("http://body.generic-jwt.badsecrets.com/")
-        r = x.carve(httpx_response=res)
-        assert r
-        assert r[0]["secret"] == "1234"
-        assert r[0]["type"] == "SecretFound"
+    x = Generic_JWT()
+    res = FakeResponse(text=jwt_html)
+    r = x.carve(http_response=res)
+    assert r
+    assert r[0]["secret"] == "1234"
+    assert r[0]["type"] == "SecretFound"
 
 
 def test_carve_negativeidentify_body():
@@ -335,15 +289,10 @@ def test_carve_negativeidentify_body():
     <html>
     """
 
-    with respx.mock:
-        respx.get("http://negativeidentify.jsf_viewstate.badsecrets.com/").respond(
-            status_code=200,
-            text=identify_html,
-        )
-        res = httpx.get("http://negativeidentify.jsf_viewstate.badsecrets.com/")
-        r = x.carve(httpx_response=res)
-        assert r
-        assert r[0]["type"] == "IdentifyOnly"
+    res = FakeResponse(text=identify_html)
+    r = x.carve(http_response=res)
+    assert r
+    assert r[0]["type"] == "IdentifyOnly"
 
 
 def test_carve_negative():
@@ -358,14 +307,9 @@ def test_carve_negative():
     <html>
     """
 
-    with respx.mock:
-        respx.get("http://negative.generic-jwt.badsecrets.com/").respond(
-            status_code=200,
-            text=useless_html,
-        )
-        res = httpx.get("http://negative.generic-jwt.badsecrets.com/")
-        r = x.carve(httpx_response=res)
-        assert not r
+    res = FakeResponse(text=useless_html)
+    r = x.carve(http_response=res)
+    assert not r
 
     x = Generic_JWT()
     useless_html = """
@@ -378,15 +322,10 @@ def test_carve_negative():
     <html>
     """
 
-    with respx.mock:
-        respx.get("http://identifyonly.generic-jwt.badsecrets.com/").respond(
-            status_code=200,
-            text=useless_html,
-        )
-        res = httpx.get("http://identifyonly.generic-jwt.badsecrets.com/")
-        r = x.carve(httpx_response=res)
-        assert r
-        assert r[0]["type"] == "IdentifyOnly"
+    res = FakeResponse(text=useless_html)
+    r = x.carve(http_response=res)
+    assert r
+    assert r[0]["type"] == "IdentifyOnly"
 
 
 def test_invalid_carve_args():
@@ -401,15 +340,10 @@ def test_invalid_carve_args():
     """
     cookies = {"random-cookie": "useless_data"}
     x = Generic_JWT()
-    with respx.mock:
-        cookie_headers = [("set-cookie", f"{k}={v}") for k, v in cookies.items()]
-        respx.get("http://invalidcarveargs.generic-jwt.badsecrets.com/").mock(
-            return_value=httpx.Response(200, text=useless_html, headers=cookie_headers)
-        )
-        res = httpx.get("http://invalidcarveargs.generic-jwt.badsecrets.com/")
+    res = FakeResponse(text=useless_html, cookies=cookies)
 
     with pytest.raises(badsecrets.errors.CarveException):
-        x.carve(body=useless_html, cookies=cookies, httpx_response=res)
+        x.carve(body=useless_html, cookies=cookies, http_response=res)
 
     with pytest.raises(badsecrets.errors.CarveException):
         x.carve(body=useless_html, cookies="cookies")
@@ -418,7 +352,7 @@ def test_invalid_carve_args():
         x.carve(body={"dict": "dict"})
 
     with pytest.raises(badsecrets.errors.CarveException):
-        x.carve(httpx_response=("AAAA"))
+        x.carve(http_response=("AAAA"))
 
     with pytest.raises(badsecrets.errors.CarveException):
         x.carve()

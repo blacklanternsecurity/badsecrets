@@ -1,7 +1,6 @@
 import asyncio
 import unittest.mock as mock
-import httpx
-import respx
+from blasthttp.mock import BlasthttpMock
 from badsecrets.base import (
     BadsecretsBase,
     BadsecretsActiveBase,
@@ -139,26 +138,24 @@ def test_probe_all_modules_no_body_no_response():
     assert results == []
 
 
-@respx.mock
 def test_probe_all_modules_url_from_response():
-    """probe_all_modules extracts URL from httpx_response when url not provided."""
-    respx.post("https://vpn.example.com/sslmgr").mock(
-        return_value=httpx.Response(200, text="Unable to find the configuration")
-    )
+    """probe_all_modules extracts URL from http_response when url not provided."""
 
-    mock_response = httpx.Response(
-        200,
-        text="<html>GlobalProtect Portal</html>",
-        request=httpx.Request("GET", "https://vpn.example.com/login"),
-    )
+    class FakeResponse:
+        url = "https://vpn.example.com/login"
+        text = "<html>GlobalProtect Portal</html>"
+        headers = {}
+        cookies = {}
 
-    # url=None forces extraction from httpx_response.url
-    results = asyncio.run(probe_all_modules(httpx_response=mock_response))
+    bh_mock = BlasthttpMock()
+    bh_mock.add_response(url="https://vpn.example.com/sslmgr", text="Unable to find the configuration")
+
+    # url=None forces extraction from http_response.url
+    results = asyncio.run(probe_all_modules(http_response=FakeResponse(), http_client=bh_mock))
     assert len(results) >= 1
     assert results[0]["detecting_module"] == "GlobalProtect_DefaultMasterKey"
 
 
-@respx.mock
 def test_probe_all_modules_exception_in_probe():
     """Exception during active probe doesn't crash probe_all_modules."""
 

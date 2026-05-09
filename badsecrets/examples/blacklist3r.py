@@ -7,9 +7,11 @@
 import re
 import os
 import sys
+import asyncio
 import argparse
-import httpx
 import urllib.parse
+
+from blasthttp import BlastHTTP
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
@@ -102,9 +104,20 @@ def main():
         if args.user_agent:
             headers["User-agent"] = args.user_agent
 
+        async def _get():
+            client = BlastHTTP()
+            return await client.request(
+                args.url,
+                method="GET",
+                headers=list(headers.items()),
+                verify_certs=False,
+                follow_redirects=True,
+                proxy=proxy,
+            )
+
         try:
-            res = httpx.get(args.url, proxy=proxy, headers=headers, verify=False, follow_redirects=True)
-        except (httpx.ConnectError, httpx.ConnectTimeout):
+            res = asyncio.run(_get())
+        except RuntimeError:
             print(f"Error connecting to URL: [{args.url}]")
             return
         resp_body = urllib.parse.unquote(res.text)

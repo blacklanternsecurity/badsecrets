@@ -10,9 +10,73 @@ import string
 import base64
 import random
 import urllib.parse
+import asyncio
 import argparse
-import httpx
 from itertools import chain
+from urllib.parse import urlencode
+
+from blasthttp import BlastHTTP
+
+
+_HTTP_CLIENT = None
+
+
+def _client():
+    global _HTTP_CLIENT
+    if _HTTP_CLIENT is None:
+        _HTTP_CLIENT = BlastHTTP()
+    return _HTTP_CLIENT
+
+
+def _sync_request(url, method="GET", body=None, headers=None, proxy=None, follow_redirects=False, timeout=None):
+    """Synchronous wrapper around blasthttp.BlastHTTP.request via asyncio.run.
+
+    `headers` may be a dict (will be converted to list of tuples) or already a list.
+    """
+    if isinstance(headers, dict):
+        header_tuples = list(headers.items())
+    elif headers is None:
+        header_tuples = []
+    else:
+        header_tuples = list(headers)
+
+    async def _do():
+        kwargs = {
+            "method": method,
+            "headers": header_tuples,
+            "verify_certs": False,
+            "follow_redirects": follow_redirects,
+            "proxy": proxy,
+        }
+        if body is not None:
+            kwargs["body"] = body
+        if timeout is not None:
+            kwargs["timeout"] = timeout
+        return await _client().request(url, **kwargs)
+
+    return asyncio.run(_do())
+
+
+def _sync_post_form(url, data, headers=None, proxy=None):
+    """Synchronous form-urlencoded POST."""
+    if not isinstance(headers, dict):
+        headers = dict(headers or [])
+    h = {**headers, "Content-Type": "application/x-www-form-urlencoded"}
+    body = urlencode(data).encode()
+    return _sync_request(url, method="POST", body=body, headers=h, proxy=proxy)
+
+
+def _sync_post_raw(url, content, headers=None, proxy=None):
+    """Synchronous POST with a raw body (e.g. multipart). Caller sets Content-Type in headers."""
+    return _sync_request(url, method="POST", body=content, headers=headers, proxy=proxy)
+
+
+def _sync_get(url, headers=None, proxy=None, follow_redirects=False, timeout=None):
+    """Synchronous GET."""
+    return _sync_request(
+        url, method="GET", headers=headers, proxy=proxy, follow_redirects=follow_redirects, timeout=timeout
+    )
+
 
 from Crypto.Cipher import AES
 from Crypto.Hash import HMAC
@@ -217,9 +281,7 @@ class AsyncUpload:
         data, multipart_boundary = self.rau_data_prep("1985.10.26", derived_key, iv, "ThinkMcFlyThink")
         headers = dict(self.headers) if self.headers else {}
         headers["Content-Type"] = f"multipart/form-data; boundary=---------------------------{multipart_boundary}"
-        request = httpx.Request("POST", self.url, content=data, headers=headers)
-        with httpx.Client(proxy=self.proxy, verify=False) as client:
-            resp = client.send(request)
+        resp = _sync_post_raw(self.url, content=data, headers=headers, proxy=self.proxy)
         if "Exception Details: " in resp.text:
             print("Verbose Errors are enabled!")
             if "Telerik.Web.UI.CryptoExceptionThrower.ThrowGenericCryptoException" in resp.text:
@@ -329,13 +391,11 @@ class AsyncUpload:
                         headers["Content-Type"] = (
                             f"multipart/form-data; boundary=---------------------------{multipart_boundary}"
                         )
-                        request = httpx.Request("POST", self.url, content=data, headers=headers)
                         if hasattr(self, "debug") and self.debug:
                             print(f"[DEBUG] Sending request to: {self.url}")
                         try:
-                            with httpx.Client(proxy=self.proxy, verify=False) as client:
-                                resp = client.send(request)
-                        except httpx.HTTPError:
+                            resp = _sync_post_raw(self.url, content=data, headers=headers, proxy=self.proxy)
+                        except RuntimeError:
                             print(f"Network error connecting to URL: [{self.url}]. Exiting due to connection failure.")
                             sys.exit(1)
                         if hasattr(self, "debug") and self.debug:
@@ -386,14 +446,13 @@ class DialogHandler:
         ct = self.telerik_encryptionkey.telerik_encrypt(derivedKey, derivedIV, plaintext)
         dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params(self.hash_key, ct)
         try:
-            r = httpx.post(
+            r = _sync_post_form(
                 self.url,
                 data={"dialogParametersHolder": dialog_parameters},
                 headers=self.headers,
-                verify=False,
                 proxy=self.proxy,
             )
-        except httpx.HTTPError:
+        except RuntimeError:
             if hasattr(self, "debug") and self.debug:
                 print("[DEBUG] Network error probing version, exiting")
             sys.exit(1)
@@ -418,14 +477,13 @@ class DialogHandler:
         dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params(self.hash_key, ct)
 
         try:
-            r = httpx.post(
+            r = _sync_post_form(
                 self.url,
                 data={"dialogParametersHolder": dialog_parameters},
                 headers=self.headers,
-                verify=False,
                 proxy=self.proxy,
             )
-        except httpx.HTTPError:
+        except RuntimeError:
             if hasattr(self, "debug") and self.debug:
                 print("[DEBUG] Network error probing version, exiting")
             sys.exit(1)
@@ -452,8 +510,8 @@ class DialogHandler:
             print("\n[DEBUG] Detecting key derivation function")
             print(f"[DEBUG] Sending probe request to: {self.url}")
         try:
-            res = httpx.post(self.url, data=KDF_probe_data, proxy=self.proxy, headers=self.headers, verify=False)
-        except httpx.HTTPError:
+            res = _sync_post_form(self.url, data=KDF_probe_data, proxy=self.proxy, headers=self.headers)
+        except RuntimeError:
             print(f"Network error connecting to URL: [{self.url}]. Cannot determine key derivation function.")
             sys.exit(1)
         resp_body = res.text
@@ -504,8 +562,8 @@ class DialogHandler:
                     print(f"[DEBUG] Sending request to: {self.url}")
 
                 try:
-                    res = httpx.post(self.url, data=data, proxy=self.proxy, headers=self.headers, verify=False)
-                except httpx.HTTPError:
+                    res = _sync_post_form(self.url, data=data, proxy=self.proxy, headers=self.headers)
+                except RuntimeError:
                     print(f"Network error connecting to URL: [{self.url}]. Exiting due to connection failure.")
                     sys.exit(1)
 
@@ -547,8 +605,8 @@ class DialogHandler:
                         print(f"\n[DEBUG] Testing encryption key #{encryptionkey_counter}: {encryption_key}")
                         print(f"[DEBUG] Sending request to: {self.url}")
                     try:
-                        res = httpx.post(self.url, data=data, proxy=self.proxy, headers=self.headers, verify=False)
-                    except httpx.HTTPError:
+                        res = _sync_post_form(self.url, data=data, proxy=self.proxy, headers=self.headers)
+                    except RuntimeError:
                         print(f"Network error connecting to URL: [{self.url}]. Exiting due to connection failure.")
                         sys.exit(1)
                     if hasattr(self, "debug") and self.debug:
@@ -587,8 +645,8 @@ class DialogHandler:
             dialog_parameters = self.telerik_hashkey.sign_enc_dialog_params("dummy", ct)
             data = {"dialogParametersHolder": dialog_parameters}
             try:
-                baseline_res = httpx.post(self.url, data=data, proxy=self.proxy, headers=self.headers, verify=False)
-            except httpx.HTTPError:
+                baseline_res = _sync_post_form(self.url, data=data, proxy=self.proxy, headers=self.headers)
+            except RuntimeError:
                 print(f"Network error connecting to URL: [{self.url}]. Cannot establish baseline for testing.")
                 sys.exit(1)
             baseline_size = len(baseline_res.text)
@@ -639,8 +697,8 @@ class DialogHandler:
                         print(f"  - Encryption Key: {encryption_key}")
                         print(f"[DEBUG] Sending request to: {self.url}")
                     try:
-                        res = httpx.post(self.url, data=data, proxy=self.proxy, headers=self.headers, verify=False)
-                    except httpx.HTTPError:
+                        res = _sync_post_form(self.url, data=data, proxy=self.proxy, headers=self.headers)
+                    except RuntimeError:
                         print(f"Network error connecting to URL: [{self.url}]. Exiting due to connection failure.")
                         sys.exit(1)
 
@@ -796,8 +854,8 @@ def main():
         print("Assuming target is a AsyncUpload Endpoint...")
         asyncupload_endpoint = args.url.split("?")[0] + "?type=RAU"
         try:
-            res = httpx.get(asyncupload_endpoint, proxy=proxy, headers=headers, verify=False, timeout=10)
-        except httpx.HTTPError:
+            res = _sync_get(asyncupload_endpoint, proxy=proxy, headers=headers, timeout=10)
+        except RuntimeError:
             print(f"Network error connecting to URL: [{args.url}]. Please check the URL and network connectivity.")
             sys.exit(1)
             return
@@ -840,8 +898,8 @@ def main():
     else:
         print("Assuming target is Telerik UI DialogHandler...")
         try:
-            res = httpx.get(args.url, proxy=proxy, headers=headers, verify=False, follow_redirects=True)
-        except httpx.HTTPError:
+            res = _sync_get(args.url, proxy=proxy, headers=headers, follow_redirects=True)
+        except RuntimeError:
             print(f"Network error connecting to URL: [{args.url}]. Please check the URL and network connectivity.")
             sys.exit(1)
             return
