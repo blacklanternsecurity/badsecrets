@@ -446,6 +446,17 @@ def main():
             if r_list:
                 all_passive_results.extend(r_list)
 
+        # One IdentifyOnly per module across all fetches; SecretFound never deduped.
+        seen_identify_modules = set()
+        deduped = []
+        for r in all_passive_results:
+            if r["type"] == "IdentifyOnly":
+                if r["detecting_module"] in seen_identify_modules:
+                    continue
+                seen_identify_modules.add(r["detecting_module"])
+            deduped.append(r)
+        all_passive_results = deduped
+
         if args.debug and not json_mode:
             if all_passive_results:
                 modules_hit = {r["detecting_module"] for r in all_passive_results}

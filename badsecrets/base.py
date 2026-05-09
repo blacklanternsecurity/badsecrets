@@ -162,7 +162,21 @@ class BadsecretsBase:
 
         # Don't report an IdentifyOnly result if we have a SecretFound result for the same 'product'
         secret_found_results = {d["product"] for d in results if d["type"] == "SecretFound"}
-        return [d for d in results if not (d["type"] == "IdentifyOnly" and d["product"] in secret_found_results)]
+        results = [d for d in results if not (d["type"] == "IdentifyOnly" and d["product"] in secret_found_results)]
+
+        # Within a single module, collapse multiple IdentifyOnly hits into one —
+        # if a module recognizes 4 cookies on a response without cracking any,
+        # the user just needs to know "this product is here" once. Keep the
+        # first as the representative product value.
+        seen_identify_only = False
+        deduped = []
+        for d in results:
+            if d["type"] == "IdentifyOnly":
+                if seen_identify_only:
+                    continue
+                seen_identify_only = True
+            deduped.append(d)
+        return deduped
 
     def _carve_body(self, body, cookies, headers, **kwargs):
         """Extract secrets from HTML body text. Override in subclasses for custom body carving."""
