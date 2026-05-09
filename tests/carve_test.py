@@ -24,6 +24,9 @@ Rails_SecretKeyBase = modules_loaded["rails_secretkeybase"]
 Generic_JWT = modules_loaded["generic_jwt"]
 Jsf_viewstate = modules_loaded["jsf_viewstate"]
 Express_SignedCookies_ES = modules_loaded["express_signedcookies_es"]
+LaravelSignedCookies = modules_loaded["laravel_signedcookies"]
+Yii2_SignedCookies = modules_loaded["yii2_signedcookies"]
+Rack2_SignedCookies = modules_loaded["rack2_signedcookies"]
 
 aspnet_viewstate_sample = """
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -410,3 +413,116 @@ def test_carve_aspnet_viewstate_userkey():
     assert len(r) == 1
     assert r[0]["type"] == "SecretFound"
     assert "/wEPDwUJODExMDE5NzY5ZGTX0g6r3svRDbR+eCZDnrj4MT4/FA==" in r[0]["product"]
+
+
+# Cookies-branch IdentifyOnly fallback: when carve() sees a cookie that matches
+# a module's identify_regex but the secret isn't in the wordlist, the cookies
+# branch must emit an IdentifyOnly result (mirroring the headers/body branches).
+# Regression for the Laravel report — and lock in the symmetry across every
+# module whose carve_locations is ("cookies",).
+
+
+def _identify_only_fallback(module_cls, cookie_name, cookie_value, expected_module_name=None):
+    x = module_cls()
+    # Sanity: the fixture cookie must match identify_regex but not be a known secret
+    assert x.identify(cookie_value), f"fixture cookie does not match {module_cls.__name__}.identify_regex"
+    assert x.check_secret(cookie_value) is None, f"fixture cookie unexpectedly matched a known secret"
+
+    r = x.carve(cookies={cookie_name: cookie_value})
+    assert r, "expected IdentifyOnly result, got nothing"
+    assert len(r) == 1
+    assert r[0]["type"] == "IdentifyOnly"
+    assert r[0]["location"] == "cookies"
+    assert r[0]["product"] == cookie_value
+
+
+def test_carve_cookies_identifyonly_laravel():
+    _identify_only_fallback(
+        LaravelSignedCookies,
+        "laravel_session",
+        "eyJpdiI6IlhlNTZ2UjZUQWZKVHdIcG9nZFkwcGc9PSIsInZhbHVlIjoiQUFBIiwibWFjIjoiYWFhIiwidGFnIjoiIn0%3D",
+    )
+
+
+def test_carve_cookies_identifyonly_django():
+    # Django session cookie format: encoded:signature1:signature2 — matches
+    # ^[\.a-zA-z-0-9]+:[\.a-zA-z-0-9:]+$ but uses a key that isn't in the wordlist.
+    _identify_only_fallback(
+        Django_SignedCookies,
+        "sessionid",
+        "AAAA-not-a-real-django-session-aaaa:1ojOrE:bfOktjgLlUykwCIRIpvaTZRQMM3-NotAValidSecret",
+    )
+
+
+def test_carve_cookies_identifyonly_flask():
+    # Flask signed cookie format: eyJ.eyJ.signature
+    _identify_only_fallback(
+        Flask_SignedCookies,
+        "session",
+        "eyJoZWxsbyI6Im5vdGFyZWFsa2V5In0.AAAAAA.AAAAAAAAAAAAAAAAAAAAAA-NotAValidSig",
+    )
+
+
+def test_carve_cookies_identifyonly_rack2():
+    # Rack/Rails 5+ session format: BAh<marshal_b64>--<hmac_b64>
+    # Rack/Rails 5+ format: marshal_b64--hmac. First half must be proper-length b64
+    # because get_hashcat_commands() base64-decodes it.
+    _identify_only_fallback(
+        Rack2_SignedCookies,
+        "_session_id",
+        "BAh" + "A" * 61 + "--" + "B" * 32,
+    )
+
+
+def test_carve_cookies_identifyonly_yii2():
+    # Yii2 cookie format: 64 hex chars + a%3A<url-encoded payload>
+    _identify_only_fallback(
+        Yii2_SignedCookies,
+        "_identity",
+        "a" * 64 + "a%3A" + "AAAAAAAAAAAAAAAAAAAAAAAAA",
+    )
+
+
+def test_carve_cookies_identifyonly_express():
+    # Express signed cookie format: s%3A<sid>.<sig>
+    _identify_only_fallback(
+        Express_SignedCookies_ES,
+        "session",
+        "s%3AAAAAAAAAAAAAAAAAAAAAAAAA.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    )
+
+
+def test_carve_cookies_unrelated_value_is_skipped():
+    """A garbage cookie that matches no identify_regex must NOT emit IdentifyOnly."""
+    x = LaravelSignedCookies()
+    r = x.carve(cookies={"random": "totally-unrelated-value"})
+    assert not r
+
+
+# Manual/product-mode IdentifyOnly fallback:
+# `check_all_modules(<unknown_laravel_cookie>)` must surface IdentifyOnly results
+# from every module that identifies the input, not just SecretFound matches.
+# This is the path used by `badsecrets <product>` (no --url) and was a sister
+# blind spot to the cookies-branch carve() bug.
+
+
+def test_check_all_modules_identifyonly_laravel():
+    from badsecrets.base import check_all_modules
+
+    fake_laravel = "eyJpdiI6IlhlNTZ2UjZUQWZKVHdIcG9nZFkwcGc9PSIsInZhbHVlIjoiQUFBIiwibWFjIjoiYWFhIiwidGFnIjoiIn0%3D"
+    r = check_all_modules(fake_laravel)
+    assert r, "expected at least one IdentifyOnly result for a recognizable Laravel cookie"
+    assert any(d["detecting_module"] == "LaravelSignedCookies" and d["type"] == "IdentifyOnly" for d in r), (
+        f"LaravelSignedCookies did not identify the cookie; got: {[(d['detecting_module'], d['type']) for d in r]}"
+    )
+    # All hits should carry the manual location label
+    for d in r:
+        assert d["location"] == "manual"
+
+
+def test_check_all_modules_identifyonly_no_match():
+    from badsecrets.base import check_all_modules
+
+    # A short garbage string matches no identify_regex
+    r = check_all_modules("totally-unrelated-value")
+    assert r is None

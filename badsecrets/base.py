@@ -116,8 +116,12 @@ class BadsecretsBase:
                 if r:
                     r["type"] = "SecretFound"
                     r["product"] = v
-                    r["location"] = "cookies"
-                    results.append(r)
+                elif self.validate_carve and self.identify(v):
+                    r = {"type": "IdentifyOnly", "product": v, "hashcat": self.get_hashcat_commands(v)}
+                else:
+                    continue
+                r["location"] = "cookies"
+                results.append(r)
 
         if headers and "headers" in self.carve_locations:
             for header_value in headers.values():
@@ -374,19 +378,46 @@ def hashcat_all_modules(product, detecting_module=None, *args):
 
 
 def check_all_modules(*args, **kwargs):
+    """Run every passive module against the supplied product(s).
+
+    Returns a list of result dicts (each tagged ``type=SecretFound`` or
+    ``type=IdentifyOnly``), or None if nothing matched. Mirrors the shape
+    of ``carve_all_modules``: SecretFound results come from
+    ``check_secret``; IdentifyOnly results come from a module's
+    ``identify_regex`` matching the value but no known secret being found.
+    """
+    results = []
     for m in _passive_subclasses():
         x = m(custom_resource=kwargs.get("custom_resource"))
         r = x.check_secret(*args[0 : x.check_secret_args])
         if r:
+            r["type"] = "SecretFound"
             r["detecting_module"] = m.__name__
             r["description"] = x.get_description()
-
-            # allow the module to provide an amended product, if needed
             if "product" not in r:
                 r["product"] = args[0]
             r["location"] = "manual"
-            return r
-    return None
+            results.append(r)
+        elif x.validate_carve and x.identify(args[0]):
+            # Hashcat is intentionally left unset; callers (e.g. the CLI) populate
+            # it via hashcat_all_modules() so the format matches what
+            # print_hashcat_results expects.
+            results.append(
+                {
+                    "type": "IdentifyOnly",
+                    "product": args[0],
+                    "hashcat": None,
+                    "detecting_module": m.__name__,
+                    "description": x.get_description(),
+                    "location": "manual",
+                }
+            )
+
+    # If ANY module produced a SecretFound, suppress ALL IdentifyOnly results —
+    # an actionable cracked secret outranks every recognition-only candidate.
+    if any(r["type"] == "SecretFound" for r in results):
+        results = [r for r in results if r["type"] == "SecretFound"]
+    return results or None
 
 
 def carve_all_modules(**kwargs):
@@ -413,6 +444,10 @@ def carve_all_modules(**kwargs):
             for r in r_list:
                 r["detecting_module"] = m.__name__
                 results.append(r)
+
+    # If ANY module produced a SecretFound, suppress ALL IdentifyOnly results.
+    if any(r["type"] == "SecretFound" for r in results):
+        results = [r for r in results if r["type"] == "SecretFound"]
     if results:
         return results
 
