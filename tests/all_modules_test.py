@@ -36,15 +36,19 @@ negative_tests = [
 
 
 def test_check_all():
-    # Confirm each of the examples produced a positive result
+    # Confirm each of the examples produced a SecretFound result
     for test in tests:
         r = check_all_modules(test)
         assert r
+        assert any(d["type"] == "SecretFound" for d in r)
 
-    # verify various types of non-matching inputs do not produce errors or false positives
+    # verify various types of non-matching inputs do not produce SecretFound
+    # (IdentifyOnly hits are allowed — e.g. a JWT-shaped string with a bad signature
+    # is legitimately identified as a JWT, just not crackable.)
     for negative_test in negative_tests:
         r = check_all_modules(negative_test)
-        assert not r
+        if r:
+            assert all(d["type"] == "IdentifyOnly" for d in r)
 
 
 aspnet_viewstate_sample = """
@@ -120,7 +124,10 @@ def test_carve_all_cookies():
 
     # Test cookie carving by passing cookies directly to carve_all_modules.
     r_list = carve_all_modules(cookies=cookies)
+    # 7 distinct cookies have known secrets in our wordlists. With at least
+    # one SecretFound present, all IdentifyOnly results are suppressed.
     assert len(r_list) == 7
+    assert all(r["type"] == "SecretFound" for r in r_list)
 
 
 def test_carve_multiple_vulns():
@@ -133,7 +140,12 @@ def test_carve_multiple_vulns():
 
     res = FakeResponse(text=multiple_vuln_html)
     r_list = carve_all_modules(http_response=res)
-    assert len(r_list) == 2
+    # ASPNET_Viewstate finds the MachineKey (SecretFound). The compressed
+    # __VSTATE value also gets identified by ASPNET_CompressedViewstate,
+    # but IdentifyOnly results are suppressed when any SecretFound exists.
+    assert len(r_list) == 1
+    assert r_list[0]["type"] == "SecretFound"
+    assert r_list[0]["detecting_module"] == "ASPNET_Viewstate"
 
 
 def test_multiple_identify_only():

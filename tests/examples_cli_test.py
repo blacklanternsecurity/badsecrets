@@ -230,7 +230,10 @@ def test_example_cli_identifyonly_hashcat(monkeypatch, capsys, bh_mock):
     cli.main()
     captured = capsys.readouterr()
     print(captured)
-    assert "No secrets found :(" in captured.out
+    # The CLI now surfaces an IdentifyOnly report instead of bailing with
+    # "No secrets found :(" when a recognizable product is given but the
+    # secret isn't in the wordlist.
+    assert "Cryptographic Product Identified" in captured.out
     assert "Potential matching hashcat commands:" in captured.out
     assert "JSON Web Token (JWT) Algorithm: HS256 Command: [hashcat -m 16500" in captured.out
 
@@ -253,7 +256,7 @@ def test_example_cli_identifyonly_hashcat_rack2(monkeypatch, capsys, bh_mock):
     captured = capsys.readouterr()
     print(captured)
 
-    assert "No secrets found :(" in captured.out
+    assert "Cryptographic Product Identified" in captured.out
     assert "[Rack2_SignedCookies] Rack 2.x Signed Cookie" in captured.out
     assert "Potential matching hashcat commands" in captured.out
 

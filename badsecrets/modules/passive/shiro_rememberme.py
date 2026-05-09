@@ -10,7 +10,10 @@ JAVA_SERIALIZATION_MAGIC = b"\xac\xed\x00\x05"
 
 class Shiro_RememberMe(BadsecretsBase):
     # Base64 pattern, minimum 44 chars (32 bytes = 16 IV + 16 ciphertext minimum)
-    identify_regex = re.compile(r"^(?:[A-Za-z0-9+/]{4}){11,}(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$")
+    # Exclude the `eyJ` prefix to avoid matching Laravel/JWT/Flask cookies that
+    # also fit a generic long-base64 pattern. Real Shiro rememberMe cookies are
+    # AES-encrypted random bytes and don't legitimately start with `eyJ`.
+    identify_regex = re.compile(r"^(?!eyJ)(?:[A-Za-z0-9+/]{4}){11,}(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$")
     description = {"product": "Apache Shiro", "secret": "RememberMe AES Key", "severity": "CRITICAL"}
     carve_locations = ("cookies",)
 

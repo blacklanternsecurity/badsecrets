@@ -446,6 +446,17 @@ def main():
             if r_list:
                 all_passive_results.extend(r_list)
 
+        # One IdentifyOnly per module across all fetches; SecretFound never deduped.
+        seen_identify_modules = set()
+        deduped = []
+        for r in all_passive_results:
+            if r["type"] == "IdentifyOnly":
+                if r["detecting_module"] in seen_identify_modules:
+                    continue
+                seen_identify_modules.add(r["detecting_module"])
+            deduped.append(r)
+        all_passive_results = deduped
+
         if args.debug and not json_mode:
             if all_passive_results:
                 modules_hit = {r["detecting_module"] for r in all_passive_results}
@@ -523,18 +534,29 @@ def main():
     else:
         if args.debug and not json_mode:
             print_status(f"[DEBUG] Checking product(s): {args.product}", color="blue")
-        x = check_all_modules(*args.product, custom_resource=custom_resource)
+        results = check_all_modules(*args.product, custom_resource=custom_resource)
         if args.debug and not json_mode:
-            if x:
-                print_status(f"[DEBUG] Match found by module: {x.get('detecting_module', 'unknown')}", color="blue")
+            if results:
+                modules_hit = {r["detecting_module"] for r in results}
+                print_status(f"[DEBUG] Match found by module(s): {', '.join(modules_hit)}", color="blue")
             else:
                 print_status("[DEBUG] No match from any module", color="blue")
-        if x:
+        if results:
             if json_mode:
-                print(json_module.dumps(x))
+                print(json_module.dumps(results))
             else:
-                report = ReportSecret(x)
-                report.report()
+                for r in results:
+                    if r["type"] == "SecretFound":
+                        report = ReportSecret(r)
+                    else:
+                        if not args.no_hashcat and r.get("hashcat") is None:
+                            hashcat_candidates = hashcat_all_modules(
+                                r["product"], detecting_module=r["detecting_module"]
+                            )
+                            if hashcat_candidates:
+                                r["hashcat"] = hashcat_candidates
+                        report = ReportIdentify(r)
+                    report.report()
         else:
             if not json_mode:
                 print_status("No secrets found :(", color="red")
