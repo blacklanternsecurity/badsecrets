@@ -3,6 +3,7 @@ import importlib
 from pathlib import Path
 from contextlib import suppress
 from .base import BadsecretsBase, BadsecretsActiveBase
+from .__version__ import __version__  # noqa: F401
 
 module_dir = Path(__file__).parent / "modules"
 modules_loaded = {}
