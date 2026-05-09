@@ -1,7 +1,5 @@
 import os
 import sys
-import httpx
-import respx
 from unittest.mock import patch
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -132,7 +130,7 @@ def test_examples_blacklist3r_manual(monkeypatch, capsys):
         assert "Viewstate is not formatted correctly" in captured.err
 
 
-def test_examples_blacklist3r_offline(monkeypatch, capsys):
+def test_examples_blacklist3r_offline(monkeypatch, capsys, bh_mock):
     with patch("sys.exit") as exit_mock:
         # Invalid URL is rejected
         monkeypatch.setattr("sys.argv", ["python", "--url", "hxxp://notaurl"])
@@ -158,45 +156,48 @@ def test_examples_blacklist3r_offline(monkeypatch, capsys):
         captured = capsys.readouterr()
         assert "error: --viewstate/--generator options and --url option are mutually exclusive" in captured.err
 
-    with respx.mock:
-        respx.get("http://example.com/vulnerableviewstate.aspx").respond(
-            status_code=200,
-            text=base_viewstate_page.replace("###viewstate###", vulnerable_viewstate),
-        )
-        respx.get("http://example.com/nonvulnerableviewstate.aspx").respond(
-            status_code=200,
-            text=base_viewstate_page.replace("###viewstate###", non_vulnerable_viewstate),
-        )
-        respx.get("http://example.com/noviewstate.aspx").respond(status_code=200, text=no_viewstate_page)
-        respx.get("http://notreal.com/").mock(side_effect=httpx.ConnectTimeout("timeout"))
-        # URL Mode - Valid URL is visited, contains viewstate, viewstate is vulnerable
+    bh_mock.add_response(
+        url="http://example.com/vulnerableviewstate.aspx",
+        text=base_viewstate_page.replace("###viewstate###", vulnerable_viewstate),
+        status_code=200,
+    )
+    bh_mock.add_response(
+        url="http://example.com/nonvulnerableviewstate.aspx",
+        text=base_viewstate_page.replace("###viewstate###", non_vulnerable_viewstate),
+        status_code=200,
+    )
+    bh_mock.add_response(url="http://example.com/noviewstate.aspx", text=no_viewstate_page, status_code=200)
 
-        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerableviewstate.aspx"])
-        blacklist3r.main()
+    def _err(req):
+        raise RuntimeError("timeout")
 
-        # URL Mode - Valid URL is visited, contains viewstate, viewstate is vulnerable
-        captured = capsys.readouterr()
-        assert "Matching MachineKeys found!" in captured.out
-        assert (
-            "F4F0AC3A8889DFBB6FC9D24275A8F0E523C1FB1A2F3FA0C3F3B36320A80670E1D62D15A16A335F0CB14F8AECE7002A5BD8A980F677EA82666B49167947F0A669"
-            in captured.out
-        )
-        assert "encryptionAlgo: AES" in captured.out
+    bh_mock.add_callback(_err, url="http://notreal.com/")
 
-        # URL Mode - Valid URL is visited, contains viewstate, viewstate is NOT vulnerable
-        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/nonvulnerableviewstate.aspx"])
-        blacklist3r.main()
-        captured2 = capsys.readouterr()
-        assert "Matching MachineKeys NOT found" in captured2.out
+    # URL Mode - Valid URL is visited, contains viewstate, viewstate is vulnerable
+    monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerableviewstate.aspx"])
+    blacklist3r.main()
+    captured = capsys.readouterr()
+    assert "Matching MachineKeys found!" in captured.out
+    assert (
+        "F4F0AC3A8889DFBB6FC9D24275A8F0E523C1FB1A2F3FA0C3F3B36320A80670E1D62D15A16A335F0CB14F8AECE7002A5BD8A980F677EA82666B49167947F0A669"
+        in captured.out
+    )
+    assert "encryptionAlgo: AES" in captured.out
 
-        # URL Mode - Valid URL is visited, does not contain viewstate
-        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/noviewstate.aspx"])
-        blacklist3r.main()
-        captured2 = capsys.readouterr()
-        assert "Did not find viewstate in repsonse from URL" in captured2.out
+    # URL Mode - Valid URL is visited, contains viewstate, viewstate is NOT vulnerable
+    monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/nonvulnerableviewstate.aspx"])
+    blacklist3r.main()
+    captured2 = capsys.readouterr()
+    assert "Matching MachineKeys NOT found" in captured2.out
 
-        # URL Mode - Validly formatted URL is not responding
-        monkeypatch.setattr("sys.argv", ["python", "--url", "http://notreal.com"])
-        blacklist3r.main()
-        captured2 = capsys.readouterr()
-        assert "Error connecting to URL" in captured2.out
+    # URL Mode - Valid URL is visited, does not contain viewstate
+    monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/noviewstate.aspx"])
+    blacklist3r.main()
+    captured2 = capsys.readouterr()
+    assert "Did not find viewstate in repsonse from URL" in captured2.out
+
+    # URL Mode - Validly formatted URL is not responding
+    monkeypatch.setattr("sys.argv", ["python", "--url", "http://notreal.com"])
+    blacklist3r.main()
+    captured2 = capsys.readouterr()
+    assert "Error connecting to URL" in captured2.out

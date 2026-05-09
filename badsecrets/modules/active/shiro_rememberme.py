@@ -65,7 +65,9 @@ class Shiro_RememberMe_Key(BadsecretsActiveBase):
     @staticmethod
     def _has_delete_me(response):
         """Check if response contains rememberMe=deleteMe in Set-Cookie."""
-        return any("rememberMe=deleteMe" in value for value in response.headers.get_list("set-cookie"))
+        return any(
+            name.lower() == "set-cookie" and "rememberMe=deleteMe" in value for name, value in response.headers.items()
+        )
 
     async def probe(self, url, custom_keys=None, **kwargs):
         """Probe for known Shiro rememberMe keys by sending crafted cookies.
@@ -75,7 +77,7 @@ class Shiro_RememberMe_Key(BadsecretsActiveBase):
         2. For each candidate key, encrypt a SimplePrincipalCollection with AES-CBC then AES-GCM
         3. If response does NOT contain deleteMe, the key is correct
         """
-        import httpx
+        from blasthttp import BlastHTTP
 
         results = []
         base = re.match(r"(https?://[^/]+)", url)
@@ -100,48 +102,42 @@ class Shiro_RememberMe_Key(BadsecretsActiveBase):
                 if key not in keys_to_try:
                     keys_to_try.append(key)
 
-        client = self.http_client
-        should_close = False
-        if client is None:
-            client = httpx.AsyncClient(timeout=10, verify=False)
-            should_close = True
+        client = self.http_client if self.http_client is not None else BlastHTTP()
 
+        # Step 1: Confirm Shiro is present by sending garbage cookie
         try:
-            # Step 1: Confirm Shiro is present by sending garbage cookie
-            try:
-                confirm_resp = await client.get(
-                    target_url,
-                    headers={"Cookie": "rememberMe=1"},
-                    follow_redirects=True,
-                )
-                if not self._has_delete_me(confirm_resp):
-                    log.debug(f"Shiro confirmation failed: no deleteMe in response from {target_url}")
-                    return results
-            except Exception as e:
-                log.debug(f"Error confirming Shiro at {target_url}: {e}")
+            confirm_resp = await client.request(
+                target_url,
+                method="GET",
+                headers=[("Cookie", "rememberMe=1")],
+                follow_redirects=True,
+                verify_certs=False,
+                timeout=10,
+            )
+            if not self._has_delete_me(confirm_resp):
+                log.debug(f"Shiro confirmation failed: no deleteMe in response from {target_url}")
                 return results
+        except Exception as e:
+            log.debug(f"Error confirming Shiro at {target_url}: {e}")
+            return results
 
-            # Step 2: Try each key
-            for key_b64 in keys_to_try:
-                with suppress(ValueError, binascii.Error):
-                    key_bytes = base64.b64decode(key_b64)
-                    if len(key_bytes) not in (16, 24, 32):
-                        continue
+        # Step 2: Try each key
+        for key_b64 in keys_to_try:
+            with suppress(ValueError, binascii.Error):
+                key_bytes = base64.b64decode(key_b64)
+                if len(key_bytes) not in (16, 24, 32):
+                    continue
 
-                    # Try CBC mode first (Shiro < 1.4.2)
-                    result = await self._try_key(client, target_url, key_bytes, key_b64, mode="CBC")
-                    if result:
-                        results.append(result)
-                        continue
+                # Try CBC mode first (Shiro < 1.4.2)
+                result = await self._try_key(client, target_url, key_bytes, key_b64, mode="CBC")
+                if result:
+                    results.append(result)
+                    continue
 
-                    # Try GCM mode (Shiro >= 1.4.2)
-                    result = await self._try_key(client, target_url, key_bytes, key_b64, mode="GCM")
-                    if result:
-                        results.append(result)
-
-        finally:
-            if should_close:
-                await client.aclose()
+                # Try GCM mode (Shiro >= 1.4.2)
+                result = await self._try_key(client, target_url, key_bytes, key_b64, mode="GCM")
+                if result:
+                    results.append(result)
 
         return results
 
@@ -155,10 +151,13 @@ class Shiro_RememberMe_Key(BadsecretsActiveBase):
 
             cookie_value = base64.b64encode(raw).decode()
 
-            response = await client.get(
+            response = await client.request(
                 url,
-                headers={"Cookie": f"rememberMe={cookie_value}"},
+                method="GET",
+                headers=[("Cookie", f"rememberMe={cookie_value}")],
                 follow_redirects=True,
+                verify_certs=False,
+                timeout=10,
             )
 
             if not self._has_delete_me(response):

@@ -1,8 +1,16 @@
-import httpx
-import respx
-
 from badsecrets.base import check_all_modules, carve_all_modules, BadsecretsBase, yara_carve_scan, _all_subclasses
 import badsecrets.base
+
+
+class FakeResponse:
+    """Duck-typed HTTP response for carve(http_response=...) tests."""
+
+    def __init__(self, text="", headers=None, cookies=None, url=""):
+        self.text = text
+        self.headers = headers if headers is not None else {}
+        self.cookies = cookies if cookies is not None else {}
+        self.url = url
+
 
 tests = [
     "yJrdyJV6tkmHLII2uDq1Sl509UeDg9xGI4u3tb6dm9BQS4wD08KTkyXKST4PeQs00giqSA==",
@@ -91,12 +99,10 @@ def test_carve_all_body():
         r_list = carve_all_modules(body=sample)
         assert len(r_list) > 0
 
-    with respx.mock:
-        for idx, sample in enumerate([aspnet_viewstate_sample, telerik_dialogparameters_sample, jwt_html]):
-            respx.get(f"http://{idx}.carve-all.badsecrets.com/").respond(status_code=200, text=sample)
-            res = httpx.get(f"http://{idx}.carve-all.badsecrets.com/")
-            r_list = carve_all_modules(httpx_response=res)
-            assert len(r_list) > 0
+    for sample in [aspnet_viewstate_sample, telerik_dialogparameters_sample, jwt_html]:
+        res = FakeResponse(text=sample)
+        r_list = carve_all_modules(http_response=res)
+        assert len(r_list) > 0
 
 
 def test_carve_all_cookies():
@@ -113,9 +119,6 @@ def test_carve_all_cookies():
     }
 
     # Test cookie carving by passing cookies directly to carve_all_modules.
-    # respx exposes cookies as set-cookie response headers which the carve function
-    # also scans, leading to duplicate detections via mock HTTP responses.
-    # Since this test verifies cookie-based secret detection, we pass cookies directly.
     r_list = carve_all_modules(cookies=cookies)
     assert len(r_list) == 7
 
@@ -128,15 +131,9 @@ def test_carve_multiple_vulns():
 <input type="hidden" name="__VIEWSTATEGENERATOR" value="AAAAAAAA" />
 """
 
-    with respx.mock:
-        respx.get("http://multiplevulns.carve-all.badsecrets.com/").respond(
-            status_code=200,
-            text=multiple_vuln_html,
-        )
-
-        res = httpx.get("http://multiplevulns.carve-all.badsecrets.com/")
-        r_list = carve_all_modules(httpx_response=res)
-        assert len(r_list) == 2
+    res = FakeResponse(text=multiple_vuln_html)
+    r_list = carve_all_modules(http_response=res)
+    assert len(r_list) == 2
 
 
 def test_multiple_identify_only():
@@ -150,19 +147,13 @@ Sys.Application.add_init(function() {
 </body>
 </html>
 """
-    with respx.mock:
-        respx.get("http://multipleidentifyonly.carve-all.badsecrets.com/").respond(
-            status_code=200,
-            text=multiple_identify_only_html,
-        )
-
-        res = httpx.get("http://multipleidentifyonly.carve-all.badsecrets.com/")
-        r_list = carve_all_modules(httpx_response=res)
-        assert len(r_list) == 2
-        assert r_list[0]["type"] == "IdentifyOnly"
-        assert r_list[1]["type"] == "IdentifyOnly"
-        assert r_list[0]["description"]["product"] in ["Telerik DialogParameters", "Telerik Hash Key Signature"]
-        assert r_list[1]["description"]["product"] in ["Telerik DialogParameters", "Telerik Hash Key Signature"]
+    res = FakeResponse(text=multiple_identify_only_html)
+    r_list = carve_all_modules(http_response=res)
+    assert len(r_list) == 2
+    assert r_list[0]["type"] == "IdentifyOnly"
+    assert r_list[1]["type"] == "IdentifyOnly"
+    assert r_list[0]["description"]["product"] in ["Telerik DialogParameters", "Telerik Hash Key Signature"]
+    assert r_list[1]["description"]["product"] in ["Telerik DialogParameters", "Telerik Hash Key Signature"]
 
 
 def test_yara_carve_coverage():

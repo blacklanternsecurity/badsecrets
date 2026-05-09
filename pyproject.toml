@@ -11,7 +11,7 @@ dependencies = [
     "flask-unsign>=1.2.1",
     "Django>=4.1.2,<6.0.0",
     "pyjwt[crypto]>=2.6.0",
-    "httpx>=0.27,<1.0",
+    "blasthttp>=0.5.1",
     "colorama>=0.4.6",
     "yara-python>=4.2.0",
 ]
@@ -27,8 +27,8 @@ symfony-knownkey = "badsecrets.examples.symfony_knownkey:main"
 
 [dependency-groups]
 dev = [
-    "respx>=0.21,<1.0",
     "pytest>=8.3.4,<10.0.0",
+    "pytest-asyncio>=0.21,<2.0",
     "pytest-cov>=6.1.1,<8.0.0",
     "mock>=5.1.0",
     "pytest-mock>=3.10.0",
