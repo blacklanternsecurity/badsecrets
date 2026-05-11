@@ -13,7 +13,7 @@ dependencies = [
     "pyjwt[crypto]>=2.6.0",
     "blasthttp>=0.5.1",
     "colorama>=0.4.6",
-    "yara-python>=4.2.0",
+    "yara-python>=4.5.4",
 ]
 
 [project.urls]
