@@ -265,3 +265,46 @@ def test_probe_exception_during_key_attempt():
     gp = GlobalProtect_DefaultMasterKey(http_client=bh)
     results = asyncio.run(gp.probe("https://vpn.example.com"))
     assert len(results) == 0
+
+
+class _StrictBodyClient:
+    """Wraps BlasthttpMock to enforce real blasthttp's body=str requirement.
+
+    BlasthttpMock silently accepts bytes for `body`, but the real
+    blasthttp.BlastHTTP.request() raises TypeError on bytes. This wrapper
+    mirrors that strictness so regressions are caught in tests.
+    """
+
+    def __init__(self, mock):
+        self._mock = mock
+        self.bodies = []
+
+    async def request(self, url, **kwargs):
+        body = kwargs.get("body")
+        if body is not None and not isinstance(body, str):
+            raise TypeError(f"argument 'body': '{type(body).__name__}' object cannot be cast as 'str'")
+        self.bodies.append(body)
+        return await self._mock.request(url, **kwargs)
+
+
+def test_regression_probe_body_must_be_str():
+    """Regression: blasthttp rejects bytes bodies.
+
+    Before the fix, probe() built form_body with urlencode(...).encode(), which
+    crashed real blasthttp with TypeError. BlasthttpMock-based tests missed it
+    because the mock accepts bytes silently.
+    """
+    bh = BlasthttpMock()
+    bh.add_response(
+        url="https://vpn.example.com/sslmgr",
+        text="Unable to find the configuration",
+        status_code=200,
+    )
+    strict = _StrictBodyClient(bh)
+
+    gp = GlobalProtect_DefaultMasterKey(http_client=strict)
+    asyncio.run(gp.probe("https://vpn.example.com"))
+
+    assert strict.bodies, "expected at least one request"
+    for b in strict.bodies:
+        assert isinstance(b, str), f"body must be str, got {type(b).__name__}"

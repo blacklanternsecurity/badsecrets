@@ -62,7 +62,8 @@ def _sync_post_form(url, data, headers=None, proxy=None):
     if not isinstance(headers, dict):
         headers = dict(headers or [])
     h = {**headers, "Content-Type": "application/x-www-form-urlencoded"}
-    body = urlencode(data).encode()
+    # TODO(blasthttp>=0.5.2): restore `.encode()` once blasthttp accepts bytes bodies again
+    body = urlencode(data)
     return _sync_request(url, method="POST", body=body, headers=h, proxy=proxy)
 
 
@@ -328,7 +329,8 @@ class AsyncUpload:
         payload += f'{{"TotalChunks":1,"ChunkIndex":0,"TotalFileSize":1,"UploadID":"{random_hex_string(12)}.txt"}}\r\n'
         payload += f"-----------------------------{multipart_boundary}--\r\n"
         payload += "\r\n"
-        return bytes(payload, "utf8"), multipart_boundary
+        # TODO(blasthttp>=0.5.2): return `bytes(payload, "utf8")` once blasthttp accepts bytes bodies again
+        return payload, multipart_boundary
 
     @staticmethod
     def select_derive_algos(version):
