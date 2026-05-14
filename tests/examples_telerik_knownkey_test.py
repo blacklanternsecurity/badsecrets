@@ -1988,12 +1988,11 @@ def test_dialoghandler_pbkdf1_ms_encryption_key_final_network_error(monkeypatch,
     assert "Network error connecting to URL: [http://test.com]. Exiting due to connection failure." in captured.out
 
 
-class _StrictBodyClient:
-    """Wraps BlasthttpMock to enforce real blasthttp's body=str requirement.
+class _BodyCapturingClient:
+    """Wraps BlasthttpMock to capture the `body` kwarg passed to request().
 
-    BlasthttpMock silently accepts both str and bytes for `body`, but the real
-    blasthttp.BlastHTTP.request() raises TypeError on bytes. This wrapper
-    mirrors that strictness so regressions are caught in tests.
+    Used by regression tests to confirm that callers send bodies in the bytes
+    form blasthttp expects for binary multipart and urlencoded payloads.
     """
 
     def __init__(self, mock):
@@ -2001,25 +2000,21 @@ class _StrictBodyClient:
         self.bodies = []
 
     async def request(self, url, **kwargs):
-        body = kwargs.get("body")
-        if body is not None and not isinstance(body, str):
-            raise TypeError(f"argument 'body': '{type(body).__name__}' object cannot be cast as 'str'")
-        self.bodies.append(body)
+        self.bodies.append(kwargs.get("body"))
         return await self._mock.request(url, **kwargs)
 
 
-def test_regression_request_body_must_be_str(monkeypatch):
-    """Regression: blasthttp rejects bytes bodies.
+def test_regression_request_body_is_bytes(monkeypatch):
+    """Regression: telerik HTTP helpers must send bytes bodies.
 
-    Before the fix, rau_data_prep() returned bytes and _sync_post_form() called
-    .encode() on the urlencoded payload, both of which crashed real blasthttp
-    with TypeError. The existing BlasthttpMock-based tests didn't catch this
-    because the mock accepts bytes silently.
+    Originally broke under blasthttp 0.5.1 (which rejected bytes — fixed in
+    0.6.0); we keep the assertion so a regression to str doesn't sneak back
+    in via a refactor.
     """
     bh = BlasthttpMock()
     bh.add_callback(lambda req: MockResponse(status_code=200, text=""))
-    strict = _StrictBodyClient(bh)
-    monkeypatch.setattr(telerik_knownkey, "_HTTP_CLIENT", strict)
+    capture = _BodyCapturingClient(bh)
+    monkeypatch.setattr(telerik_knownkey, "_HTTP_CLIENT", capture)
 
     # Exercise _sync_post_raw (multipart body from rau_data_prep)
     au = telerik_knownkey.AsyncUpload("http://example.com/Telerik.Web.UI.WebResource.axd")
@@ -2028,14 +2023,14 @@ def test_regression_request_body_must_be_str(monkeypatch):
     # Exercise _sync_post_form (urlencoded body)
     telerik_knownkey._sync_post_form("http://example.com/x", {"a": "b"})
 
-    assert len(strict.bodies) >= 2, "expected requests from both version_probe and _sync_post_form"
-    for b in strict.bodies:
-        assert isinstance(b, str), f"body must be str, got {type(b).__name__}"
+    assert len(capture.bodies) >= 2, "expected requests from both version_probe and _sync_post_form"
+    for b in capture.bodies:
+        assert isinstance(b, bytes), f"body must be bytes, got {type(b).__name__}"
 
 
-def test_regression_rau_data_prep_returns_str():
-    """rau_data_prep() must return str — bytes here crash blasthttp downstream."""
+def test_regression_rau_data_prep_returns_bytes():
+    """rau_data_prep() must return bytes for the multipart body."""
     au = telerik_knownkey.AsyncUpload("http://example.com/x")
     derived_key, iv = au.telerik_encryptionkey.telerik_derivekeys_PBKDF1_MS("GreatScott!")
     payload, _ = au.rau_data_prep("1985.10.26", derived_key, iv, "ThinkMcFlyThink")
-    assert isinstance(payload, str)
+    assert isinstance(payload, bytes)

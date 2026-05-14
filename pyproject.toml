@@ -11,7 +11,7 @@ dependencies = [
     "flask-unsign>=1.2.1",
     "Django>=5.2.14,<6.0.0",
     "pyjwt[crypto]>=2.12.1",
-    "blasthttp>=0.5.1",
+    "blasthttp>=0.6.0",
     "colorama>=0.4.6",
     "yara-python>=4.5.4",
 ]

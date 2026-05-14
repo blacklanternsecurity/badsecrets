@@ -92,7 +92,6 @@ class GlobalProtect_DefaultMasterKey(BadsecretsActiveBase):
             try:
                 aes_key = self.derive_aes_key(key_str)
                 cookie = self.build_auth_cookie(aes_key)
-                # TODO(blasthttp>=0.5.2): restore `.encode()` once blasthttp accepts bytes bodies again
                 form_body = urlencode(
                     {
                         "scep-profile-name": "badsecrets",
@@ -101,7 +100,7 @@ class GlobalProtect_DefaultMasterKey(BadsecretsActiveBase):
                         "host-id": "badsecrets-hostid",
                         "appauthcookie": cookie,
                     }
-                )
+                ).encode()
                 response = await client.request(
                     sslmgr_url,
                     method="POST",

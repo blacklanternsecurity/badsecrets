@@ -267,12 +267,11 @@ def test_probe_exception_during_key_attempt():
     assert len(results) == 0
 
 
-class _StrictBodyClient:
-    """Wraps BlasthttpMock to enforce real blasthttp's body=str requirement.
+class _BodyCapturingClient:
+    """Wraps BlasthttpMock to capture the `body` kwarg passed to request().
 
-    BlasthttpMock silently accepts bytes for `body`, but the real
-    blasthttp.BlastHTTP.request() raises TypeError on bytes. This wrapper
-    mirrors that strictness so regressions are caught in tests.
+    Used by regression tests to confirm callers send bodies in the bytes form
+    blasthttp expects for urlencoded payloads.
     """
 
     def __init__(self, mock):
@@ -280,19 +279,16 @@ class _StrictBodyClient:
         self.bodies = []
 
     async def request(self, url, **kwargs):
-        body = kwargs.get("body")
-        if body is not None and not isinstance(body, str):
-            raise TypeError(f"argument 'body': '{type(body).__name__}' object cannot be cast as 'str'")
-        self.bodies.append(body)
+        self.bodies.append(kwargs.get("body"))
         return await self._mock.request(url, **kwargs)
 
 
-def test_regression_probe_body_must_be_str():
-    """Regression: blasthttp rejects bytes bodies.
+def test_regression_probe_body_is_bytes():
+    """Regression: probe() must send form_body as bytes.
 
-    Before the fix, probe() built form_body with urlencode(...).encode(), which
-    crashed real blasthttp with TypeError. BlasthttpMock-based tests missed it
-    because the mock accepts bytes silently.
+    Originally broke under blasthttp 0.5.1 (which rejected bytes — fixed in
+    0.6.0); we keep the assertion so a regression to str doesn't sneak back
+    in via a refactor.
     """
     bh = BlasthttpMock()
     bh.add_response(
@@ -300,11 +296,11 @@ def test_regression_probe_body_must_be_str():
         text="Unable to find the configuration",
         status_code=200,
     )
-    strict = _StrictBodyClient(bh)
+    capture = _BodyCapturingClient(bh)
 
-    gp = GlobalProtect_DefaultMasterKey(http_client=strict)
+    gp = GlobalProtect_DefaultMasterKey(http_client=capture)
     asyncio.run(gp.probe("https://vpn.example.com"))
 
-    assert strict.bodies, "expected at least one request"
-    for b in strict.bodies:
-        assert isinstance(b, str), f"body must be str, got {type(b).__name__}"
+    assert capture.bodies, "expected at least one request"
+    for b in capture.bodies:
+        assert isinstance(b, bytes), f"body must be bytes, got {type(b).__name__}"
