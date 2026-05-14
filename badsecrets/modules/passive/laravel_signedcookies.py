@@ -23,7 +23,10 @@ class LaravelSignedCookies(BadsecretsBase):
             return decrypted
         return None
 
-    identify_regex = re.compile(r"eyJ(?:[\w-])*")
+    # Laravel-encrypted cookies always start with the base64 of `{"iv":` (= `eyJpdi`).
+    # Anchoring on this prefix avoids false-positive overlap with JWTs (`eyJhbGc…`)
+    # and other arbitrary base64 blobs.
+    identify_regex = re.compile(r"^eyJpdi[\w-]+")
     description = {"product": "Laravel Signed Cookie", "secret": "Laravel APP_KEY", "severity": "HIGH"}
     carve_locations = ("cookies",)
 

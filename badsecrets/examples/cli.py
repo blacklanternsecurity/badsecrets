@@ -14,7 +14,7 @@ from badsecrets.base import (
     yara_prefilter_scan,
 )
 from badsecrets.helpers import print_status, validate_url
-import httpx
+from blasthttp import BlastHTTP
 import asyncio
 import argparse
 import difflib
@@ -39,7 +39,7 @@ def print_version():
     try:
         version_str = version("badsecrets")
     except PackageNotFoundError:
-        version_str = "Unknown (Running w/poetry?)"
+        version_str = "Unknown (not installed)"
     print(f"Version - {version_str}\n")
 
 
@@ -396,40 +396,40 @@ def main():
 
         # Fetch initial response without following redirects, then follow if needed.
         # Both passive and active phases evaluate every response we collect.
-        try:
-            res = httpx.get(
-                args.url,
-                proxy=proxy,
-                headers=headers,
-                verify=False,
-                follow_redirects=False,
+        client = BlastHTTP()
+        header_tuples = list(headers.items())
+
+        async def _get(url, follow_redirects):
+            return await client.request(
+                url,
+                method="GET",
+                headers=header_tuples,
+                verify_certs=False,
+                follow_redirects=follow_redirects,
                 timeout=args.timeout,
+                proxy=proxy,
             )
-        except (httpx.ConnectError, httpx.ConnectTimeout):
+
+        try:
+            res = asyncio.run(_get(args.url, follow_redirects=False))
+        except RuntimeError as e:
             if not json_mode:
-                print_status(f"Error connecting to URL: [{args.url}]", color="red")
+                print_status(f"Error connecting to URL: [{args.url}] ({e})", color="red")
             return
 
         responses = [(res, args.url)]
 
         # If the initial response is a redirect, also fetch the followed page
-        if res.is_redirect:
+        if 300 <= res.status_code < 400:
             try:
-                followed = httpx.get(
-                    args.url,
-                    proxy=proxy,
-                    headers=headers,
-                    verify=False,
-                    follow_redirects=True,
-                    timeout=args.timeout,
-                )
+                followed = asyncio.run(_get(args.url, follow_redirects=True))
                 if args.debug and not json_mode:
                     print_status(
                         f"[DEBUG] Followed redirect to: {followed.url} (status {followed.status_code})",
                         color="blue",
                     )
                 responses.append((followed, str(followed.url)))
-            except (httpx.ConnectError, httpx.ConnectTimeout):
+            except RuntimeError:
                 pass
 
         # Passive phase: carve all responses
@@ -437,14 +437,25 @@ def main():
         for resp, resp_url in responses:
             if args.debug and not json_mode:
                 print_status(f"[DEBUG] Response status: {resp.status_code} ({resp_url})", color="blue")
-                print_status(f"[DEBUG] Response headers: {dict(resp.headers)}", color="blue")
+                print_status(f"[DEBUG] Response headers: {dict(resp.headers.items())}", color="blue")
                 if resp.cookies:
                     print_status(f"[DEBUG] Cookies: {list(resp.cookies.keys())}", color="blue")
                 print_status(f"[DEBUG] Response body length: {len(resp.text)} chars", color="blue")
 
-            r_list = carve_all_modules(httpx_response=resp, custom_resource=custom_resource, url=resp_url)
+            r_list = carve_all_modules(http_response=resp, custom_resource=custom_resource, url=resp_url)
             if r_list:
                 all_passive_results.extend(r_list)
+
+        # One IdentifyOnly per module across all fetches; SecretFound never deduped.
+        seen_identify_modules = set()
+        deduped = []
+        for r in all_passive_results:
+            if r["type"] == "IdentifyOnly":
+                if r["detecting_module"] in seen_identify_modules:
+                    continue
+                seen_identify_modules.add(r["detecting_module"])
+            deduped.append(r)
+        all_passive_results = deduped
 
         if args.debug and not json_mode:
             if all_passive_results:
@@ -487,7 +498,7 @@ def main():
             active_results = []
             seen_modules = set()
             for resp, resp_url in responses:
-                scan_text = build_prefilter_text(httpx_response=resp)
+                scan_text = build_prefilter_text(http_response=resp)
                 if not scan_text:
                     continue
                 prefilter_matches = yara_prefilter_scan(scan_text)
@@ -504,6 +515,7 @@ def main():
                             body=scan_text,
                             url=resp_url,
                             active_keys_map=active_keys_map,
+                            http_client=client,
                         )
                     )
                     active_results.extend(results)
@@ -522,18 +534,29 @@ def main():
     else:
         if args.debug and not json_mode:
             print_status(f"[DEBUG] Checking product(s): {args.product}", color="blue")
-        x = check_all_modules(*args.product, custom_resource=custom_resource)
+        results = check_all_modules(*args.product, custom_resource=custom_resource)
         if args.debug and not json_mode:
-            if x:
-                print_status(f"[DEBUG] Match found by module: {x.get('detecting_module', 'unknown')}", color="blue")
+            if results:
+                modules_hit = {r["detecting_module"] for r in results}
+                print_status(f"[DEBUG] Match found by module(s): {', '.join(modules_hit)}", color="blue")
             else:
                 print_status("[DEBUG] No match from any module", color="blue")
-        if x:
+        if results:
             if json_mode:
-                print(json_module.dumps(x))
+                print(json_module.dumps(results))
             else:
-                report = ReportSecret(x)
-                report.report()
+                for r in results:
+                    if r["type"] == "SecretFound":
+                        report = ReportSecret(r)
+                    else:
+                        if not args.no_hashcat and r.get("hashcat") is None:
+                            hashcat_candidates = hashcat_all_modules(
+                                r["product"], detecting_module=r["detecting_module"]
+                            )
+                            if hashcat_candidates:
+                                r["hashcat"] = hashcat_candidates
+                        report = ReportIdentify(r)
+                    report.report()
         else:
             if not json_mode:
                 print_status("No secrets found :(", color="red")

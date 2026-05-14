@@ -2,7 +2,6 @@ import os
 import sys
 import tempfile
 import pytest
-import respx
 from unittest.mock import patch
 from importlib.metadata import PackageNotFoundError
 
@@ -122,141 +121,144 @@ def test_examples_cli_url_both_set(monkeypatch, capsys):
         assert "In --url mode, no positional arguments should be used" in captured.out
 
 
-def test_example_cli_vulnerable_url(monkeypatch, capsys):
-    with respx.mock:
-        respx.get("http://example.com/vulnerablejwt.html").respond(
-            status_code=200,
-            text=base_vulnerable_page,
-        )
+def test_example_cli_vulnerable_url(monkeypatch, capsys, bh_mock):
+    bh_mock.add_response(
+        url="http://example.com/vulnerablejwt.html",
+        text=base_vulnerable_page,
+        status_code=200,
+    )
 
-        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerablejwt.html"])
-        cli.main()
-        captured = capsys.readouterr()
-        assert "your-256-bit-secret" in captured.out
-
-
-def test_example_cli_vulnerable_headers(monkeypatch, capsys):
-    with respx.mock:
-        respx.get("http://example.com/vulnerableexpress_cs.html").respond(
-            status_code=200,
-            text="<html><body>content</body></html>",
-            headers={
-                "X-Powered-By": "Express",
-                "Content-Type": "text/html; charset=utf-8",
-                "Content-Length": "11",
-                "ETag": 'W/"b-LTx1jc/VQrBurpG4w6qnFsu3lHk"',
-                "Set-Cookie": "session=eyJ1c2VybmFtZSI6IkJib3RJc0xpZmUifQ==; path=/; expires=Sun, 16 Jul 2023 19:56:30 GMT; httponly, session.sig=8BrG9wzvqxuPCtKmfgdyXXGGqA8; path=/; expires=Sun, 16 Jul 2023 19:56:30 GMT; httponly",
-                "Date": "Sat, 15 Jul 2023 02:47:13 GMT",
-                "Connection": "close",
-            },
-        )
-
-        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerableexpress_cs.html"])
-        cli.main()
-        captured = capsys.readouterr()
-        assert (
-            "Product: Data Cookie: [session=eyJ1c2VybmFtZSI6IkJib3RJc0xpZmUifQ==] Signature Cookie: [8BrG9wzvqxuPCtKmfgdyXXGGqA8]"
-            in captured.out
-        )
+    monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerablejwt.html"])
+    cli.main()
+    captured = capsys.readouterr()
+    assert "your-256-bit-secret" in captured.out
 
 
-def test_example_cli_vulnerable_headersidentifyonly(monkeypatch, capsys):
-    with respx.mock:
-        respx.get("http://example.com/vulnerableexpress_cs.html").respond(
-            status_code=200,
-            text="<html><body>content</body></html>",
-            headers={
-                "X-Powered-By": "Express",
-                "Content-Type": "text/html; charset=utf-8",
-                "Content-Length": "11",
-                "ETag": 'W/"b-LTx1jc/VQrBurpG4w6qnFsu3lHk"',
-                "Set-Cookie": "session=eyJ1c2VybmFtZSI6IkJib3RJc0xpZmUifQ==; path=/; expires=Sun, 16 Jul 2023 19:56:30 GMT; httponly, session.sig=8BrG9wzvqxuPCtKmfgdyXXGGqA7; path=/; expires=Sun, 16 Jul 2023 19:56:30 GMT; httponly",
-                "Date": "Sat, 15 Jul 2023 02:47:13 GMT",
-                "Connection": "close",
-            },
-        )
+def test_example_cli_vulnerable_headers(monkeypatch, capsys, bh_mock):
+    bh_mock.add_response(
+        url="http://example.com/vulnerableexpress_cs.html",
+        text="<html><body>content</body></html>",
+        status_code=200,
+        headers={
+            "X-Powered-By": "Express",
+            "Content-Type": "text/html; charset=utf-8",
+            "Content-Length": "11",
+            "ETag": 'W/"b-LTx1jc/VQrBurpG4w6qnFsu3lHk"',
+            "Set-Cookie": "session=eyJ1c2VybmFtZSI6IkJib3RJc0xpZmUifQ==; path=/; expires=Sun, 16 Jul 2023 19:56:30 GMT; httponly, session.sig=8BrG9wzvqxuPCtKmfgdyXXGGqA8; path=/; expires=Sun, 16 Jul 2023 19:56:30 GMT; httponly",
+            "Date": "Sat, 15 Jul 2023 02:47:13 GMT",
+            "Connection": "close",
+        },
+    )
 
-        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerableexpress_cs.html"])
-        cli.main()
-        captured = capsys.readouterr()
-        assert (
-            "Data Cookie: [session=eyJ1c2VybmFtZSI6IkJib3RJc0xpZmUifQ==] Signature Cookie: [8BrG9wzvqxuPCtKmfgdyXXGGqA7]"
-            in captured.out
-        )
-        print(captured.out)
-        assert "Cryptographic Product Identified (no vulnerability)" in captured.out
+    monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerableexpress_cs.html"])
+    cli.main()
+    captured = capsys.readouterr()
+    assert (
+        "Product: Data Cookie: [session=eyJ1c2VybmFtZSI6IkJib3RJc0xpZmUifQ==] Signature Cookie: [8BrG9wzvqxuPCtKmfgdyXXGGqA8]"
+        in captured.out
+    )
 
 
-def test_example_cli_not_vulnerable_url(monkeypatch, capsys):
-    with respx.mock:
-        respx.get("http://example.com/notvulnerable.html").respond(
-            status_code=200,
-            text=base_non_vulnerable_page,
-        )
+def test_example_cli_vulnerable_headersidentifyonly(monkeypatch, capsys, bh_mock):
+    bh_mock.add_response(
+        url="http://example.com/vulnerableexpress_cs.html",
+        text="<html><body>content</body></html>",
+        status_code=200,
+        headers={
+            "X-Powered-By": "Express",
+            "Content-Type": "text/html; charset=utf-8",
+            "Content-Length": "11",
+            "ETag": 'W/"b-LTx1jc/VQrBurpG4w6qnFsu3lHk"',
+            "Set-Cookie": "session=eyJ1c2VybmFtZSI6IkJib3RJc0xpZmUifQ==; path=/; expires=Sun, 16 Jul 2023 19:56:30 GMT; httponly, session.sig=8BrG9wzvqxuPCtKmfgdyXXGGqA7; path=/; expires=Sun, 16 Jul 2023 19:56:30 GMT; httponly",
+            "Date": "Sat, 15 Jul 2023 02:47:13 GMT",
+            "Connection": "close",
+        },
+    )
 
-        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/notvulnerable.html"])
-        cli.main()
-        captured = capsys.readouterr()
-        assert "No secrets found :(" in captured.out
-
-
-def test_example_cli_identifyonly_url(monkeypatch, capsys):
-    with respx.mock:
-        respx.get("http://example.com/identifyonly.html").respond(
-            status_code=200,
-            text=base_identifyonly_page,
-        )
-
-        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/identifyonly.html"])
-        cli.main()
-        captured = capsys.readouterr()
-        print(captured)
-        assert "Cryptographic Product Identified (no vulnerability)" in captured.out
-
-
-def test_example_cli_identifyonly_hashcat(monkeypatch, capsys):
-    with respx.mock:
-        respx.get("http://example.com/identifyonly.html").respond(
-            status_code=200,
-            text=base_identifyonly_page,
-        )
-
-        monkeypatch.setattr(
-            "sys.argv",
-            [
-                "python",
-                "eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCB",
-            ],
-        )
-        cli.main()
-        captured = capsys.readouterr()
-        print(captured)
-        assert "No secrets found :(" in captured.out
-        assert "Potential matching hashcat commands:" in captured.out
-        assert "JSON Web Token (JWT) Algorithm: HS256 Command: [hashcat -m 16500" in captured.out
+    monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerableexpress_cs.html"])
+    cli.main()
+    captured = capsys.readouterr()
+    assert (
+        "Data Cookie: [session=eyJ1c2VybmFtZSI6IkJib3RJc0xpZmUifQ==] Signature Cookie: [8BrG9wzvqxuPCtKmfgdyXXGGqA7]"
+        in captured.out
+    )
+    print(captured.out)
+    assert "Cryptographic Product Identified (no vulnerability)" in captured.out
 
 
-def test_example_cli_identifyonly_hashcat_rack2(monkeypatch, capsys):
-    with respx.mock:
-        respx.get("http://example.com/identifyonly.html").respond(
-            status_code=200,
-            text=base_identifyonly_page,
-        )
+def test_example_cli_not_vulnerable_url(monkeypatch, capsys, bh_mock):
+    bh_mock.add_response(
+        url="http://example.com/notvulnerable.html",
+        text=base_non_vulnerable_page,
+        status_code=200,
+    )
 
-        monkeypatch.setattr(
-            "sys.argv",
-            [
-                "python",
-                "BAh7B0kiD3Nlc3Npb25faWQGOgZFVG86HVJhY2s6OlNlc3Npb246OlNlc3Npb25JZAY6D0BwdWJsaWNfaWRJIkU5YmI3ZDUyODUyNTAwMDYzMGE2NjMxYTA5MjBlMjYzMzFmOGE0MjBhNTdhYWIxNzVkZTFmM2FjMDQ3NmI1NDQzBjsARkkiCmNvdW50BjsARmkG--2a983fbc58911c5266d7748a6a55165f74d412f4",
-            ],  # intentionally bad signature to test hashcat function
-        )
-        cli.main()
-        captured = capsys.readouterr()
-        print(captured)
+    monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/notvulnerable.html"])
+    cli.main()
+    captured = capsys.readouterr()
+    assert "No secrets found :(" in captured.out
 
-        assert "No secrets found :(" in captured.out
-        assert "[Rack2_SignedCookies] Rack 2.x Signed Cookie" in captured.out
-        assert "Potential matching hashcat commands" in captured.out
+
+def test_example_cli_identifyonly_url(monkeypatch, capsys, bh_mock):
+    bh_mock.add_response(
+        url="http://example.com/identifyonly.html",
+        text=base_identifyonly_page,
+        status_code=200,
+    )
+
+    monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/identifyonly.html"])
+    cli.main()
+    captured = capsys.readouterr()
+    print(captured)
+    assert "Cryptographic Product Identified (no vulnerability)" in captured.out
+
+
+def test_example_cli_identifyonly_hashcat(monkeypatch, capsys, bh_mock):
+    bh_mock.add_response(
+        url="http://example.com/identifyonly.html",
+        text=base_identifyonly_page,
+        status_code=200,
+    )
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "python",
+            "eyJhbGciOiJIUzI1NiJ9.eyJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkJhZFNlY3JldHMiLCJleHAiOjE1OTMxMzM0ODMsImlhdCI6MTQ2NjkwMzA4M30.ovqRikAo_0kKJ0GVrAwQlezymxrLGjcEiW_s3UJMMCB",
+        ],
+    )
+    cli.main()
+    captured = capsys.readouterr()
+    print(captured)
+    # The CLI now surfaces an IdentifyOnly report instead of bailing with
+    # "No secrets found :(" when a recognizable product is given but the
+    # secret isn't in the wordlist.
+    assert "Cryptographic Product Identified" in captured.out
+    assert "Potential matching hashcat commands:" in captured.out
+    assert "JSON Web Token (JWT) Algorithm: HS256 Command: [hashcat -m 16500" in captured.out
+
+
+def test_example_cli_identifyonly_hashcat_rack2(monkeypatch, capsys, bh_mock):
+    bh_mock.add_response(
+        url="http://example.com/identifyonly.html",
+        text=base_identifyonly_page,
+        status_code=200,
+    )
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "python",
+            "BAh7B0kiD3Nlc3Npb25faWQGOgZFVG86HVJhY2s6OlNlc3Npb246OlNlc3Npb25JZAY6D0BwdWJsaWNfaWRJIkU5YmI3ZDUyODUyNTAwMDYzMGE2NjMxYTA5MjBlMjYzMzFmOGE0MjBhNTdhYWIxNzVkZTFmM2FjMDQ3NmI1NDQzBjsARkkiCmNvdW50BjsARmkG--2a983fbc58911c5266d7748a6a55165f74d412f4",
+        ],  # intentionally bad signature to test hashcat function
+    )
+    cli.main()
+    captured = capsys.readouterr()
+    print(captured)
+
+    assert "Cryptographic Product Identified" in captured.out
+    assert "[Rack2_SignedCookies] Rack 2.x Signed Cookie" in captured.out
+    assert "Potential matching hashcat commands" in captured.out
 
 
 def test_example_cli_hashcat_omittedonmatch(monkeypatch, capsys):
@@ -523,7 +525,7 @@ def test_example_cli_customsecrets_toolarge(monkeypatch, capsys):
         assert "exceeds the maximum limit of 100KB!" in captured.out
 
 
-def test_example_cli_customsecrets_urlmode_expressbase64(monkeypatch, capsys):
+def test_example_cli_customsecrets_urlmode_expressbase64(monkeypatch, capsys, bh_mock):
     base_vulnerable_page_jsf_custom = """
 <p><input type="hidden" name="javax.faces.ViewState" id="j_id__v_0:javax.faces.ViewState:1" value="AHo0wmLu5ceItIi+I7XkEi1GAb4h12WZ894pA+Z4OH7bco2jXEy1RSCWwjtJcZNbWPcvPqL5zzfl03DoeMZfGGX7a9PSv+fUT8MAeKNouAGj1dZuO8srXt8xZIGg+wPCWWCzcX6IhWOtgWUwiXeSojCDTKXklsYt+kzlVBk5wOsXvb2lTJoO0Q==" autocomplete="off" />
 """
@@ -532,32 +534,32 @@ def test_example_cli_customsecrets_urlmode_expressbase64(monkeypatch, capsys):
         f.write("base64:aGFja3RoZXBsYW5ldA==")
         f.flush()
 
-        with respx.mock:
-            respx.get("http://example.com/vulnerablejsf.html").respond(
-                status_code=200,
-                text=base_vulnerable_page_jsf_custom,
-            )
+        bh_mock.add_response(
+            url="http://example.com/vulnerablejsf.html",
+            text=base_vulnerable_page_jsf_custom,
+            status_code=200,
+        )
 
-            monkeypatch.setattr(
-                "sys.argv",
-                [
-                    "python",
-                    "--url",
-                    "http://example.com/vulnerablejsf.html",
-                    "-c",
-                    f.name,
-                ],
-            )
-            cli.main()
-            captured = capsys.readouterr()
-            print(captured)
-            assert ("Including custom secrets list") in captured.out
-            assert (
-                "e496c62dfa4ce5541939c0eb17bdbda54c9a0ed1:007a34c262eee5c788b488be23b5e4122d4601be21d76599f3de2903e678387edb728da35c4cb5452096c23b4971935b58f72f3ea2f9cf37e5d370e878c65f1865fb6bd3d2bfe7d44fc30078a368b801a3d5d66e3bcb2b5edf316481a0fb03c25960b3717e888563ad816530897792a230834ca5"
-            ) in captured.out
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "python",
+                "--url",
+                "http://example.com/vulnerablejsf.html",
+                "-c",
+                f.name,
+            ],
+        )
+        cli.main()
+        captured = capsys.readouterr()
+        print(captured)
+        assert ("Including custom secrets list") in captured.out
+        assert (
+            "e496c62dfa4ce5541939c0eb17bdbda54c9a0ed1:007a34c262eee5c788b488be23b5e4122d4601be21d76599f3de2903e678387edb728da35c4cb5452096c23b4971935b58f72f3ea2f9cf37e5d370e878c65f1865fb6bd3d2bfe7d44fc30078a368b801a3d5d66e3bcb2b5edf316481a0fb03c25960b3717e888563ad816530897792a230834ca5"
+        ) in captured.out
 
 
-def test_example_cli_customsecrets_urlmode(monkeypatch, capsys):
+def test_example_cli_customsecrets_urlmode(monkeypatch, capsys, bh_mock):
     base_vulnerable_page_aspnet_custom = """
     <form method="post" action="./form.aspx" id="ctl00">
 <div class="aspNetHidden">
@@ -597,25 +599,25 @@ function __doPostBack(eventTarget, eventArgument) {
         )
         f.flush()
 
-        with respx.mock:
-            respx.get("http://example.com/vulnerableaspnet.html").respond(
-                status_code=200,
-                text=base_vulnerable_page_aspnet_custom,
-            )
+        bh_mock.add_response(
+            url="http://example.com/vulnerableaspnet.html",
+            text=base_vulnerable_page_aspnet_custom,
+            status_code=200,
+        )
 
-            monkeypatch.setattr(
-                "sys.argv",
-                [
-                    "python",
-                    "--url",
-                    "http://example.com/vulnerableaspnet.html",
-                    "-c",
-                    f.name,
-                ],
-            )
-            cli.main()
-            captured = capsys.readouterr()
-            assert ("Known Secret Found!") in captured.out
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "python",
+                "--url",
+                "http://example.com/vulnerableaspnet.html",
+                "-c",
+                f.name,
+            ],
+        )
+        cli.main()
+        captured = capsys.readouterr()
+        assert ("Known Secret Found!") in captured.out
 
 
 def test_example_cli_color(monkeypatch, capsys):
@@ -646,7 +648,7 @@ def test_example_cli_help(monkeypatch, capsys):
         assert "--user-agent USER_AGENT" in captured.out
 
 
-def test_example_cli_dotnet45_url(monkeypatch, capsys):
+def test_example_cli_dotnet45_url(monkeypatch, capsys, bh_mock):
     base_vulnerable_page_aspnet_dotnet45 = """
          <form method="post" action="./form.aspx" id="ctl00">
 <div class="aspNetHidden">
@@ -679,27 +681,27 @@ function __doPostBack(eventTarget, eventArgument) {
     <input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="1E02dhhNh5Elng+wXjTw6opqE8R/OdZddtcAL82qdZyIIRVQ8s97YQsJqECjV/OJQAu5ZySO9StoIr1X0S6NUbt/h4tCjnSvkgol4hnPb0DshxRmrMTYr/s+zlBn09dZFQ40HKbQeaRIxkww99sDGqnXdTyIOjVxrVW2FmKJSm8=" />
 </div>
     """
-    with respx.mock:
-        respx.get("http://172.16.25.128/form.aspx").respond(
-            status_code=200,
-            text=base_vulnerable_page_aspnet_dotnet45,
-        )
+    bh_mock.add_response(
+        url="http://172.16.25.128/form.aspx",
+        text=base_vulnerable_page_aspnet_dotnet45,
+        status_code=200,
+    )
 
-        monkeypatch.setattr(
-            "sys.argv",
-            [
-                "python",
-                "--url",
-                "http://172.16.25.128/form.aspx",
-            ],
-        )
-        cli.main()
-        captured = capsys.readouterr()
-        assert ("Known Secret Found!") in captured.out
-        assert ("Details: Mode [DOTNET45]") in captured.out
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "python",
+            "--url",
+            "http://172.16.25.128/form.aspx",
+        ],
+    )
+    cli.main()
+    captured = capsys.readouterr()
+    assert ("Known Secret Found!") in captured.out
+    assert ("Details: Mode [DOTNET45]") in captured.out
 
 
-def test_example_cli_aspnetcompressedviewstate_url(monkeypatch, capsys):
+def test_example_cli_aspnetcompressedviewstate_url(monkeypatch, capsys, bh_mock):
     base_vulnerable_page_aspnet_compressedviewstate = """
          <!doctype html>
 
@@ -725,28 +727,28 @@ def test_example_cli_aspnetcompressedviewstate_url(monkeypatch, capsys):
 <p>content</p>
 </html>
     """
-    with respx.mock:
-        respx.get("http://172.16.25.128/form.aspx").respond(
-            status_code=200,
-            text=base_vulnerable_page_aspnet_compressedviewstate,
-        )
+    bh_mock.add_response(
+        url="http://172.16.25.128/form.aspx",
+        text=base_vulnerable_page_aspnet_compressedviewstate,
+        status_code=200,
+    )
 
-        monkeypatch.setattr(
-            "sys.argv",
-            [
-                "python",
-                "--url",
-                "http://172.16.25.128/form.aspx",
-            ],
-        )
-        cli.main()
-        captured = capsys.readouterr()
-        assert ("Known Secret Found!") in captured.out
-        assert ("Product: H4sIAAAAAAAEAPvPyJ/Cz8ppZGpgaWpgZmmYAgAAmCJNEQAAAA==") in captured.out
-        assert ("ASP.NET Compressed Viewstate") in captured.out
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "python",
+            "--url",
+            "http://172.16.25.128/form.aspx",
+        ],
+    )
+    cli.main()
+    captured = capsys.readouterr()
+    assert ("Known Secret Found!") in captured.out
+    assert ("Product: H4sIAAAAAAAEAPvPyJ/Cz8ppZGpgaWpgZmmYAgAAmCJNEQAAAA==") in captured.out
+    assert ("ASP.NET Compressed Viewstate") in captured.out
 
 
-def test_example_cli_aspnetcompressedviewstate_url_alternateparamname(monkeypatch, capsys):
+def test_example_cli_aspnetcompressedviewstate_url_alternateparamname(monkeypatch, capsys, bh_mock):
     base_vulnerable_page_aspnet_compressedviewstate = """
          <!doctype html>
 
@@ -769,25 +771,25 @@ def test_example_cli_aspnetcompressedviewstate_url_alternateparamname(monkeypatc
 <p>content</p>
 </html>
     """
-    with respx.mock:
-        respx.get("http://172.16.25.128/form.aspx").respond(
-            status_code=200,
-            text=base_vulnerable_page_aspnet_compressedviewstate,
-        )
+    bh_mock.add_response(
+        url="http://172.16.25.128/form.aspx",
+        text=base_vulnerable_page_aspnet_compressedviewstate,
+        status_code=200,
+    )
 
-        monkeypatch.setattr(
-            "sys.argv",
-            [
-                "python",
-                "--url",
-                "http://172.16.25.128/form.aspx",
-            ],
-        )
-        cli.main()
-        captured = capsys.readouterr()
-        assert ("Known Secret Found!") in captured.out
-        assert ("Product: H4sIAAAAAAAEAPvPyJ/Cz8ppZGpgaWpgZmmYAgAAmCJNEQAAAA==") in captured.out
-        assert ("ASP.NET Compressed Viewstate") in captured.out
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "python",
+            "--url",
+            "http://172.16.25.128/form.aspx",
+        ],
+    )
+    cli.main()
+    captured = capsys.readouterr()
+    assert ("Known Secret Found!") in captured.out
+    assert ("Product: H4sIAAAAAAAEAPvPyJ/Cz8ppZGpgaWpgZmmYAgAAmCJNEQAAAA==") in captured.out
+    assert ("ASP.NET Compressed Viewstate") in captured.out
 
 
 def test_example_cli_dotnet45_manual(monkeypatch, capsys):
@@ -870,101 +872,106 @@ def test_examples_cli_colors_info(monkeypatch, capsys):
     print(captured.out)
 
 
-def test_example_cli_redirects_followed(monkeypatch, capsys):
+def test_example_cli_redirects_followed(monkeypatch, capsys, bh_mock):
     """Redirects are always followed — secret on the final page is found."""
-    with respx.mock:
-        respx.get("http://example.com/vulnerablejwt.html").respond(
-            status_code=200,
-            text=base_vulnerable_page,
-        )
+    bh_mock.add_response(
+        url="http://example.com/vulnerablejwt.html",
+        text=base_vulnerable_page,
+        status_code=200,
+    )
 
-        respx.get("http://example.com/vulnerablejwt-redir.html").respond(
-            status_code=302, headers={"Location": "vulnerablejwt.html"}
-        )
+    bh_mock.add_response(
+        url="http://example.com/vulnerablejwt-redir.html",
+        status_code=302,
+        headers={"Location": "http://example.com/vulnerablejwt.html"},
+    )
 
-        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerablejwt-redir.html"])
-        cli.main()
-        captured = capsys.readouterr()
-        assert "your-256-bit-secret" in captured.out
-
-
-def test_example_cli_redirects_default(monkeypatch, capsys):
-    with respx.mock:
-        respx.get("http://example.com/vulnerablejwt.html").respond(
-            status_code=200,
-        )
-
-        respx.get("http://example.com/vulnerablejwt-redir.html").respond(
-            status_code=302,
-            text=base_vulnerable_page,
-            headers={"Location": "vulnerablejwt.html"},
-        )
-
-        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerablejwt-redir.html"])
-        cli.main()
-        captured = capsys.readouterr()
-        assert "your-256-bit-secret" in captured.out
+    monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerablejwt-redir.html"])
+    cli.main()
+    captured = capsys.readouterr()
+    assert "your-256-bit-secret" in captured.out
 
 
-def test_example_cli_trailing_slash_redirect(monkeypatch, capsys):
+def test_example_cli_redirects_default(monkeypatch, capsys, bh_mock):
+    bh_mock.add_response(
+        url="http://example.com/vulnerablejwt.html",
+        status_code=200,
+    )
+
+    bh_mock.add_response(
+        url="http://example.com/vulnerablejwt-redir.html",
+        status_code=302,
+        text=base_vulnerable_page,
+        headers={"Location": "http://example.com/vulnerablejwt.html"},
+    )
+
+    monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerablejwt-redir.html"])
+    cli.main()
+    captured = capsys.readouterr()
+    assert "your-256-bit-secret" in captured.out
+
+
+def test_example_cli_trailing_slash_redirect(monkeypatch, capsys, bh_mock):
     """Trailing-slash redirect (e.g. /path -> /path/) — secret on followed page is found."""
-    with respx.mock:
-        respx.get("http://example.com/vulnerablejwt").respond(
-            status_code=301,
-            headers={"Location": "http://example.com/vulnerablejwt/"},
-        )
+    bh_mock.add_response(
+        url="http://example.com/vulnerablejwt",
+        status_code=301,
+        headers={"Location": "http://example.com/vulnerablejwt/"},
+    )
 
-        respx.get("http://example.com/vulnerablejwt/").respond(
-            status_code=200,
-            text=base_vulnerable_page,
-        )
+    bh_mock.add_response(
+        url="http://example.com/vulnerablejwt/",
+        text=base_vulnerable_page,
+        status_code=200,
+    )
 
-        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerablejwt"])
-        cli.main()
-        captured = capsys.readouterr()
-        assert "your-256-bit-secret" in captured.out
+    monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/vulnerablejwt"])
+    cli.main()
+    captured = capsys.readouterr()
+    assert "your-256-bit-secret" in captured.out
 
 
-def test_example_cli_redirect_secret_in_initial_response(monkeypatch, capsys):
+def test_example_cli_redirect_secret_in_initial_response(monkeypatch, capsys, bh_mock):
     """Secret in the redirect response body is found even though we also follow.
     Both the initial response and the redirect target are evaluated.
     """
-    with respx.mock:
-        respx.get("http://example.com/old-page").respond(
-            status_code=301,
-            text=base_vulnerable_page,
-            headers={"Location": "http://example.com/new-page/"},
-        )
-        respx.get("http://example.com/new-page/").respond(
-            status_code=200,
-            text=base_non_vulnerable_page,
-        )
+    bh_mock.add_response(
+        url="http://example.com/old-page",
+        status_code=301,
+        text=base_vulnerable_page,
+        headers={"Location": "http://example.com/new-page/"},
+    )
+    bh_mock.add_response(
+        url="http://example.com/new-page/",
+        text=base_non_vulnerable_page,
+        status_code=200,
+    )
 
-        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/old-page"])
-        cli.main()
-        captured = capsys.readouterr()
-        # Should detect from the redirect response body itself
-        assert "your-256-bit-secret" in captured.out
+    monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/old-page"])
+    cli.main()
+    captured = capsys.readouterr()
+    # Should detect from the redirect response body itself
+    assert "your-256-bit-secret" in captured.out
 
 
 serverside_jsfviewstate_html = '<input type="hidden" name="javax.faces.ViewState" id="javax.faces.ViewState" value="-7521159484971427124:9144573339387850859" autocomplete="off" /></form>'
 
 
 # We don't actually care at all about this if it has the server-side viewstate - its completely useless
-def test_example_cli_jsfviewstate_serverside(monkeypatch, capsys):
-    with respx.mock:
-        respx.get("http://example.com/serverside_jsfviewstate.html").respond(
-            status_code=200,
-            text=serverside_jsfviewstate_html,
-        )
+def test_example_cli_jsfviewstate_serverside(monkeypatch, capsys, bh_mock):
+    bh_mock.add_response(
+        url="http://example.com/serverside_jsfviewstate.html",
+        text=serverside_jsfviewstate_html,
+        status_code=200,
+    )
 
-        monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/serverside_jsfviewstate.html"])
-        cli.main()
-        captured = capsys.readouterr()
-        assert (
-            "Cryptographic Product Identified (no vulnerability)" not in captured.out
-        )  # make sure we didn't report it at all
-        assert "Potential matching hashcat commands:" not in captured.out
+    monkeypatch.setattr("sys.argv", ["python", "--url", "http://example.com/serverside_jsfviewstate.html"])
+    cli.main()
+    captured = capsys.readouterr()
+    assert (
+        "Cryptographic Product Identified (no vulnerability)" not in captured.out
+    )  # make sure we didn't report it at all
+    assert "Potential matching hashcat commands:" not in captured.out
 
 
 def test_example_cli_no_args(monkeypatch, capsys):
@@ -988,7 +995,7 @@ def test_example_cli_version_not_found(monkeypatch, capsys):
         )
         cli.main()
         captured = capsys.readouterr()
-        assert "Version - Unknown (Running w/poetry?)" in captured.out
+        assert "Version - Unknown (not installed)" in captured.out
 
 
 def test_print_module_table_empty(capsys):

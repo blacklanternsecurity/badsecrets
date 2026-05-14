@@ -8,7 +8,8 @@ from badsecrets.base import BadsecretsBase
 
 
 class Telerik_HashKey(BadsecretsBase):
-    identify_regex = re.compile(r"^(?:[A-Za-z0-9+\/=%]{32,})$")
+    # Exclude the `eyJ` prefix; see telerik_encryptionkey for rationale.
+    identify_regex = re.compile(r"^(?!eyJ)(?:[A-Za-z0-9+\/=%]{32,})$")
     yara_carve_pattern = r"\"SerializedParameters\":\"[A-Za-z0-9+\/=]{32,500}"
     description = {
         "product": "Telerik DialogParameters",

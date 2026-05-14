@@ -1,0 +1,7 @@
+.vscode
+.pytest_cache
+.ruff_cache
+.benchmarks
+.coverage
+dist
+docker
