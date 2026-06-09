@@ -1,7 +1,7 @@
 import os
 import sys
-import httpx
-import respx
+import re
+from blasthttp.mock import MockResponse
 from unittest.mock import patch
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -13,20 +13,22 @@ from badsecrets import modules_loaded
 Symfony_SignedURL = modules_loaded["symfony_signedurl"]
 
 
-def test_symfony_url_not_up(monkeypatch, capsys):
-    with respx.mock:
-        # URL is down - handled correctly
+def test_symfony_url_not_up(monkeypatch, capsys, bh_mock):
+    """URL is down — handled correctly."""
 
-        respx.get("http://notreal.com/_fragment").mock(side_effect=httpx.ConnectTimeout("timeout"))
-        monkeypatch.setattr("sys.argv", ["python", "--url", "http://notreal.com"])
-        symfony_knownkey.main()
-        captured = capsys.readouterr()
-        assert "Error connecting to URL" in captured.out
+    def _err(req):
+        raise RuntimeError("timeout")
+
+    bh_mock.add_callback(_err, url="http://notreal.com/_fragment")
+
+    monkeypatch.setattr("sys.argv", ["python", "--url", "http://notreal.com"])
+    symfony_knownkey.main()
+    captured = capsys.readouterr()
+    assert "Error connecting to URL" in captured.out
 
 
 def test_symfony_url_malformed(monkeypatch, capsys):
-    # URL is not properly formatted
-
+    """URL is not properly formatted."""
     with patch("sys.exit") as exit_mock:
         monkeypatch.setattr("sys.argv", ["python", "--url", "hxxp://notreal.com"])
         symfony_knownkey.main()
@@ -35,7 +37,7 @@ def test_symfony_url_malformed(monkeypatch, capsys):
         assert "URL is not formatted correctly" in captured.err
 
 
-def test_symfony_brute_success(monkeypatch, capsys, mocker):
+def test_symfony_brute_success(monkeypatch, capsys, bh_mock):
     phpcredits_page = """
     <tr class="h"><th>PHP Group</th></tr>
 <tr><td class="e">Thies C. Arntzen, Stig Bakken, Shane Caraveo, Andi Gutmans, Rasmus Lerdorf, Sam Ruby, Sascha Schumann, Zeev Suraski, Jim Winstead, Andrei Zmievski </td></tr>
@@ -54,26 +56,19 @@ def test_symfony_brute_success(monkeypatch, capsys, mocker):
 <tr><td class="e">Server API (SAPI) Abstraction Layer </td><td class="v">Andi Gutmans, Shane Caraveo, Zeev Suraski </td></tr>
     """
 
-    with respx.mock:
-        respx.get("https://localhost/AAAAAAAA").respond(
-            status_code=404,
-            text="",
-        )
+    bh_mock.add_callback(
+        lambda req: MockResponse(text="", status_code=404),
+        url="https://localhost/AAAAAAAA",
+    )
 
-        # Use a side_effect dispatcher because respx matches URLs without considering
-        # query parameters, so a route for "_fragment" would also match "_fragment?_path=..."
-        def _fragment_dispatcher(request):
-            if "_hash=SrBMT/u6I0ylFIn/i6LYayCog21DnFMJ7yFBSnZpImA=" in str(request.url):
-                return httpx.Response(200, text=phpcredits_page)
-            return httpx.Response(403, text="")
+    def _fragment_dispatcher(request):
+        if "_hash=SrBMT/u6I0ylFIn/i6LYayCog21DnFMJ7yFBSnZpImA=" in request.url:
+            return MockResponse(text=phpcredits_page, status_code=200)
+        return MockResponse(text="", status_code=403)
 
-        respx.get(url__startswith="https://localhost/_fragment").mock(side_effect=_fragment_dispatcher)
+    bh_mock.add_callback(_fragment_dispatcher, url=re.compile(r"^https://localhost/_fragment.*"))
 
-        monkeypatch.setattr(
-            "sys.argv",
-            ["python", "--url", "https://localhost/"],
-        )
-        symfony_knownkey.main()
-        captured = capsys.readouterr()
-        assert "Found Symfony Secret! [50c8215b436ebfcc1d568effb624a40e]" in captured.out
-        print(captured)
+    monkeypatch.setattr("sys.argv", ["python", "--url", "https://localhost/"])
+    symfony_knownkey.main()
+    captured = capsys.readouterr()
+    assert "Found Symfony Secret! [50c8215b436ebfcc1d568effb624a40e]" in captured.out

@@ -1,10 +1,28 @@
 import asyncio
 import base64
 import unittest.mock as mock
-import httpx
-import respx
+from blasthttp.mock import BlasthttpMock, MockResponse
 from badsecrets.base import yara_prefilter_scan, probe_all_modules, build_prefilter_text
 from badsecrets.modules.active.shiro_rememberme import Shiro_RememberMe_Key, _SERIALIZED_PRINCIPAL
+
+
+class FakeResponse:
+    """Duck-typed HTTP response for build_prefilter_text/probe_all_modules tests."""
+
+    def __init__(self, text="", headers=None, cookies=None, url=""):
+        self.text = text
+        self.headers = headers if headers is not None else {}
+        self.cookies = cookies if cookies is not None else {}
+        self.url = url
+
+
+def _cookie_value(req):
+    """Case-insensitive lookup of the Cookie header on a MockRequest."""
+    for k, v in req.headers.items():
+        if k.lower() == "cookie":
+            return v
+    return ""
+
 
 SHIRO_LOGIN_HTML = """
 <html>
@@ -48,13 +66,12 @@ def test_prefilter_miss():
 
 def test_build_prefilter_text():
     """build_prefilter_text includes headers and body."""
-    resp = httpx.Response(
-        200,
+    resp = FakeResponse(
         text="<html></html>",
         headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"},
-        request=httpx.Request("GET", "https://example.com"),
+        url="https://example.com",
     )
-    text = build_prefilter_text(httpx_response=resp)
+    text = build_prefilter_text(http_response=resp)
     assert "rememberMe=deleteMe" in text
     assert "<html></html>" in text
 
@@ -104,38 +121,25 @@ def test_encrypt_decrypt_roundtrip_gcm():
     assert pt == _SERIALIZED_PRINCIPAL
 
 
-@respx.mock
 def test_probe_default_key_found_cbc():
     """Default key accepted (no deleteMe) in CBC mode -> SecretFound."""
-    # Confirmation request (garbage cookie) -> deleteMe (confirms Shiro present)
-    respx.get("https://shiro.example.com/login").mock(
-        return_value=httpx.Response(
-            200,
-            text=SHIRO_LOGIN_HTML,
-            headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"},
-        )
-    )
-
-    call_count = 0
 
     def side_effect(request):
-        nonlocal call_count
-        call_count += 1
-        cookie_header = request.headers.get("cookie", "")
+        cookie_header = _cookie_value(request)
         if "rememberMe=1" in cookie_header:
             # Garbage cookie -> deleteMe (Shiro confirmation)
-            return httpx.Response(
-                200,
+            return MockResponse(
                 text=SHIRO_LOGIN_HTML,
                 headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"},
+                status_code=200,
             )
-        else:
-            # Real encrypted cookie -> no deleteMe (key accepted!)
-            return httpx.Response(200, text=SHIRO_LOGIN_HTML)
+        # Real encrypted cookie -> no deleteMe (key accepted!)
+        return MockResponse(text=SHIRO_LOGIN_HTML, status_code=200)
 
-    respx.get("https://shiro.example.com/login").mock(side_effect=side_effect)
+    bh = BlasthttpMock()
+    bh.add_callback(side_effect, url="https://shiro.example.com/login")
 
-    gp = Shiro_RememberMe_Key()
+    gp = Shiro_RememberMe_Key(http_client=bh)
     results = asyncio.run(gp.probe("https://shiro.example.com/login"))
     assert len(results) >= 1
     assert results[0]["type"] == "SecretFound"
@@ -144,49 +148,52 @@ def test_probe_default_key_found_cbc():
     assert "kPH+bIxk5D2deZiIxcaaaA==" in results[0]["secret"]
 
 
-@respx.mock
 def test_probe_key_rejected():
     """All keys rejected (deleteMe every time) -> no results."""
 
     def always_delete_me(request):
-        return httpx.Response(
-            200,
+        return MockResponse(
             text=SHIRO_LOGIN_HTML,
             headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"},
+            status_code=200,
         )
 
-    respx.get("https://shiro.example.com/login").mock(side_effect=always_delete_me)
+    bh = BlasthttpMock()
+    bh.add_callback(always_delete_me, url="https://shiro.example.com/login")
 
-    gp = Shiro_RememberMe_Key()
+    gp = Shiro_RememberMe_Key(http_client=bh)
     results = asyncio.run(gp.probe("https://shiro.example.com/login"))
     assert len(results) == 0
 
 
-@respx.mock
 def test_probe_not_shiro():
     """Confirmation step fails (no deleteMe for garbage cookie) -> no probes sent."""
 
     def no_delete_me(request):
-        return httpx.Response(200, text="<html>Not Shiro</html>")
+        return MockResponse(text="<html>Not Shiro</html>", status_code=200)
 
-    respx.get("https://example.com/login").mock(side_effect=no_delete_me)
+    bh = BlasthttpMock()
+    bh.add_callback(no_delete_me, url="https://example.com/login")
 
-    gp = Shiro_RememberMe_Key()
+    gp = Shiro_RememberMe_Key(http_client=bh)
     results = asyncio.run(gp.probe("https://example.com/login"))
     assert len(results) == 0
 
 
-@respx.mock
 def test_probe_connection_error():
     """Connection error -> no crash, no result."""
-    respx.get("https://shiro.example.com/login").mock(side_effect=httpx.ConnectError("Connection refused"))
 
-    gp = Shiro_RememberMe_Key()
+    def _err(req):
+        raise RuntimeError("Connection refused")
+
+    bh = BlasthttpMock()
+    bh.add_callback(_err, url="https://shiro.example.com/login")
+
+    gp = Shiro_RememberMe_Key(http_client=bh)
     results = asyncio.run(gp.probe("https://shiro.example.com/login"))
     assert len(results) == 0
 
 
-@respx.mock
 def test_probe_gcm_key_found():
     """CBC rejected but GCM accepted -> SecretFound with mode=GCM."""
     call_count = 0
@@ -196,32 +203,31 @@ def test_probe_gcm_key_found():
         call_count += 1
         if call_count == 1:
             # Confirmation: garbage cookie -> deleteMe
-            return httpx.Response(
-                200,
+            return MockResponse(
                 text=SHIRO_LOGIN_HTML,
                 headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"},
+                status_code=200,
             )
-        elif call_count == 2:
+        if call_count == 2:
             # CBC attempt -> rejected
-            return httpx.Response(
-                200,
+            return MockResponse(
                 text=SHIRO_LOGIN_HTML,
                 headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"},
+                status_code=200,
             )
-        else:
-            # GCM attempt -> accepted!
-            return httpx.Response(200, text=SHIRO_LOGIN_HTML)
+        # GCM attempt -> accepted!
+        return MockResponse(text=SHIRO_LOGIN_HTML, status_code=200)
 
-    respx.get("https://shiro.example.com/login").mock(side_effect=side_effect)
+    bh = BlasthttpMock()
+    bh.add_callback(side_effect, url="https://shiro.example.com/login")
 
-    gp = Shiro_RememberMe_Key()
+    gp = Shiro_RememberMe_Key(http_client=bh)
     results = asyncio.run(gp.probe("https://shiro.example.com/login"))
     assert len(results) == 1
     assert results[0]["details"]["mode"] == "GCM"
     assert results[0]["details"]["is_default_key"] is True
 
 
-@respx.mock
 def test_probe_custom_key_found():
     """Custom key matches after default is rejected."""
     call_count = 0
@@ -230,34 +236,32 @@ def test_probe_custom_key_found():
         nonlocal call_count
         call_count += 1
         if call_count == 1:
-            # Confirmation
-            return httpx.Response(
-                200,
+            return MockResponse(
                 text=SHIRO_LOGIN_HTML,
                 headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"},
+                status_code=200,
             )
-        elif call_count <= 3:
+        if call_count <= 3:
             # Default key CBC + GCM -> rejected
-            return httpx.Response(
-                200,
+            return MockResponse(
                 text=SHIRO_LOGIN_HTML,
                 headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"},
+                status_code=200,
             )
-        elif call_count == 4:
+        if call_count == 4:
             # Custom key CBC -> accepted!
-            return httpx.Response(200, text=SHIRO_LOGIN_HTML)
-        else:
-            return httpx.Response(
-                200,
-                text=SHIRO_LOGIN_HTML,
-                headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"},
-            )
+            return MockResponse(text=SHIRO_LOGIN_HTML, status_code=200)
+        return MockResponse(
+            text=SHIRO_LOGIN_HTML,
+            headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"},
+            status_code=200,
+        )
 
-    respx.get("https://shiro.example.com/login").mock(side_effect=side_effect)
+    bh = BlasthttpMock()
+    bh.add_callback(side_effect, url="https://shiro.example.com/login")
 
-    # Use a valid 16-byte key
     custom_key = base64.b64encode(b"\x00" * 16).decode()
-    gp = Shiro_RememberMe_Key()
+    gp = Shiro_RememberMe_Key(http_client=bh)
     results = asyncio.run(gp.probe("https://shiro.example.com/login", custom_keys=[custom_key]))
     assert len(results) == 1
     assert results[0]["details"]["is_default_key"] is False
@@ -271,7 +275,6 @@ def test_probe_invalid_url():
     assert results == []
 
 
-@respx.mock
 def test_probe_with_http_client():
     """Probe uses provided http_client."""
     call_count = 0
@@ -280,26 +283,21 @@ def test_probe_with_http_client():
         nonlocal call_count
         call_count += 1
         if call_count == 1:
-            return httpx.Response(
-                200,
+            return MockResponse(
                 text=SHIRO_LOGIN_HTML,
                 headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"},
+                status_code=200,
             )
-        else:
-            return httpx.Response(200, text=SHIRO_LOGIN_HTML)
+        return MockResponse(text=SHIRO_LOGIN_HTML, status_code=200)
 
-    respx.get("https://shiro.example.com/login").mock(side_effect=side_effect)
+    bh = BlasthttpMock()
+    bh.add_callback(side_effect, url="https://shiro.example.com/login")
 
-    async def run():
-        async with httpx.AsyncClient() as client:
-            gp = Shiro_RememberMe_Key(http_client=client)
-            return await gp.probe("https://shiro.example.com/login")
-
-    results = asyncio.run(run())
+    gp = Shiro_RememberMe_Key(http_client=bh)
+    results = asyncio.run(gp.probe("https://shiro.example.com/login"))
     assert len(results) >= 1
 
 
-@respx.mock
 def test_probe_all_modules_integration():
     """Full flow: response with Shiro headers -> prefilter -> probe -> result."""
     call_count = 0
@@ -308,27 +306,27 @@ def test_probe_all_modules_integration():
         nonlocal call_count
         call_count += 1
         if call_count == 1:
-            return httpx.Response(
-                200,
+            return MockResponse(
                 text=SHIRO_LOGIN_HTML,
                 headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"},
+                status_code=200,
             )
-        else:
-            return httpx.Response(200, text=SHIRO_LOGIN_HTML)
+        return MockResponse(text=SHIRO_LOGIN_HTML, status_code=200)
 
-    respx.get("https://shiro.example.com/login").mock(side_effect=side_effect)
+    bh = BlasthttpMock()
+    bh.add_callback(side_effect, url="https://shiro.example.com/login")
 
-    mock_response = httpx.Response(
-        200,
+    mock_response = FakeResponse(
         text=SHIRO_LOGIN_HTML,
         headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"},
-        request=httpx.Request("GET", "https://shiro.example.com/login"),
+        url="https://shiro.example.com/login",
     )
 
     results = asyncio.run(
         probe_all_modules(
-            httpx_response=mock_response,
+            http_response=mock_response,
             url="https://shiro.example.com/login",
+            http_client=bh,
         )
     )
     assert len(results) >= 1
@@ -338,18 +336,13 @@ def test_probe_all_modules_integration():
     assert results[0]["description"]["severity"] == "CRITICAL"
 
 
-@respx.mock
 def test_probe_all_modules_no_prefilter_match():
     """Unrelated response -> no prefilter match -> no probes fired."""
-    mock_response = httpx.Response(
-        200,
-        text=UNRELATED_HTML,
-        request=httpx.Request("GET", "https://example.com"),
-    )
+    mock_response = FakeResponse(text=UNRELATED_HTML, url="https://example.com")
 
     results = asyncio.run(
         probe_all_modules(
-            httpx_response=mock_response,
+            http_response=mock_response,
             url="https://example.com",
         )
     )
@@ -363,40 +356,47 @@ def test_description():
     assert desc["severity"] == "CRITICAL"
 
 
-@respx.mock
 def test_probe_resource_file_missing():
     """Missing resource file doesn't crash — falls back to default key."""
 
     def side_effect(request):
-        cookie_header = request.headers.get("cookie", "")
+        cookie_header = _cookie_value(request)
         if "rememberMe=1" in cookie_header:
-            return httpx.Response(200, text=SHIRO_LOGIN_HTML, headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"})
-        return httpx.Response(200, text=SHIRO_LOGIN_HTML)
+            return MockResponse(
+                text=SHIRO_LOGIN_HTML,
+                headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"},
+                status_code=200,
+            )
+        return MockResponse(text=SHIRO_LOGIN_HTML, status_code=200)
 
-    respx.get("https://shiro.example.com/login").mock(side_effect=side_effect)
+    bh = BlasthttpMock()
+    bh.add_callback(side_effect, url="https://shiro.example.com/login")
 
-    gp = Shiro_RememberMe_Key()
+    gp = Shiro_RememberMe_Key(http_client=bh)
     with mock.patch.object(gp, "load_resources", side_effect=FileNotFoundError):
         results = asyncio.run(gp.probe("https://shiro.example.com/login"))
     assert len(results) >= 1
     assert results[0]["details"]["is_default_key"] is True
 
 
-@respx.mock
 def test_probe_default_key_not_in_resources():
     """When resource file keys don't include default, default is prepended."""
 
     def side_effect(request):
-        cookie_header = request.headers.get("cookie", "")
+        cookie_header = _cookie_value(request)
         if "rememberMe=1" in cookie_header:
-            return httpx.Response(200, text=SHIRO_LOGIN_HTML, headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"})
-        return httpx.Response(200, text=SHIRO_LOGIN_HTML)
+            return MockResponse(
+                text=SHIRO_LOGIN_HTML,
+                headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"},
+                status_code=200,
+            )
+        return MockResponse(text=SHIRO_LOGIN_HTML, status_code=200)
 
-    respx.get("https://shiro.example.com/login").mock(side_effect=side_effect)
+    bh = BlasthttpMock()
+    bh.add_callback(side_effect, url="https://shiro.example.com/login")
 
-    # Resource file returns a key that's NOT the default
     other_key = base64.b64encode(b"\x00" * 16).decode()
-    gp = Shiro_RememberMe_Key()
+    gp = Shiro_RememberMe_Key(http_client=bh)
     with mock.patch.object(gp, "load_resources", return_value=[f"{other_key}\n"]):
         results = asyncio.run(gp.probe("https://shiro.example.com/login"))
     # Default key is tried first and accepted
@@ -404,27 +404,34 @@ def test_probe_default_key_not_in_resources():
     assert results[0]["details"]["is_default_key"] is True
 
 
-@respx.mock
 def test_probe_invalid_key_length():
     """Key that decodes to non-AES length is skipped."""
 
     def side_effect(request):
-        cookie_header = request.headers.get("cookie", "")
+        cookie_header = _cookie_value(request)
         if "rememberMe=1" in cookie_header:
-            return httpx.Response(200, text=SHIRO_LOGIN_HTML, headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"})
-        return httpx.Response(200, text=SHIRO_LOGIN_HTML, headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"})
+            return MockResponse(
+                text=SHIRO_LOGIN_HTML,
+                headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"},
+                status_code=200,
+            )
+        return MockResponse(
+            text=SHIRO_LOGIN_HTML,
+            headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"},
+            status_code=200,
+        )
 
-    respx.get("https://shiro.example.com/login").mock(side_effect=side_effect)
+    bh = BlasthttpMock()
+    bh.add_callback(side_effect, url="https://shiro.example.com/login")
 
     # 15 bytes is not a valid AES key length (need 16, 24, or 32)
     bad_key = base64.b64encode(b"\x00" * 15).decode()
-    gp = Shiro_RememberMe_Key()
+    gp = Shiro_RememberMe_Key(http_client=bh)
     with mock.patch.object(gp, "load_resources", return_value=[f"{bad_key}\n"]):
         results = asyncio.run(gp.probe("https://shiro.example.com/login"))
     assert len(results) == 0
 
 
-@respx.mock
 def test_try_key_exception():
     """Exception in _try_key doesn't crash probe."""
     call_count = 0
@@ -433,11 +440,16 @@ def test_try_key_exception():
         nonlocal call_count
         call_count += 1
         if call_count == 1:
-            return httpx.Response(200, text=SHIRO_LOGIN_HTML, headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"})
-        raise httpx.ReadTimeout("timeout")
+            return MockResponse(
+                text=SHIRO_LOGIN_HTML,
+                headers={"Set-Cookie": "rememberMe=deleteMe; Path=/"},
+                status_code=200,
+            )
+        raise RuntimeError("timeout")
 
-    respx.get("https://shiro.example.com/login").mock(side_effect=side_effect)
+    bh = BlasthttpMock()
+    bh.add_callback(side_effect, url="https://shiro.example.com/login")
 
-    gp = Shiro_RememberMe_Key()
+    gp = Shiro_RememberMe_Key(http_client=bh)
     results = asyncio.run(gp.probe("https://shiro.example.com/login"))
     assert len(results) == 0

@@ -242,18 +242,9 @@ Secret: fake123
 Details: {'sub': '1234567890', 'name': 'John Doe', 'iat': 1516239022, 'jwt_headers': {'alg': 'HS256', 'typ': 'JWT'}}
 ```
 
-### blacklist3r.py
+### blacklist3r.py (removed)
 
-*Note: This is now obsolete, since `cli.py` is now capable of handling machinekeys/generator values. It will remain included for reference.*
-*Example: `badsecrets KLox5XeGYfb7Lo8zFzr1YepUagXuixcxX55lpFht+rrW6VGheZi831vdusH6DCMfxIhsLG1EPU3OuPvqN2XBc/fj0ew15TQ1zBmmKWJVns4= AAAAAAAA`*
-
-Bad secrets includes a [fully functional CLI example](https://github.com/blacklanternsecurity/badsecrets/blob/dev/badsecrets/examples/blacklist3r.py) which replicates the functionality of [blacklist3r](https://github.com/NotSoSecure/Blacklist3r) in python badsecrets/examples/blacklist3r. 
-
-
-```bash
-python ./badsecrets/examples/blacklist3r.py --url http://vulnerablesite/vulnerablepage.aspx
-python ./badsecrets/examples/blacklist3r.py --viewstate /wEPDwUJODExMDE5NzY5ZGQMKS6jehX5HkJgXxrPh09vumNTKQ== --generator EDD8C9AE
-```
+The standalone `blacklist3r.py` tool has been **deprecated and removed**. The capabilities in the main badsecrets viewstate modules now far surpass what the standalone tool offered, and it had become a maintenance burden. Use the main `badsecrets` CLI (or the `aspnet_viewstate` module directly) for ASP.NET viewstate / machine key analysis.
 
 ### telerik_knownkey.py
 
@@ -324,6 +315,12 @@ bbot -f subdomain-enum -m badsecrets -t evil.corp
 
 ![badsecrets](https://user-images.githubusercontent.com/24899338/227044294-59e0408e-c55f-481a-a494-7ee5dd0a39be.png)
 
+## Docker
+
+```bash
+docker build -t badsecrets .
+docker run -t badsecrets <args>
+```
 
 ### Basic library usage
 

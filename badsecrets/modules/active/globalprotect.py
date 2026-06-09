@@ -62,7 +62,8 @@ class GlobalProtect_DefaultMasterKey(BadsecretsActiveBase):
             url: Target URL (base URL, path will be replaced with /sslmgr)
             custom_keys: List of additional keys to try
         """
-        import httpx
+        from blasthttp import BlastHTTP
+        from urllib.parse import urlencode
 
         results = []
         # Build target URL: replace path with /sslmgr
@@ -85,75 +86,72 @@ class GlobalProtect_DefaultMasterKey(BadsecretsActiveBase):
                 if key not in keys_to_try:
                     keys_to_try.append(key)
 
-        client = self.http_client
-        should_close = False
-        if client is None:
-            client = httpx.AsyncClient(timeout=10, verify=False)
-            should_close = True
+        client = self.http_client if self.http_client is not None else BlastHTTP()
 
-        try:
-            for key_str in keys_to_try:
-                try:
-                    aes_key = self.derive_aes_key(key_str)
-                    cookie = self.build_auth_cookie(aes_key)
-                    data = {
+        for key_str in keys_to_try:
+            try:
+                aes_key = self.derive_aes_key(key_str)
+                cookie = self.build_auth_cookie(aes_key)
+                form_body = urlencode(
+                    {
                         "scep-profile-name": "badsecrets",
                         "user-email": "probe@badsecrets.local",
                         "user": "badsecrets-probe",
                         "host-id": "badsecrets-hostid",
                         "appauthcookie": cookie,
                     }
-                    response = await client.post(
-                        sslmgr_url,
-                        data=data,
-                        headers={
-                            "User-Agent": "PAN-GlobalProtect",
-                            "Content-Type": "application/x-www-form-urlencoded",
-                        },
-                    )
-                    text = response.text
+                ).encode()
+                response = await client.request(
+                    sslmgr_url,
+                    method="POST",
+                    body=form_body,
+                    headers=[
+                        ("User-Agent", "PAN-GlobalProtect"),
+                        ("Content-Type", "application/x-www-form-urlencoded"),
+                    ],
+                    verify_certs=False,
+                    timeout=10,
+                )
+                text = response.text
 
-                    if "Unable to find the configuration" in text:
-                        is_default = key_str == self.DEFAULT_KEY
-                        results.append(
-                            {
-                                "type": "SecretFound",
-                                "product": sslmgr_url,
-                                "secret": f"{'default' if is_default else key_str} master key ({key_str})",
-                                "location": "active_probe",
-                                "details": {
-                                    "key": key_str,
-                                    "is_default_key": is_default,
-                                    "scep_configured": False,
-                                    "response_indicator": "Unable to find the configuration",
-                                },
-                            }
-                        )
-                    elif "Unable to generate client certificate" in text:
-                        is_default = key_str == self.DEFAULT_KEY
-                        results.append(
-                            {
-                                "type": "SecretFound",
-                                "product": sslmgr_url,
-                                "secret": f"{'default' if is_default else key_str} master key ({key_str})",
-                                "location": "active_probe",
-                                "details": {
-                                    "key": key_str,
-                                    "is_default_key": is_default,
-                                    "scep_configured": True,
-                                    "cve": "CVE-2021-3060",
-                                    "response_indicator": "Unable to generate client certificate",
-                                },
-                            }
-                        )
-                    elif "Invalid Cookie" in text:
-                        log.debug(f"Key '{key_str}' rejected by {sslmgr_url}")
-                    else:
-                        log.debug(f"Unexpected response from {sslmgr_url}: {text[:200]}")
-                except Exception as e:
-                    log.debug(f"Error probing {sslmgr_url} with key '{key_str}': {e}")
-        finally:
-            if should_close:
-                await client.aclose()
+                if "Unable to find the configuration" in text:
+                    is_default = key_str == self.DEFAULT_KEY
+                    results.append(
+                        {
+                            "type": "SecretFound",
+                            "product": sslmgr_url,
+                            "secret": f"{'default' if is_default else key_str} master key ({key_str})",
+                            "location": "active_probe",
+                            "details": {
+                                "key": key_str,
+                                "is_default_key": is_default,
+                                "scep_configured": False,
+                                "response_indicator": "Unable to find the configuration",
+                            },
+                        }
+                    )
+                elif "Unable to generate client certificate" in text:
+                    is_default = key_str == self.DEFAULT_KEY
+                    results.append(
+                        {
+                            "type": "SecretFound",
+                            "product": sslmgr_url,
+                            "secret": f"{'default' if is_default else key_str} master key ({key_str})",
+                            "location": "active_probe",
+                            "details": {
+                                "key": key_str,
+                                "is_default_key": is_default,
+                                "scep_configured": True,
+                                "cve": "CVE-2021-3060",
+                                "response_indicator": "Unable to generate client certificate",
+                            },
+                        }
+                    )
+                elif "Invalid Cookie" in text:
+                    log.debug(f"Key '{key_str}' rejected by {sslmgr_url}")
+                else:
+                    log.debug(f"Unexpected response from {sslmgr_url}: {text[:200]}")
+            except Exception as e:
+                log.debug(f"Error probing {sslmgr_url} with key '{key_str}': {e}")
 
         return results

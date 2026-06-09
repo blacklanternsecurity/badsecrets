@@ -2,8 +2,6 @@ import os
 import sys
 import tempfile
 import pytest
-import respx
-import httpx
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(f"{os.path.dirname(SCRIPT_DIR)}/examples")
@@ -137,10 +135,9 @@ def test_custom_secrets_passive_module():
 # --- CLI integration tests ---
 
 
-@respx.mock
-def test_passive_only_skips_active(monkeypatch, capsys):
+def test_passive_only_skips_active(monkeypatch, capsys, bh_mock):
     """--passive-only suppresses active probes."""
-    respx.get("https://vpn.example.com").mock(return_value=httpx.Response(200, text=GLOBALPROTECT_PORTAL_HTML))
+    bh_mock.add_response(url="https://vpn.example.com", text=GLOBALPROTECT_PORTAL_HTML, status_code=200)
 
     monkeypatch.setattr(
         "sys.argv",
@@ -153,11 +150,10 @@ def test_passive_only_skips_active(monkeypatch, capsys):
     assert "Active probes are enabled" not in captured.out
 
 
-@respx.mock
-def test_url_mode_runs_active_by_default(monkeypatch, capsys):
+def test_url_mode_runs_active_by_default(monkeypatch, capsys, bh_mock):
     """--url without --passive-only runs active probes (shows active message)."""
-    respx.get("https://vpn.example.com").mock(return_value=httpx.Response(200, text=GLOBALPROTECT_PORTAL_HTML))
-    respx.post("https://vpn.example.com/sslmgr").mock(return_value=httpx.Response(200, text="Invalid Cookie"))
+    bh_mock.add_response(url="https://vpn.example.com", text=GLOBALPROTECT_PORTAL_HTML, status_code=200)
+    bh_mock.add_response(url="https://vpn.example.com/sslmgr", method="POST", text="Invalid Cookie", status_code=200)
 
     monkeypatch.setattr(
         "sys.argv",
@@ -169,12 +165,14 @@ def test_url_mode_runs_active_by_default(monkeypatch, capsys):
     assert "Active probes are enabled" in captured.out
 
 
-@respx.mock
-def test_url_mode_active_finds_secret(monkeypatch, capsys):
+def test_url_mode_active_finds_secret(monkeypatch, capsys, bh_mock):
     """Active probe finds default key and reports it."""
-    respx.get("https://vpn.example.com").mock(return_value=httpx.Response(200, text=GLOBALPROTECT_PORTAL_HTML))
-    respx.post("https://vpn.example.com/sslmgr").mock(
-        return_value=httpx.Response(200, text="Unable to find the configuration")
+    bh_mock.add_response(url="https://vpn.example.com", text=GLOBALPROTECT_PORTAL_HTML, status_code=200)
+    bh_mock.add_response(
+        url="https://vpn.example.com/sslmgr",
+        method="POST",
+        text="Unable to find the configuration",
+        status_code=200,
     )
 
     monkeypatch.setattr(
@@ -188,12 +186,14 @@ def test_url_mode_active_finds_secret(monkeypatch, capsys):
     assert "p1a2l3o4a5l6t7o8" in captured.out
 
 
-@respx.mock
-def test_url_mode_active_json(monkeypatch, capsys):
+def test_url_mode_active_json(monkeypatch, capsys, bh_mock):
     """Active probe result in JSON mode."""
-    respx.get("https://vpn.example.com").mock(return_value=httpx.Response(200, text=GLOBALPROTECT_PORTAL_HTML))
-    respx.post("https://vpn.example.com/sslmgr").mock(
-        return_value=httpx.Response(200, text="Unable to find the configuration")
+    bh_mock.add_response(url="https://vpn.example.com", text=GLOBALPROTECT_PORTAL_HTML, status_code=200)
+    bh_mock.add_response(
+        url="https://vpn.example.com/sslmgr",
+        method="POST",
+        text="Unable to find the configuration",
+        status_code=200,
     )
 
     monkeypatch.setattr(
@@ -209,12 +209,14 @@ def test_url_mode_active_json(monkeypatch, capsys):
     assert "p1a2l3o4a5l6t7o8" in captured.out
 
 
-@respx.mock
-def test_url_mode_custom_secrets_for_active(monkeypatch, capsys):
+def test_url_mode_custom_secrets_for_active(monkeypatch, capsys, bh_mock):
     """--custom-secrets MODULE:keys works in URL mode for active modules."""
-    respx.get("https://vpn.example.com").mock(return_value=httpx.Response(200, text=GLOBALPROTECT_PORTAL_HTML))
-    respx.post("https://vpn.example.com/sslmgr").mock(
-        return_value=httpx.Response(200, text="Unable to find the configuration")
+    bh_mock.add_response(url="https://vpn.example.com", text=GLOBALPROTECT_PORTAL_HTML, status_code=200)
+    bh_mock.add_response(
+        url="https://vpn.example.com/sslmgr",
+        method="POST",
+        text="Unable to find the configuration",
+        status_code=200,
     )
 
     monkeypatch.setattr(

@@ -5,7 +5,6 @@ import base64
 import hashlib
 import binascii
 import logging
-import httpx
 import yara
 import badsecrets.errors
 from abc import abstractmethod
@@ -90,25 +89,24 @@ class BadsecretsBase:
     def carve_regex(self):
         return None
 
-    def carve(self, body=None, cookies=None, headers=None, httpx_response=None, _yara_body_hit=None, **kwargs):
+    def carve(self, body=None, cookies=None, headers=None, http_response=None, _yara_body_hit=None, **kwargs):
         results = []
 
-        if not body and not cookies and not headers and httpx_response is None:
-            raise badsecrets.errors.CarveException("Either body/headers/cookies or httpx_response required")
+        if not body and not cookies and not headers and http_response is None:
+            raise badsecrets.errors.CarveException("Either body/headers/cookies or http_response required")
 
-        if httpx_response is not None:
+        if http_response is not None:
             if body or cookies or headers:
-                raise badsecrets.errors.CarveException("Body/cookies/headers and httpx_response cannot both be set")
+                raise badsecrets.errors.CarveException("Body/cookies/headers and http_response cannot both be set")
 
-            if isinstance(httpx_response, httpx.Response):
-                if not cookies:
-                    cookies = dict(httpx_response.cookies)
-                if not headers:
-                    headers = httpx_response.headers
-                if not body and hasattr(httpx_response, "text"):
-                    body = httpx_response.text
-            else:
-                raise badsecrets.errors.CarveException("httpx_response must be an httpx.Response object")
+            if not all(hasattr(http_response, a) for a in ("text", "headers", "cookies")):
+                raise badsecrets.errors.CarveException(
+                    "http_response must expose .text, .headers, and .cookies (e.g. blasthttp.Response)"
+                )
+
+            cookies = dict(http_response.cookies) or None
+            headers = http_response.headers
+            body = http_response.text
 
         if cookies and "cookies" in self.carve_locations:
             if not isinstance(cookies, dict):
@@ -118,8 +116,12 @@ class BadsecretsBase:
                 if r:
                     r["type"] = "SecretFound"
                     r["product"] = v
-                    r["location"] = "cookies"
-                    results.append(r)
+                elif self.validate_carve and self.identify(v):
+                    r = {"type": "IdentifyOnly", "product": v, "hashcat": self.get_hashcat_commands(v)}
+                else:
+                    continue
+                r["location"] = "cookies"
+                results.append(r)
 
         if headers and "headers" in self.carve_locations:
             for header_value in headers.values():
@@ -160,7 +162,21 @@ class BadsecretsBase:
 
         # Don't report an IdentifyOnly result if we have a SecretFound result for the same 'product'
         secret_found_results = {d["product"] for d in results if d["type"] == "SecretFound"}
-        return [d for d in results if not (d["type"] == "IdentifyOnly" and d["product"] in secret_found_results)]
+        results = [d for d in results if not (d["type"] == "IdentifyOnly" and d["product"] in secret_found_results)]
+
+        # Within a single module, collapse multiple IdentifyOnly hits into one —
+        # if a module recognizes 4 cookies on a response without cracking any,
+        # the user just needs to know "this product is here" once. Keep the
+        # first as the representative product value.
+        seen_identify_only = False
+        deduped = []
+        for d in results:
+            if d["type"] == "IdentifyOnly":
+                if seen_identify_only:
+                    continue
+                seen_identify_only = True
+            deduped.append(d)
+        return deduped
 
     def _carve_body(self, body, cookies, headers, **kwargs):
         """Extract secrets from HTML body text. Override in subclasses for custom body carving."""
@@ -376,19 +392,46 @@ def hashcat_all_modules(product, detecting_module=None, *args):
 
 
 def check_all_modules(*args, **kwargs):
+    """Run every passive module against the supplied product(s).
+
+    Returns a list of result dicts (each tagged ``type=SecretFound`` or
+    ``type=IdentifyOnly``), or None if nothing matched. Mirrors the shape
+    of ``carve_all_modules``: SecretFound results come from
+    ``check_secret``; IdentifyOnly results come from a module's
+    ``identify_regex`` matching the value but no known secret being found.
+    """
+    results = []
     for m in _passive_subclasses():
         x = m(custom_resource=kwargs.get("custom_resource"))
         r = x.check_secret(*args[0 : x.check_secret_args])
         if r:
+            r["type"] = "SecretFound"
             r["detecting_module"] = m.__name__
             r["description"] = x.get_description()
-
-            # allow the module to provide an amended product, if needed
             if "product" not in r:
                 r["product"] = args[0]
             r["location"] = "manual"
-            return r
-    return None
+            results.append(r)
+        elif x.validate_carve and x.identify(args[0]):
+            # Hashcat is intentionally left unset; callers (e.g. the CLI) populate
+            # it via hashcat_all_modules() so the format matches what
+            # print_hashcat_results expects.
+            results.append(
+                {
+                    "type": "IdentifyOnly",
+                    "product": args[0],
+                    "hashcat": None,
+                    "detecting_module": m.__name__,
+                    "description": x.get_description(),
+                    "location": "manual",
+                }
+            )
+
+    # If ANY module produced a SecretFound, suppress ALL IdentifyOnly results —
+    # an actionable cracked secret outranks every recognition-only candidate.
+    if any(r["type"] == "SecretFound" for r in results):
+        results = [r for r in results if r["type"] == "SecretFound"]
+    return results or None
 
 
 def carve_all_modules(**kwargs):
@@ -396,9 +439,9 @@ def carve_all_modules(**kwargs):
 
     # Determine body text for YARA pre-scanning
     scan_body = kwargs.get("body")
-    httpx_resp = kwargs.get("httpx_response")
-    if not scan_body and httpx_resp is not None and isinstance(httpx_resp, httpx.Response):
-        scan_body = getattr(httpx_resp, "text", None)
+    http_resp = kwargs.get("http_response")
+    if not scan_body and http_resp is not None:
+        scan_body = getattr(http_resp, "text", None)
 
     # Run YARA pre-filter on body text (single pass, all rules)
     yara_body_matches = set()
@@ -415,37 +458,43 @@ def carve_all_modules(**kwargs):
             for r in r_list:
                 r["detecting_module"] = m.__name__
                 results.append(r)
+
+    # If ANY module produced a SecretFound, suppress ALL IdentifyOnly results.
+    if any(r["type"] == "SecretFound" for r in results):
+        results = [r for r in results if r["type"] == "SecretFound"]
     if results:
         return results
 
 
-def build_prefilter_text(httpx_response=None, body=None):
+def build_prefilter_text(http_response=None, body=None):
     """Build text for YARA prefilter scanning, including headers + body.
 
     Active module prefilters may need to match on response headers (e.g. Set-Cookie)
     in addition to body content. This function constructs the combined text.
     """
     parts = []
-    if httpx_response is not None:
-        for name, value in httpx_response.headers.items():
+    if http_response is not None:
+        for name, value in http_response.headers.items():
             parts.append(f"{name}: {value}")
         parts.append("")
     text = body
-    if not text and httpx_response is not None:
-        text = getattr(httpx_response, "text", None)
+    if not text and http_response is not None:
+        text = getattr(http_response, "text", None)
     if text:
         parts.append(text)
     return "\n".join(parts) if parts else ""
 
 
-async def probe_all_modules(httpx_response=None, url=None, body=None, active_keys_map=None, **kwargs):
+async def probe_all_modules(http_response=None, url=None, body=None, active_keys_map=None, http_client=None, **kwargs):
     """Run active probes against modules whose YARA prefilter matches the response.
 
     Args:
-        httpx_response: The passive HTTP response to prefilter against
-        url: Target URL for active probes (extracted from httpx_response if not provided)
-        body: Response body text (extracted from httpx_response if not provided)
+        http_response: The passive HTTP response to prefilter against
+        url: Target URL for active probes (extracted from http_response if not provided)
+        body: Response body text (extracted from http_response if not provided)
         active_keys_map: Dict of {module_class_name: [key1, key2, ...]} for per-module custom keys
+        http_client: Optional shared HTTP client (e.g. blasthttp.BlastHTTP, blasthttp.mock.BlasthttpMock).
+            If provided, each active module reuses it; otherwise modules create their own.
     Returns:
         List of result dicts from active probes, or empty list
     """
@@ -456,13 +505,13 @@ async def probe_all_modules(httpx_response=None, url=None, body=None, active_key
     # Build scan text including headers + body for prefilter matching
     scan_text = body
     if not scan_text:
-        scan_text = build_prefilter_text(httpx_response=httpx_response, body=body)
+        scan_text = build_prefilter_text(http_response=http_response, body=body)
     if not scan_text:
         return results
 
     # Extract URL from response if not provided
-    if not url and httpx_response is not None:
-        url = str(httpx_response.url)
+    if not url and http_response is not None:
+        url = str(http_response.url)
 
     # Run YARA prefilter
     prefilter_matches = yara_prefilter_scan(scan_text)
@@ -473,7 +522,7 @@ async def probe_all_modules(httpx_response=None, url=None, body=None, active_key
     for cls in _active_subclasses():
         if cls.__name__ in prefilter_matches:
             custom_keys = active_keys_map.get(cls.__name__, [])
-            module = cls()
+            module = cls(http_client=http_client)
             try:
                 probe_results = await module.probe(url, custom_keys=custom_keys, **kwargs)
             except Exception as e:

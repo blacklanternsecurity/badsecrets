@@ -449,27 +449,30 @@ def test_normal_viewstate_carve_still_works():
 
 
 def test_carve_no_args():
-    """carve() with no args should raise CarveException (lines 68-70)."""
+    """carve() with no args should raise CarveException."""
     x = ASPNETViewstate()
-    with pytest.raises(CarveException, match="Either body/headers/cookies or httpx_response required"):
+    with pytest.raises(CarveException, match="Either body/headers/cookies or http_response required"):
         x.carve()
 
 
-def test_carve_httpx_response_with_body():
-    """carve() with both httpx_response and body should raise CarveException (lines 74-76)."""
-    import httpx
+def test_carve_http_response_with_body():
+    """carve() with both http_response and body should raise CarveException."""
+
+    class FakeResponse:
+        text = "<html></html>"
+        headers = {}
+        cookies = {}
 
     x = ASPNETViewstate()
-    response = httpx.Response(200, text="<html></html>")
     with pytest.raises(CarveException, match="cannot both be set"):
-        x.carve(httpx_response=response, body="<html></html>")
+        x.carve(http_response=FakeResponse(), body="<html></html>")
 
 
-def test_carve_httpx_response_invalid_type():
-    """carve() with non-httpx.Response should raise CarveException (lines 88-90)."""
+def test_carve_http_response_invalid_type():
+    """carve() with object missing required attrs should raise CarveException."""
     x = ASPNETViewstate()
-    with pytest.raises(CarveException, match="must be an httpx.Response"):
-        x.carve(httpx_response="not a response")
+    with pytest.raises(CarveException, match="must expose .text, .headers, and .cookies"):
+        x.carve(http_response="not a response")
 
 
 def test_carve_cookies_not_dict():
@@ -616,19 +619,20 @@ def test_carve_to_check_secret_direct_returns_none():
     assert result is None
 
 
-def test_carve_mock_httpx_response():
-    """carve() with a mock httpx.Response extracts cookies, headers, body (lines 81-86)."""
-    import httpx
+def test_carve_mock_http_response():
+    """carve() with a mock http response extracts cookies, headers, body."""
 
-    x = ASPNETViewstate()
-    html_body = """
+    class FakeResponse:
+        url = "http://10.1.1.43/default2.aspx"
+        text = """
     <input type="hidden" name="__VIEWSTATE" value="/wEPDwUJODc0MjgwMjkwZGTCdzCrBtl0AFYdKsWX1bQ8DcMilw==" />
     <input type="hidden" name="__VIEWSTATEGENERATOR" value="9BD98A7D" />
     """
-    # Construct a synthetic httpx.Response in-memory (no network, no server)
-    mock_request = httpx.Request("GET", "http://10.1.1.43/default2.aspx")
-    mock_response = httpx.Response(200, text=html_body, request=mock_request)
-    r_list = x.carve(httpx_response=mock_response, url="http://10.1.1.43/default2.aspx")
+        headers = {}
+        cookies = {}
+
+    x = ASPNETViewstate()
+    r_list = x.carve(http_response=FakeResponse(), url="http://10.1.1.43/default2.aspx")
     assert r_list
     found_secret = any(r["type"] == "SecretFound" for r in r_list)
     assert found_secret

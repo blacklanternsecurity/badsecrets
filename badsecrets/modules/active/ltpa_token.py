@@ -190,7 +190,7 @@ class LTPA_Token_Key(BadsecretsActiveBase):
         2. For each key, forge LtpaToken2, send as cookie
         3. If response is 200 (not redirect/401), the key was accepted
         """
-        import httpx
+        from blasthttp import BlastHTTP
 
         results = []
         base = re.match(r"(https?://[^/]+)", url)
@@ -201,61 +201,55 @@ class LTPA_Token_Key(BadsecretsActiveBase):
         if not keysets:
             return results
 
-        client = self.http_client
-        should_close = False
-        if client is None:
-            client = httpx.AsyncClient(timeout=10, verify=False)
-            should_close = True
+        client = self.http_client if self.http_client is not None else BlastHTTP()
 
+        # Step 1: Confirm target requires authentication
         try:
-            # Step 1: Confirm target requires authentication
-            try:
-                baseline_resp = await client.get(url, follow_redirects=False)
-                if baseline_resp.status_code == 200:
-                    log.debug(f"Target {url} returned 200 without auth — skipping LTPA probe")
-                    return results
-            except Exception as e:
-                log.debug(f"Error checking baseline for {url}: {e}")
+            baseline_resp = await client.request(
+                url, method="GET", follow_redirects=False, verify_certs=False, timeout=10
+            )
+            if baseline_resp.status_code == 200:
+                log.debug(f"Target {url} returned 200 without auth — skipping LTPA probe")
                 return results
+        except Exception as e:
+            log.debug(f"Error checking baseline for {url}: {e}")
+            return results
 
-            # Step 2: Try each keyset
-            for keyset in keysets:
-                try:
-                    token = forge_ltpa2_token(
-                        keyset["aes_key"],
-                        keyset["rsa_key"],
-                        keyset["realm"],
+        # Step 2: Try each keyset
+        for keyset in keysets:
+            try:
+                token = forge_ltpa2_token(
+                    keyset["aes_key"],
+                    keyset["rsa_key"],
+                    keyset["realm"],
+                )
+                response = await client.request(
+                    url,
+                    method="GET",
+                    headers=[("Cookie", f"LtpaToken2={token}")],
+                    follow_redirects=False,
+                    verify_certs=False,
+                    timeout=10,
+                )
+
+                if response.status_code == 200:
+                    log.debug(f"Forged LtpaToken2 accepted by {url}: LtpaToken2={token}")
+                    results.append(
+                        {
+                            "type": "SecretFound",
+                            "product": url,
+                            "secret": f"LtpaToken2 key {keyset['key_id']} (see ltpa_active_keys.json)",
+                            "location": "active_probe",
+                            "details": {
+                                "key_id": keyset["key_id"],
+                                "key_source": keyset["source"],
+                                "realm": keyset["realm"],
+                            },
+                        }
                     )
-                    response = await client.get(
-                        url,
-                        headers={"Cookie": f"LtpaToken2={token}"},
-                        follow_redirects=False,
-                    )
-
-                    if response.status_code == 200:
-                        log.debug(f"Forged LtpaToken2 accepted by {url}: LtpaToken2={token}")
-                        results.append(
-                            {
-                                "type": "SecretFound",
-                                "product": url,
-                                "secret": f"LtpaToken2 key {keyset['key_id']} (see ltpa_active_keys.json)",
-                                "location": "active_probe",
-                                "details": {
-                                    "key_id": keyset["key_id"],
-                                    "key_source": keyset["source"],
-                                    "realm": keyset["realm"],
-                                },
-                            }
-                        )
-                    else:
-                        log.debug(
-                            f"LTPA key from {keyset['source']} rejected by {url} (status {response.status_code})"
-                        )
-                except Exception as e:
-                    log.debug(f"Error probing {url} with LTPA key from {keyset['source']}: {e}")
-
-        finally:
-            if should_close:
-                await client.aclose()
+                else:
+                    log.debug(f"LTPA key from {keyset['source']} rejected by {url} (status {response.status_code})")
+            except Exception as e:
+                log.debug(f"Error probing {url} with LTPA key from {keyset['source']}: {e}")
 
         return results

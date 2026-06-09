@@ -1,8 +1,26 @@
 import asyncio
-import httpx
-import respx
+from blasthttp.mock import BlasthttpMock, MockResponse
 from badsecrets.base import yara_prefilter_scan, probe_all_modules
 from badsecrets.modules.active.ltpa_token import LTPA_Token_Key, forge_ltpa2_token
+
+
+class FakeResponse:
+    """Duck-typed HTTP response for probe_all_modules tests."""
+
+    def __init__(self, text="", headers=None, cookies=None, url=""):
+        self.text = text
+        self.headers = headers if headers is not None else {}
+        self.cookies = cookies if cookies is not None else {}
+        self.url = url
+
+
+def _cookie_value(req):
+    """Case-insensitive lookup of the Cookie header on a MockRequest."""
+    for k, v in req.headers.items():
+        if k.lower() == "cookie":
+            return v
+    return ""
+
 
 WEBSPHERE_LOGIN_HTML = """
 <html>
@@ -45,29 +63,19 @@ def test_prefilter_miss():
     assert "LTPA_Token_Key" not in result
 
 
-@respx.mock
 def test_probe_key_found():
     """Baseline 302, forged token 200 -> SecretFound."""
-    call_count = 0
 
     def side_effect(request):
-        nonlocal call_count
-        call_count += 1
-        cookie_header = request.headers.get("cookie", "")
+        cookie_header = _cookie_value(request)
         if "LtpaToken2=" in cookie_header:
-            # Forged token accepted
-            return httpx.Response(200, text="<html>Admin Console</html>")
-        else:
-            # No token / baseline -> redirect to login
-            return httpx.Response(
-                302,
-                text="",
-                headers={"Location": "/ibm/console/login"},
-            )
+            return MockResponse(text="<html>Admin Console</html>", status_code=200)
+        return MockResponse(text="", status_code=302, headers={"Location": "/ibm/console/login"})
 
-    respx.get("https://websphere.example.com/ibm/console").mock(side_effect=side_effect)
+    bh = BlasthttpMock()
+    bh.add_callback(side_effect, url="https://websphere.example.com/ibm/console")
 
-    gp = LTPA_Token_Key()
+    gp = LTPA_Token_Key(http_client=bh)
     results = asyncio.run(gp.probe("https://websphere.example.com/ibm/console"))
     assert len(results) >= 1
     assert results[0]["type"] == "SecretFound"
@@ -75,40 +83,40 @@ def test_probe_key_found():
     assert "ltpa_active_keys.json" in results[0]["secret"]
 
 
-@respx.mock
 def test_probe_key_rejected():
     """All keys rejected (always 302) -> no results."""
 
     def always_redirect(request):
-        return httpx.Response(
-            302,
-            text="",
-            headers={"Location": "/ibm/console/login"},
-        )
+        return MockResponse(text="", status_code=302, headers={"Location": "/ibm/console/login"})
 
-    respx.get("https://websphere.example.com/ibm/console").mock(side_effect=always_redirect)
+    bh = BlasthttpMock()
+    bh.add_callback(always_redirect, url="https://websphere.example.com/ibm/console")
 
-    gp = LTPA_Token_Key()
+    gp = LTPA_Token_Key(http_client=bh)
     results = asyncio.run(gp.probe("https://websphere.example.com/ibm/console"))
     assert len(results) == 0
 
 
-@respx.mock
 def test_probe_not_protected():
     """Baseline 200 (no auth required) -> no probes sent."""
-    respx.get("https://example.com/app").mock(return_value=httpx.Response(200, text="<html>Public page</html>"))
+    bh = BlasthttpMock()
+    bh.add_response(url="https://example.com/app", text="<html>Public page</html>", status_code=200)
 
-    gp = LTPA_Token_Key()
+    gp = LTPA_Token_Key(http_client=bh)
     results = asyncio.run(gp.probe("https://example.com/app"))
     assert len(results) == 0
 
 
-@respx.mock
 def test_probe_connection_error():
     """Connection error -> no crash, no results."""
-    respx.get("https://websphere.example.com/ibm/console").mock(side_effect=httpx.ConnectError("Connection refused"))
 
-    gp = LTPA_Token_Key()
+    def _err(req):
+        raise RuntimeError("Connection refused")
+
+    bh = BlasthttpMock()
+    bh.add_callback(_err, url="https://websphere.example.com/ibm/console")
+
+    gp = LTPA_Token_Key(http_client=bh)
     results = asyncio.run(gp.probe("https://websphere.example.com/ibm/console"))
     assert len(results) == 0
 
@@ -120,37 +128,29 @@ def test_probe_invalid_url():
     assert results == []
 
 
-@respx.mock
 def test_probe_all_modules_integration():
     """Full flow: response with WebSphere headers -> prefilter -> probe -> result."""
-    call_count = 0
 
     def side_effect(request):
-        nonlocal call_count
-        call_count += 1
-        cookie_header = request.headers.get("cookie", "")
+        cookie_header = _cookie_value(request)
         if "LtpaToken2=" in cookie_header:
-            return httpx.Response(200, text="<html>Admin Console</html>")
-        else:
-            return httpx.Response(
-                302,
-                text="",
-                headers={"Location": "/ibm/console/login"},
-            )
+            return MockResponse(text="<html>Admin Console</html>", status_code=200)
+        return MockResponse(text="", status_code=302, headers={"Location": "/ibm/console/login"})
 
-    respx.get("https://websphere.example.com/ibm/console").mock(side_effect=side_effect)
+    bh = BlasthttpMock()
+    bh.add_callback(side_effect, url="https://websphere.example.com/ibm/console")
 
-    mock_response = httpx.Response(
-        302,
+    mock_response = FakeResponse(
         text=WEBSPHERE_LOGIN_HTML,
         headers={"Set-Cookie": "LtpaToken2=expired; Path=/"},
-        request=httpx.Request("GET", "https://websphere.example.com/ibm/console"),
+        url="https://websphere.example.com/ibm/console",
     )
 
     results = asyncio.run(
         probe_all_modules(
-            httpx_response=mock_response,
+            http_response=mock_response,
             url="https://websphere.example.com/ibm/console",
+            http_client=bh,
         )
     )
     assert len(results) >= 1
@@ -160,18 +160,13 @@ def test_probe_all_modules_integration():
     assert results[0]["description"]["severity"] == "HIGH"
 
 
-@respx.mock
 def test_probe_all_modules_no_prefilter_match():
     """Unrelated response -> no prefilter match -> no probes fired."""
-    mock_response = httpx.Response(
-        200,
-        text=UNRELATED_HTML,
-        request=httpx.Request("GET", "https://example.com"),
-    )
+    mock_response = FakeResponse(text=UNRELATED_HTML, url="https://example.com")
 
     results = asyncio.run(
         probe_all_modules(
-            httpx_response=mock_response,
+            http_response=mock_response,
             url="https://example.com",
         )
     )
@@ -301,7 +296,6 @@ def test_derive_keyset_bad_private_key():
     assert result is None
 
 
-@respx.mock
 def test_probe_no_active_keys():
     """Probe returns empty when no active keys are available."""
     import unittest.mock as mock
@@ -312,21 +306,18 @@ def test_probe_no_active_keys():
     assert len(results) == 0
 
 
-@respx.mock
 def test_probe_request_exception():
     """Exception during individual key probe doesn't crash."""
-    call_count = 0
 
     def side_effect(request):
-        nonlocal call_count
-        call_count += 1
-        cookie_header = request.headers.get("cookie", "")
+        cookie_header = _cookie_value(request)
         if "LtpaToken2=" in cookie_header:
-            raise httpx.ReadTimeout("timeout")
-        return httpx.Response(302, text="", headers={"Location": "/login"})
+            raise RuntimeError("timeout")
+        return MockResponse(text="", status_code=302, headers={"Location": "/login"})
 
-    respx.get("https://websphere.example.com/ibm/console").mock(side_effect=side_effect)
+    bh = BlasthttpMock()
+    bh.add_callback(side_effect, url="https://websphere.example.com/ibm/console")
 
-    gp = LTPA_Token_Key()
+    gp = LTPA_Token_Key(http_client=bh)
     results = asyncio.run(gp.probe("https://websphere.example.com/ibm/console"))
     assert len(results) == 0
