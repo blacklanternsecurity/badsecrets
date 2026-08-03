@@ -190,21 +190,25 @@ class BadsecretsBase:
         """Extract secrets from HTML body text. Override in subclasses for custom body carving."""
         results = []
         if self.carve_regex():
-            s = re.search(self.carve_regex(), body)
-            if s:
-                if not self.validate_carve or self.identify(s.groups()[0]):
-                    r = self.carve_to_check_secret(
-                        s, url=kwargs.get("url"), body=body, cookies=cookies, headers=headers
-                    )
-                    if r:
-                        r["type"] = "SecretFound"
-                    else:
-                        r = {"type": "IdentifyOnly"}
-                        r["hashcat"] = self._safe_hashcat(s.groups()[0])
-                    if "product" not in r:
-                        r["product"] = self.get_product_from_carve(s)
-                    r["location"] = "body"
-                    results.append(r)
+            # Walk every match rather than only the first. A page can carry several fields the
+            # carve regex matches -- an empty or decoy __VIEWSTATE alongside a real payload --
+            # and stopping at match #1 lets whichever appears first in the markup hide the rest.
+            for s in re.finditer(self.carve_regex(), body):
+                if self.validate_carve and not self.identify(s.groups()[0]):
+                    continue
+                r = self.carve_to_check_secret(s, url=kwargs.get("url"), body=body, cookies=cookies, headers=headers)
+                if r:
+                    r["type"] = "SecretFound"
+                else:
+                    r = {"type": "IdentifyOnly"}
+                    r["hashcat"] = self._safe_hashcat(s.groups()[0])
+                if "product" not in r:
+                    r["product"] = self.get_product_from_carve(s)
+                r["location"] = "body"
+                results.append(r)
+                # First candidate that identifies wins, keeping the one-result-per-body
+                # contract and avoiding repeat check_secret() work on expensive modules.
+                break
         return results
 
     @classmethod
