@@ -44,6 +44,7 @@ Passive modules analyze cryptographic products (cookies, tokens, signed URLs, et
 | Yii2_SignedCookies | Checks Yii2 framework signed cookies for known cookie validation keys |
 | Shiro_RememberMe | Checks Apache Shiro `rememberMe` cookies for known AES encryption keys |
 | LTPA_Token | Checks IBM WebSphere `LtpaToken` and `LtpaToken2` cookies for known LTPA encryption keys |
+| NextAuth | Checks NextAuth.js / Auth.js JWE session cookies for a known or weak `NEXTAUTH_SECRET` / `AUTH_SECRET` |
 
 ### Active Modules
 
@@ -350,6 +351,7 @@ Rack2_SignedCookies = modules_loaded["rack2_signedcookies"]
 Yii2_SignedCookies = modules_loaded["yii2_signedcookies"]
 Shiro_RememberMe = modules_loaded["shiro_rememberme"]
 LTPA_Token = modules_loaded["ltpa_token"]
+NextAuth = modules_loaded["nextauth"]
 
 
 x = ASPNET_Viewstate()
@@ -513,6 +515,17 @@ r = x.check_secret(
     "Ol6StBNpmLFMvRAkuqwvkxZznLJANOw320SDogOvZvUTvNUFKQ9qkQNsGa/soD2wgOI7+UnzZxBXZJY7Zd8Knge3cOXma/m+8tr96eEhXBP5XcatOey5e8BOQEFNBHK/"
     "QvaEY/rpJfyef4dX+d+coJRdQvF3IRSnqRPubsXgbTx/R148gE++CkIGfuBMVPkEWJkYHpsYRJj7xiYWNbu1jGrwz8GlonX4SdC5JBsjmezWYeAtsoKWeDXX1rhyAyBBgE27nAQEJgi4VEi3be"
     "M1eMo+foxaDHxsCeAabrSGOfOf/yLFMEZr3KAZ7QvyhErT"
+)
+if r:
+    print(r)
+else:
+    print("KEY NOT FOUND :(")
+
+x = NextAuth()
+print(f"###{str(x.__class__.__name__)}###")
+r = x.check_secret(
+    "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..eV7_ge7JJ9vqaYxW.97XOYXr0ANwWherKQ3wIwyLNBN7-A8O40pNSwihk4BPIDWUn3KoXzX5I9fV9rhmlkaILza1p3jVKhzcG"
+    "ISkE3nmx_gaxnXv6UlNfg2vMeA8A_jeQb9x9MgK1yBuIG_V-cw.5b2T1NpI1p4rku2w9mXZ-Q"
 )
 if r:
     print(r)

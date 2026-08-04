@@ -4,9 +4,11 @@ import sys
 import hmac
 import struct
 import hashlib
+import base64
 import argparse
 import binascii
 from enum import Enum
+from Crypto.Cipher import AES
 from urllib.parse import urlparse
 from colorama import Fore, Style, init
 from badsecrets.errors import BadsecretsException
@@ -818,3 +820,70 @@ class Viewstate_Helpers:
         else:
             _, apppaths = self._extract_path_and_apppaths(self.url)
         return [dotnet_string_hashcode(apppath, self.db) for apppath in apppaths]
+
+
+def b64url_decode(data):
+    """URL-safe base64 decode that tolerates the stripped padding JOSE uses."""
+    if isinstance(data, str):
+        data = data.encode("ascii")
+    pad = -len(data) % 4
+    return base64.urlsafe_b64decode(data + (b"=" * pad))
+
+
+def hkdf_sha256(ikm, salt, info, length):
+    """RFC 5869 HKDF-Extract-and-Expand with SHA-256.
+
+    Kept product-agnostic: callers supply salt/info, because the derivation is the part each
+    product implements differently and cannot be recovered from a `dir` JWE.
+    """
+    if isinstance(ikm, str):
+        ikm = ikm.encode()
+    if isinstance(salt, str):
+        salt = salt.encode()
+    if isinstance(info, str):
+        info = info.encode()
+    prk = hmac.new(salt, ikm, hashlib.sha256).digest()
+    okm = b""
+    block = b""
+    counter = 1
+    while len(okm) < length:
+        block = hmac.new(prk, block + info + bytes([counter]), hashlib.sha256).digest()
+        okm += block
+        counter += 1
+    return okm[:length]
+
+
+def parse_jwe_compact(token):
+    """Split a compact-serialization JWE into its 5 segments, or return None if it isn't one."""
+    parts = token.split(".")
+    if len(parts) != 5:
+        return None
+    return tuple(parts)
+
+
+def jwe_decrypt(protected_b64, enc, cek, iv, ciphertext, tag):
+    """Decrypt one JWE given an already-derived content-encryption key.
+
+    Returns the plaintext bytes, or None if authentication fails. Supports the two `enc` values
+    NextAuth/Auth.js use (A256GCM and A256CBC-HS512). The AAD is the ASCII of the base64url
+    protected header, per RFC 7516.
+    """
+    aad = protected_b64.encode("ascii")
+    try:
+        if enc == "A256GCM":
+            cipher = AES.new(cek, AES.MODE_GCM, nonce=iv)
+            cipher.update(aad)
+            return cipher.decrypt_and_verify(ciphertext, tag)
+        if enc == "A256CBC-HS512":
+            if len(cek) != 64:
+                return None
+            mac_key, enc_key = cek[:32], cek[32:]
+            al = struct.pack(">Q", len(aad) * 8)
+            expected = hmac.new(mac_key, aad + iv + ciphertext + al, hashlib.sha512).digest()[:32]
+            if not hmac.compare_digest(expected, tag):
+                return None
+            cipher = AES.new(enc_key, AES.MODE_CBC, iv)
+            return unpad(cipher.decrypt(ciphertext))
+    except ValueError:
+        return None
+    return None
