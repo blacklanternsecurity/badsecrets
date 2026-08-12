@@ -792,3 +792,35 @@ def test_dotnet45_viewstate_userkey_carve():
     assert r_list
     found_secret = any(r["type"] == "SecretFound" for r in r_list)
     assert found_secret
+
+
+def test_resolve_args_generator_case_insensitive():
+    """A lowercase generator is still a generator, not a ViewStateUserKey."""
+    x = ASPNETViewstate()
+    for supplied in ("9BD98A7D", "9bd98a7d", "9Bd98A7d"):
+        generator, url, userkey = x.resolve_args((supplied,))
+        assert generator == "9BD98A7D", f"{supplied} resolved to generator {generator}"
+        assert url is None
+        assert userkey is None
+
+
+def test_lowercase_generator_still_cracks():
+    """Same viewstate must crack whether the generator is upper or lower case."""
+    x = ASPNETViewstate()
+    viewstate = "/wEPDwUJODc0MjgwMjkwZGTCdzCrBtl0AFYdKsWX1bQ8DcMilw=="
+    url = "http://10.1.1.43/default2.aspx"
+    for supplied in ("9BD98A7D", "9bd98a7d"):
+        found_key = x.check_secret(viewstate, supplied, url)
+        assert found_key, f"failed to crack with generator {supplied}"
+        assert test_vkey in found_key["secret"]
+
+
+def test_check_all_modules_passes_url_and_userkey_together():
+    """check_secret_args must be wide enough to carry viewstate+generator+url+userkey."""
+    from badsecrets.base import check_all_modules
+
+    results = check_all_modules(vsk_viewstate, vsk_generator, vsk_url, vsk_session_id)
+    assert results
+    found = [r for r in results if r["type"] == "SecretFound" and r["detecting_module"] == "ASPNET_Viewstate"]
+    assert len(found) == 1
+    assert f"ViewStateUserKey: {vsk_session_id}" in found[0]["product"]
