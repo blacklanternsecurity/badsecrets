@@ -162,6 +162,26 @@ badsecrets --url http://example.com/contains_bad_secret.html
 
 You can also set a custom user-agent with `--user-agent "user-agent string"` or a proxy with `--proxy http://127.0.0.1` in this mode.
 
+* ASP.NET Viewstate: supply the URL
+
+The `ASPNET_Viewstate` module accepts up to four positional arguments — the viewstate, the `__VIEWSTATEGENERATOR` value, the page URL, and a `ViewStateUserKey`. Order does not matter; each is identified by its shape (8 hex characters is the generator, anything starting with `http://`/`https://` is the URL, anything else is the user key).
+
+```bash
+badsecrets <viewstate> <generator> <url> [viewstateuserkey]
+```
+
+**The URL is not optional for every viewstate.** .NET 4.5 (`DOTNET45`) binds the validation key to the page path through the SP800-108 KDF purpose strings, and `DOTNET40` with `IsolateApps` enabled mixes in an app-path hash. Both are computed from the URL. If you supply only the viewstate and generator, badsecrets has no path to derive from and the HMAC can never validate — you will get `No secrets found :(` even when the machine key is in the list.
+
+```bash
+# Reports nothing on this DOTNET45 viewstate - no path to derive the key from
+badsecrets 3RP87RgckNbfc7fNdaHzH9YLqbIhzpA64gFfWB49lhzHpuHFAAO7C7Dl2zh0dWUqobBb4hwiZJ1a2bhP77aQiwqvVqg= 9BD98A7D
+
+# Same viewstate, with the URL - key is found
+badsecrets 3RP87RgckNbfc7fNdaHzH9YLqbIhzpA64gFfWB49lhzHpuHFAAO7C7Dl2zh0dWUqobBb4hwiZJ1a2bhP77aQiwqvVqg= 9BD98A7D http://10.1.1.43/default2.aspx
+```
+
+This is the usual reason `--url` mode succeeds where passing the same viewstate and generator by hand does not: URL mode always knows the page path. URL mode additionally tries several `ViewStateUserKey` candidates automatically (the empty string, `mono`, any `__VIEWSTATE_KEY` field, and each cookie value on the response), which the manual path does not — so pass the user key explicitly if you know it.
+
 Example output:
 
 ```bash
