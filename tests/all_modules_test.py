@@ -1,5 +1,11 @@
 from badsecrets.base import check_all_modules, carve_all_modules, BadsecretsBase, yara_carve_scan, _all_subclasses
 import badsecrets.base
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _trim_wordlists(trim_wordlist):
+    trim_wordlist("top_250000_passwords.txt")
 
 
 class FakeResponse:

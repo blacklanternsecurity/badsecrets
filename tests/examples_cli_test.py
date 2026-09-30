@@ -11,6 +11,12 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(f"{os.path.dirname(SCRIPT_DIR)}/examples")
 from badsecrets.examples import cli
 
+
+@pytest.fixture(autouse=True)
+def _trim_wordlists(trim_wordlist):
+    trim_wordlist("top_250000_passwords.txt")
+
+
 base_vulnerable_page = """
 <html>
 <head>

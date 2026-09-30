@@ -12,6 +12,12 @@ from badsecrets.base import (
     _compile_yara_prefilter_rules,
 )
 import badsecrets.base as base_module
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _trim_wordlists(trim_wordlist):
+    trim_wordlist("top_250000_passwords.txt")
 
 
 def test_active_subclasses_returns_only_active():

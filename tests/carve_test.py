@@ -4,6 +4,11 @@ import badsecrets.errors
 from badsecrets import modules_loaded
 
 
+@pytest.fixture(autouse=True)
+def _trim_wordlists(trim_wordlist):
+    trim_wordlist("top_250000_passwords.txt")
+
+
 class FakeResponse:
     """Duck-typed HTTP response for carve(http_response=...) tests."""
 

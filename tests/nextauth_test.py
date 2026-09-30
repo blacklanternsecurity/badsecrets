@@ -2,9 +2,16 @@ import json
 import base64
 
 from badsecrets import modules_loaded
+import pytest
 from badsecrets.helpers import b64url_decode, hkdf_sha256, parse_jwe_compact, jwe_decrypt
 
 NextAuth = modules_loaded["nextauth"]
+
+
+@pytest.fixture(autouse=True)
+def _trim_wordlists(trim_wordlist):
+    trim_wordlist("top_250000_passwords.txt", "secret")
+
 
 # Authoritative vectors generated with Node.js stdlib crypto (crypto.hkdfSync + createCipheriv) —
 # an implementation entirely independent of this library's pycryptodome/hmac code. A successful

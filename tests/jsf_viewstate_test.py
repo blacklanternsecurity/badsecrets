@@ -1,6 +1,13 @@
 from badsecrets import modules_loaded
+import pytest
 
 Jsf_viewstate = modules_loaded["jsf_viewstate"]
+
+
+@pytest.fixture(autouse=True)
+def _trim_wordlists(trim_wordlist):
+    trim_wordlist("top_250000_passwords.txt")
+
 
 # Mojarra 2.0.3 (password = "PASSWORD")
 
