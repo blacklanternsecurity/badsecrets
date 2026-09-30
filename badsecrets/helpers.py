@@ -1,6 +1,5 @@
 import json
 import re
-import sys
 import hmac
 import struct
 import hashlib
@@ -148,11 +147,12 @@ class Csharp_pbkdf1:
         return result
 
 
+# Signed value of each byte, as Java's (int) cast of a signed byte produces.
+_SIGNED_BYTE = tuple(range(128)) + tuple(range(-128, 0))
+
+
 def twos_complement(unsigned):
-    bs = bin(unsigned).replace("0b", "")
-    val = int(bs, 2)
-    b = val.to_bytes(1, byteorder=sys.byteorder, signed=False)
-    return int.from_bytes(b, byteorder=sys.byteorder, signed=True)
+    return _SIGNED_BYTE[unsigned]
 
 
 class Java_sha1prng:
@@ -172,13 +172,11 @@ class Java_sha1prng:
 
     def updateState(self, output):
         last = 1
-        outputBytesArray = bytearray(output)
         newState = bytearray()
 
-        for c, n in zip(self.state, outputBytesArray, strict=False):
-            v = twos_complement(c) + twos_complement(n) + last
-            finalv = v & 255
-            newState.append(finalv)
+        for c, n in zip(self.state, output, strict=False):
+            v = _SIGNED_BYTE[c] + _SIGNED_BYTE[n] + last
+            newState.append(v & 255)
             last = v >> 8
         self.state = newState
 
