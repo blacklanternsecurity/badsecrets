@@ -17,6 +17,15 @@ from badsecrets.base import BadsecretsBase
 from badsecrets.examples import cli, symfony_knownkey, telerik_knownkey
 
 _RESOURCE_DIR = Path(badsecrets.base.__file__).parent / "resources"
+_DEFAULT_TRIM_WORDLIST = "top_250000_passwords.txt"
+
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "trim_wordlist(*answers, wordlist=..., context=...): trim a shipped wordlist down to "
+        "`answers` plus neighbours, so brute-force modules do not sweep all 250k candidates.",
+    )
 
 
 @pytest.fixture
@@ -64,3 +73,21 @@ def trim_wordlist(monkeypatch):
 
     yield _trim
     badsecrets.base._resource_cache.clear()
+
+
+@pytest.fixture(autouse=True)
+def _trim_wordlists(request):
+    """Apply any `trim_wordlist` markers on the test, module or class.
+
+    Opt a whole file in with ``pytestmark = pytest.mark.trim_wordlist``, or
+    ``pytest.mark.trim_wordlist("secret")`` when a test has to actually crack a
+    secret that lives deep in the list. Unmarked tests never build the fixture,
+    so they keep the shared resource cache.
+    """
+    markers = list(request.node.iter_markers("trim_wordlist"))
+    if not markers:
+        return
+    trim = request.getfixturevalue("trim_wordlist")
+    for marker in markers:
+        kwargs = dict(marker.kwargs)
+        trim(kwargs.pop("wordlist", _DEFAULT_TRIM_WORDLIST), *marker.args, **kwargs)

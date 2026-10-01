@@ -8,9 +8,7 @@ from badsecrets.helpers import b64url_decode, hkdf_sha256, parse_jwe_compact, jw
 NextAuth = modules_loaded["nextauth"]
 
 
-@pytest.fixture(autouse=True)
-def _trim_wordlists(trim_wordlist):
-    trim_wordlist("top_250000_passwords.txt", "secret")
+pytestmark = pytest.mark.trim_wordlist("secret")
 
 
 # Authoritative vectors generated with Node.js stdlib crypto (crypto.hkdfSync + createCipheriv) —

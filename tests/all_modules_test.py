@@ -3,9 +3,7 @@ import badsecrets.base
 import pytest
 
 
-@pytest.fixture(autouse=True)
-def _trim_wordlists(trim_wordlist):
-    trim_wordlist("top_250000_passwords.txt")
+pytestmark = pytest.mark.trim_wordlist
 
 
 class FakeResponse:

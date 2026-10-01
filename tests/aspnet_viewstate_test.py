@@ -7,9 +7,7 @@ from badsecrets.errors import CarveException
 ASPNETViewstate = modules_loaded["aspnet_viewstate"]
 
 
-@pytest.fixture(autouse=True)
-def _trim_wordlists(trim_wordlist):
-    trim_wordlist("top_250000_passwords.txt")
+pytestmark = pytest.mark.trim_wordlist
 
 
 tests = [
