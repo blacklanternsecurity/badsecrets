@@ -11,6 +11,14 @@ from abc import abstractmethod
 
 log = logging.getLogger(__name__)
 
+# Deduplicated wordlists, cached per (custom_resource, resource_list) for the life of the process.
+# Wordlists are static during a run but check_secret() runs per event, so this turns thousands of
+# reads + dedup-set builds of a 250k-line list into one. Naturally bounded by the small set of
+# resource combinations. Under BBOT this lives in each persistent process-pool worker, so it
+# persists across events. A plain dict on purpose: auditable, no lru_cache.
+_resource_cache = {}
+
+
 generic_base64_regex = re.compile(
     r"^(?:[A-Za-z0-9+\/]{4}){8,}(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}={2})$"
 )
@@ -77,16 +85,31 @@ class BadsecretsBase:
             return None
 
     def load_resources(self, resource_list):
-        filepaths = []
-        if self.custom_resource:
-            filepaths.append(self.custom_resource)
-        for r in resource_list:
-            filepaths.append(f"{os.path.dirname(os.path.abspath(__file__))}/resources/{r}")
-        for filepath in filepaths:
-            with open(filepath) as r:
-                for line in r.readlines():
-                    if len(line) > 0:
-                        yield line
+        """Return the deduplicated lines of the given wordlists (plus any custom_resource).
+
+        Cached per (custom_resource, resource_list) so a 250k-line list is read and deduplicated
+        once per process instead of on every check_secret call. First-seen order is preserved.
+        """
+        key = (self.custom_resource, tuple(resource_list))
+        cached = _resource_cache.get(key)
+        if cached is None:
+            resource_dir = os.path.dirname(os.path.abspath(__file__))
+            filepaths = []
+            if self.custom_resource:
+                filepaths.append(self.custom_resource)
+            for r in resource_list:
+                filepaths.append(f"{resource_dir}/resources/{r}")
+            seen = set()
+            deduped = []
+            for filepath in filepaths:
+                with open(filepath) as f:
+                    for line in f:
+                        if len(line) > 0 and line not in seen:
+                            seen.add(line)
+                            deduped.append(line)
+            cached = tuple(deduped)
+            _resource_cache[key] = cached
+        return cached
 
     def carve_to_check_secret(self, s, **kwargs):
         if s.groups():
@@ -190,21 +213,25 @@ class BadsecretsBase:
         """Extract secrets from HTML body text. Override in subclasses for custom body carving."""
         results = []
         if self.carve_regex():
-            s = re.search(self.carve_regex(), body)
-            if s:
-                if not self.validate_carve or self.identify(s.groups()[0]):
-                    r = self.carve_to_check_secret(
-                        s, url=kwargs.get("url"), body=body, cookies=cookies, headers=headers
-                    )
-                    if r:
-                        r["type"] = "SecretFound"
-                    else:
-                        r = {"type": "IdentifyOnly"}
-                        r["hashcat"] = self._safe_hashcat(s.groups()[0])
-                    if "product" not in r:
-                        r["product"] = self.get_product_from_carve(s)
-                    r["location"] = "body"
-                    results.append(r)
+            # Walk every match rather than only the first. A page can carry several fields the
+            # carve regex matches -- an empty or decoy __VIEWSTATE alongside a real payload --
+            # and stopping at match #1 lets whichever appears first in the markup hide the rest.
+            for s in re.finditer(self.carve_regex(), body):
+                if self.validate_carve and not self.identify(s.groups()[0]):
+                    continue
+                r = self.carve_to_check_secret(s, url=kwargs.get("url"), body=body, cookies=cookies, headers=headers)
+                if r:
+                    r["type"] = "SecretFound"
+                else:
+                    r = {"type": "IdentifyOnly"}
+                    r["hashcat"] = self._safe_hashcat(s.groups()[0])
+                if "product" not in r:
+                    r["product"] = self.get_product_from_carve(s)
+                r["location"] = "body"
+                results.append(r)
+                # First candidate that identifies wins, keeping the one-result-per-body
+                # contract and avoiding repeat check_secret() work on expensive modules.
+                break
         return results
 
     @classmethod

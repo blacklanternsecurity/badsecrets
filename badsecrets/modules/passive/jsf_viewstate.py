@@ -28,7 +28,7 @@ class Jsf_viewstate(BadsecretsBase):
     carve_locations = ("body",)
 
     def carve_regex(self):
-        return re.compile(r"<input.+?name=\"javax\.faces\.ViewState\".+?value=\"([^\"]*)\"")
+        return re.compile(r"<input(?=[^>]*name=\"javax\.faces\.ViewState\")[^>]*?\svalue=\"([^\"]*)\"")
 
     # Mojarra 1.2.x - 2.0.3
     def DES3_decrypt(self, ct, password):
@@ -232,7 +232,7 @@ class Jsf_viewstate(BadsecretsBase):
             else:
                 jsf_viewstate_value = base64.b64encode(uncompressed)
 
-        for l in set(self.load_resources(["jsf_viewstate_passwords.txt", "top_100000_passwords.txt"])):
+        for l in self.load_resources(["jsf_viewstate_passwords.txt", "top_250000_passwords.txt"]):
             with suppress(ValueError):
                 password = l.rstrip()
                 if self.DES3_decrypt(jsf_viewstate_value, password):
