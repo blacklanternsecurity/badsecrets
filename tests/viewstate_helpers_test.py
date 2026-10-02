@@ -10,7 +10,9 @@ from badsecrets.helpers import (
     dotnet_get_sort_key,
     dotnet_legacy_hash,
     dotnet_string_hashcode,
+    Java_sha1prng,
     print_status,
+    twos_complement,
     viewstate_signature_length,
     write_vlq_string,
     Viewstate_Helpers,
@@ -623,3 +625,18 @@ def test_find_path_no_aspx_no_slash():
     gen = vh.calculate_generator_value("/endpoint.aspx", "/")
     vh2 = Viewstate_Helpers("http://example.com/endpoint", generator=gen)
     assert vh2.verified_path is not None
+
+
+# --- Java SHA1PRNG tests ---
+
+
+def test_twos_complement_signed_byte():
+    assert [twos_complement(x) for x in (0, 1, 127, 128, 200, 255)] == [0, 1, 127, -128, -56, -1]
+
+
+def test_java_sha1prng_known_keys():
+    """Pins the derivation used for Mojarra 3DES viewstate keys."""
+    assert Java_sha1prng("PASSWORD").get_sha1prng_key(24).hex() == "d7eb057758209b15c0e82283f4ac318e6f054f535e7fe337"
+    assert Java_sha1prng(b"password").get_sha1prng_key(8).hex() == "9b935e0ef723fe8f"
+    # keys longer than one sha1 block exercise the carry across updateState()
+    assert Java_sha1prng("").get_sha1prng_key(64).hex().startswith("80324ed2458e5d51")
