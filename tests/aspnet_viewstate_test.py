@@ -6,6 +6,10 @@ from badsecrets.errors import CarveException
 
 ASPNETViewstate = modules_loaded["aspnet_viewstate"]
 
+
+pytestmark = pytest.mark.trim_wordlist
+
+
 tests = [
     (
         "DES+SHA1",

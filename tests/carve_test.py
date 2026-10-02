@@ -4,6 +4,9 @@ import badsecrets.errors
 from badsecrets import modules_loaded
 
 
+pytestmark = pytest.mark.trim_wordlist
+
+
 class FakeResponse:
     """Duck-typed HTTP response for carve(http_response=...) tests."""
 
