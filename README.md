@@ -44,6 +44,7 @@ Passive modules analyze cryptographic products (cookies, tokens, signed URLs, et
 | Yii2_SignedCookies | Checks Yii2 framework signed cookies for known cookie validation keys |
 | Shiro_RememberMe | Checks Apache Shiro `rememberMe` cookies for known AES encryption keys |
 | LTPA_Token | Checks IBM WebSphere `LtpaToken` and `LtpaToken2` cookies for known LTPA encryption keys |
+| NextAuth | Checks NextAuth.js / Auth.js JWE session cookies for a known or weak `NEXTAUTH_SECRET` / `AUTH_SECRET` |
 
 ### Active Modules
 
@@ -160,6 +161,26 @@ badsecrets --url http://example.com/contains_bad_secret.html
 ```
 
 You can also set a custom user-agent with `--user-agent "user-agent string"` or a proxy with `--proxy http://127.0.0.1` in this mode.
+
+* ASP.NET Viewstate: supply the URL
+
+The `ASPNET_Viewstate` module accepts up to four positional arguments — the viewstate, the `__VIEWSTATEGENERATOR` value, the page URL, and a `ViewStateUserKey`. Order does not matter; each is identified by its shape (8 hex characters is the generator, anything starting with `http://`/`https://` is the URL, anything else is the user key).
+
+```bash
+badsecrets <viewstate> <generator> <url> [viewstateuserkey]
+```
+
+**The URL is not optional for every viewstate.** .NET 4.5 (`DOTNET45`) binds the validation key to the page path through the SP800-108 KDF purpose strings, and `DOTNET40` with `IsolateApps` enabled mixes in an app-path hash. Both are computed from the URL. If you supply only the viewstate and generator, badsecrets has no path to derive from and the HMAC can never validate — you will get `No secrets found :(` even when the machine key is in the list.
+
+```bash
+# Reports nothing on this DOTNET45 viewstate - no path to derive the key from
+badsecrets 3RP87RgckNbfc7fNdaHzH9YLqbIhzpA64gFfWB49lhzHpuHFAAO7C7Dl2zh0dWUqobBb4hwiZJ1a2bhP77aQiwqvVqg= 9BD98A7D
+
+# Same viewstate, with the URL - key is found
+badsecrets 3RP87RgckNbfc7fNdaHzH9YLqbIhzpA64gFfWB49lhzHpuHFAAO7C7Dl2zh0dWUqobBb4hwiZJ1a2bhP77aQiwqvVqg= 9BD98A7D http://10.1.1.43/default2.aspx
+```
+
+This is the usual reason `--url` mode succeeds where passing the same viewstate and generator by hand does not: URL mode always knows the page path. URL mode additionally tries several `ViewStateUserKey` candidates automatically (the empty string, `mono`, any `__VIEWSTATE_KEY` field, and each cookie value on the response), which the manual path does not — so pass the user key explicitly if you know it.
 
 Example output:
 
@@ -350,6 +371,7 @@ Rack2_SignedCookies = modules_loaded["rack2_signedcookies"]
 Yii2_SignedCookies = modules_loaded["yii2_signedcookies"]
 Shiro_RememberMe = modules_loaded["shiro_rememberme"]
 LTPA_Token = modules_loaded["ltpa_token"]
+NextAuth = modules_loaded["nextauth"]
 
 
 x = ASPNET_Viewstate()
@@ -513,6 +535,17 @@ r = x.check_secret(
     "Ol6StBNpmLFMvRAkuqwvkxZznLJANOw320SDogOvZvUTvNUFKQ9qkQNsGa/soD2wgOI7+UnzZxBXZJY7Zd8Knge3cOXma/m+8tr96eEhXBP5XcatOey5e8BOQEFNBHK/"
     "QvaEY/rpJfyef4dX+d+coJRdQvF3IRSnqRPubsXgbTx/R148gE++CkIGfuBMVPkEWJkYHpsYRJj7xiYWNbu1jGrwz8GlonX4SdC5JBsjmezWYeAtsoKWeDXX1rhyAyBBgE27nAQEJgi4VEi3be"
     "M1eMo+foxaDHxsCeAabrSGOfOf/yLFMEZr3KAZ7QvyhErT"
+)
+if r:
+    print(r)
+else:
+    print("KEY NOT FOUND :(")
+
+x = NextAuth()
+print(f"###{str(x.__class__.__name__)}###")
+r = x.check_secret(
+    "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..eV7_ge7JJ9vqaYxW.97XOYXr0ANwWherKQ3wIwyLNBN7-A8O40pNSwihk4BPIDWUn3KoXzX5I9fV9rhmlkaILza1p3jVKhzcG"
+    "ISkE3nmx_gaxnXv6UlNfg2vMeA8A_jeQb9x9MgK1yBuIG_V-cw.5b2T1NpI1p4rku2w9mXZ-Q"
 )
 if r:
     print(r)

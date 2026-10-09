@@ -39,7 +39,7 @@ class Rack2_SignedCookies(BadsecretsBase):
         if not self.identify(rack_cookie):
             return None
         for l in self.load_resources(
-            ["rails_secret_key_base.txt", "top_100000_passwords.txt", "rack_secret_keys.txt"]
+            ["rails_secret_key_base.txt", "top_250000_passwords.txt", "rack_secret_keys.txt"]
         ):
             secret_key_base = l.rstrip()
             r = self.rack2(rack_cookie, secret_key_base)

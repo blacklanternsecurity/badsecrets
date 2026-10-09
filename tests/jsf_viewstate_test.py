@@ -1,6 +1,11 @@
 from badsecrets import modules_loaded
+import pytest
 
 Jsf_viewstate = modules_loaded["jsf_viewstate"]
+
+
+pytestmark = pytest.mark.trim_wordlist
+
 
 # Mojarra 2.0.3 (password = "PASSWORD")
 
