@@ -22,7 +22,9 @@ from badsecrets.base import BadsecretsBase
 
 
 class ASPNET_Viewstate(BadsecretsBase):
-    check_secret_args = 3
+    # viewstate, generator, url, ViewStateUserKey. A DOTNET45 viewstate needs the URL to derive
+    # the KDF purposes, so capping this below 4 made url+userkey impossible to supply together.
+    check_secret_args = 4
     # Lower minimum than generic_base64_regex (8 groups) to match short MAC_DISABLED viewstates
     identify_regex = re.compile(
         r"^(?:[A-Za-z0-9+\/]{4}){4,}(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}={2})$"
@@ -57,7 +59,9 @@ class ASPNET_Viewstate(BadsecretsBase):
 
     # Pre-compiled regexes for resolve_args
     _url_pattern = re.compile(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$\-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
-    _generator_pattern = re.compile(r"^[A-F0-9]{8}$")
+    # Case-insensitive: a lowercase generator is still a generator. Matching only uppercase let
+    # one fall through to the ViewStateUserKey branch, silently checking the wrong thing.
+    _generator_pattern = re.compile(r"^[A-F0-9]{8}$", re.IGNORECASE)
 
     def carve_regex(self):
         return self._carve_re_normal
@@ -374,7 +378,8 @@ class ASPNET_Viewstate(BadsecretsBase):
         for arg in args:
             if arg:
                 if self._generator_pattern.match(arg):
-                    generator = arg
+                    # Canonicalize so downstream path brute-forcing and result strings agree
+                    generator = arg.upper()
                 elif self._url_pattern.match(arg):
                     url = arg
                 else:

@@ -12,13 +12,17 @@ class ASPNET_compressedviewstate(BadsecretsBase):
     yara_carve_rule = (
         "rule ASPNET_compressedviewstate_carve {"
         ' strings: $vs = "__VIEWSTATE" $vstate = "__VSTATE" $cvs = "__COMPRESSEDVIEWSTATE"'
-        " condition: $vs or $vstate or $cvs }"
+        ' $cvs_u = "__COMPRESSED_VSTATE"'
+        " condition: $vs or $vstate or $cvs or $cvs_u }"
     )
     description = {"product": "ASP.NET Compressed Viewstate", "secret": "unprotected", "severity": "CRITICAL"}
     carve_locations = ("body",)
 
     def carve_regex(self):
-        return re.compile(r"<input[^>]+__(?:VIEWSTATE|VSTATE|COMPRESSEDVIEWSTATE)\"\s*value=\"(.*?)\"")
+        return re.compile(
+            r"<input(?=[^>]*__(?:COMPRESSEDVIEWSTATE|COMPRESSED_VSTATE|VIEWSTATE|VSTATE)\")"
+            r"[^>]*?\svalue=\"(.*?)\""
+        )
 
     def check_secret(self, compressed_viewstate):
         if not self.identify(compressed_viewstate):

@@ -31,7 +31,7 @@ class Yii2_SignedCookies(BadsecretsBase):
         if not self.identify(yii2_cookie):
             return None
 
-        for password in set(self.load_resources(["yii2_cookieValidationKeys.txt", "top_100000_passwords.txt"])):
+        for password in self.load_resources(["yii2_cookieValidationKeys.txt", "top_250000_passwords.txt"]):
             password = password.rstrip()
             if self.verify_yii2_cookie(yii2_cookie, password):
                 return {"secret": password, "details": "Valid cookieValidationKey found"}

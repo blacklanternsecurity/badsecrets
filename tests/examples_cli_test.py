@@ -11,6 +11,10 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(f"{os.path.dirname(SCRIPT_DIR)}/examples")
 from badsecrets.examples import cli
 
+
+pytestmark = pytest.mark.trim_wordlist
+
+
 base_vulnerable_page = """
 <html>
 <head>

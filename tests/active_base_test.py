@@ -12,6 +12,10 @@ from badsecrets.base import (
     _compile_yara_prefilter_rules,
 )
 import badsecrets.base as base_module
+import pytest
+
+
+pytestmark = pytest.mark.trim_wordlist
 
 
 def test_active_subclasses_returns_only_active():

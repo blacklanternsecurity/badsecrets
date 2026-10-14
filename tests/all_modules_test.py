@@ -1,5 +1,9 @@
 from badsecrets.base import check_all_modules, carve_all_modules, BadsecretsBase, yara_carve_scan, _all_subclasses
 import badsecrets.base
+import pytest
+
+
+pytestmark = pytest.mark.trim_wordlist
 
 
 class FakeResponse:
