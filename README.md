@@ -3,7 +3,7 @@
 <p align="left"><img width="300" height="300" src="https://user-images.githubusercontent.com/24899338/223151619-6859bc93-1fe2-47c7-86a6-ecaa6b495ece.png"></p>
 
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-![License](https://img.shields.io/badge/license-GPLv3-f126ea.svg)
+![License](https://img.shields.io/badge/license-AGPLv3-f126ea.svg)
 ![Tests](https://github.com/blacklanternsecurity/badsecrets/actions/workflows/tests.yaml/badge.svg?branch=main)
 [![codecov](https://codecov.io/gh/blacklanternsecurity/badsecrets/branch/main/graph/badge.svg?token=2PAE7NUM07)](https://codecov.io/gh/blacklanternsecurity/badsecrets)
 [![Pypi Downloads](https://img.shields.io/pypi/dm/badsecrets)](https://pypi.org/project/badsecrets)
