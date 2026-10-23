@@ -3,7 +3,7 @@ name = "badsecrets"
 dynamic = ["version"]
 description = "A library for detecting known or weak secrets across many platforms"
 authors = [{name = "liquidsec", email = "paul.mueller@blacklanternsecurity.com"}]
-license = "GPL-3.0"
+license = "AGPL-3.0-or-later"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
