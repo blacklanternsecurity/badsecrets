@@ -1,0 +1,2 @@
+# Every change needs an approval from a lead (development-leads or bbot-leads) before it reaches stable (.github-config docs/policy/publishing.md 1.8.0).
+* @blacklanternsecurity/bbot-leads @blacklanternsecurity/development-leads
