@@ -2,7 +2,39 @@ version: 2
 updates:
   - package-ecosystem: "uv"
     directory: "/"
-    schedule:
-      interval: "daily"
     target-branch: "dev"
-    open-pull-requests-limit: 10
+    schedule:
+      interval: "weekly"
+    groups:
+      uv-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      uv-major:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "dev"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      github-actions-major:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+    cooldown:
+      default-days: 7
